@@ -1,0 +1,3 @@
+[submodule "OpenGLWrapper"]
+	path = OpenGLWrapper
+	url = https://github.com/Drwalin/OpenGLWrapper.git
