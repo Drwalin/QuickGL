@@ -25,12 +25,12 @@ target_link_libraries(QuickGL OpenGLWrapper)
 
 
 
-if(BUILD_EXAMPLES)
-	add_executable(samples
-		samples/Sample
-	)
-	target_link_libraries(samples QuickGL)
-endif()
+# if(BUILD_EXAMPLES)
+# 	add_executable(samples
+# 		samples/Sample
+# 	)
+# 	target_link_libraries(samples QuickGL)
+# endif()
 
 
 
