@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_ALLOCATOR_VBO_H
-#define QUICKGL_ALLOCATOR_VBO_H
+#ifndef QUICKGL_ALLOCATOR_VBO_HPP
+#define QUICKGL_ALLOCATOR_VBO_HPP
 
 #include <memory>
 #include <vector>
