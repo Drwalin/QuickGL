@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_ENGINE_H
-#define QUICKGL_ENGINE_H
+#ifndef QUICKGL_ENGINE_HPP
+#define QUICKGL_ENGINE_HPP
 
 #include "../../OpenGLWrapper/include/openglwrapper/FBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
@@ -35,7 +35,7 @@ namespace qgl {
 		Engine();
 		~Engine();
 		
-		void InitAsync();
+		void InitRunAsync();
 		
 	private:
 		
