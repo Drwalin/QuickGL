@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <map>
@@ -36,14 +37,50 @@ namespace qgl {
 	
 	uint32_t AllocatorVBO::Allocate(uint32_t size) {
 		if(freeRanges.size() == 0) {
-			
+			ReserveAdditional(
+					std::max(std::max(size, vbo.GetVertexCount()/2), 4096u));
 		} else {
-			
+			for(auto it : freeRanges) {
+				if(it.second >= size) {
+					uint32_t offset = it.first;
+					uint32_t elements = it.second;
+					
+					freeRanges.erase(offset);
+					if(elements > size) {
+						freeRanges[offset+size] = elements-size;
+					}
+					
+					return offset;
+				}
+			}
+		
+			auto p = *freeRanges.rbegin();
+			if(p.first + p.second < vbo.GetVertexCount()) {
+				ReserveAdditional(
+						std::max(std::max(size, vbo.GetVertexCount()/2),
+							4096u));
+			} else {
+				ReserveAdditional(
+						std::max(std::max(size-p.second,
+								vbo.GetVertexCount()/2), 4096u));
+			}
 		}
+		auto it = freeRanges.rbegin();
+		uint32_t offset = it->first;
+		uint32_t r = it->second - size;
+		freeRanges.erase(it->first);
+		if(r > 0) {
+			freeRanges[offset+size] = r;
+		}
+		return offset;
 	}
 	
 	void AllocatorVBO::Free(uint32_t pos, uint32_t size) {
 		auto it = freeRanges.upper_bound(pos);
+	}
+	
+	void AllocatorVBO::ReserveAdditional(uint32_t elements) {
+		
 	}
 }
 

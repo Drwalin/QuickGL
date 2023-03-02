@@ -34,12 +34,13 @@ namespace qgl {
 		
 		uint32_t Allocate(uint32_t sizeElements);
 		void Free(uint32_t posElements, uint32_t sizeElements);
+		void ReserveAdditional(uint32_t elements);
 		
 		inline gl::VBO& VBO() { return vbo; }
 		
 	private:
 		
-		std::map<uint32_t, uint32_t> freeRanges;
+		std::map<uint32_t, uint32_t> freeRanges; // { offset, size }
 		
 		gl::VBO vbo;
 	};

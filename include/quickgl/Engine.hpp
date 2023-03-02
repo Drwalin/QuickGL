@@ -36,6 +36,8 @@ namespace qgl {
 		~Engine();
 		
 		void InitRunAsync();
+		int AddPipeline(class Pipeline* pipeline);
+		int AddPostprocess(class Postprocess* postprocess);
 		
 	private:
 		
