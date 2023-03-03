@@ -25,13 +25,6 @@
 
 #include "../include/quickgl/AllocatorVBO.hpp"
 
-
-
-#include <cstdio>
-// #define DEBUG {printf(" %s : %i\n", __FILE__, __LINE__); fflush(stdout);}
-#define DEBUG
-
-
 namespace qgl {
 	AllocatorVBO::AllocatorVBO(uint32_t vertexSize,
 			bool isElementOtherwiseVertexBuffer) {
@@ -98,16 +91,18 @@ namespace qgl {
 			}
 		
 			auto p = *freeRanges.rbegin();
-			if(p.first + p.second < allocated) {
+			if(p.first + p.second < allocated) { // last free block is NOT at the end of allocated memory
 				ReserveAdditional(
 						std::max(std::max(size, allocated/2),
 							4096u));
-			} else {
+			} else { // last free block is at the end of allocated memory
 				ReserveAdditional(
 						std::max(std::max(size-p.second,
 								allocated), 4096u));
 			}
 		}
+		
+		// after above code, assumes that last block has enaugh space
 		auto it = freeRanges.rbegin();
 		uint32_t offset = it->first;
 		uint32_t r = it->second - size;
@@ -119,26 +114,26 @@ namespace qgl {
 	}
 	
 	void AllocatorVBO::Free(uint32_t pos, uint32_t size) {
+		freeRanges[pos] = size;
 		if(freeRanges.size() == 0) {
-			freeRanges[pos] = size;
 		} else {
 			freeRanges[pos] = size;
 			auto it = freeRanges.find(pos);
 			{
 				auto next = it; ++next;
-				if(next != freeRanges.end()) {
-					if(pos+size == next->first) {
+				if(next != freeRanges.end()) { // if freed block is not last
+					if(pos+size == next->first) { // if freed block ends where next starts
 						it->second += next->second;
 						freeRanges.erase(next);
 						it = freeRanges.find(pos);
 					}
 				}
 			}
-			if(it == freeRanges.begin()) { // equivalent to if prev exists
+			if(it != freeRanges.begin()) { // if freed block is not first
 				auto prev = it; --prev;
-				if(prev->first + prev->second == it->first) {
-					prev->second += size;
-					freeRanges.erase(it);
+				if(prev->first + prev->second == pos) { // if previous block ends where freed starts
+					prev->second += it->second;
+					freeRanges.erase(pos);
 				}
 			}
 		}
@@ -147,8 +142,9 @@ namespace qgl {
 	void AllocatorVBO::ReserveAdditional(uint32_t additionalElements) {
 		uint32_t prevSize = allocated;
 		uint32_t newSize = prevSize+additionalElements;
-		if(resize)
+		if(resize) {
 			resize(bufferObject, newSize);
+		}
 		Free(prevSize, additionalElements);
 		allocated = newSize;
 	}

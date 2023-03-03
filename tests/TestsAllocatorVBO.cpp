@@ -14,6 +14,10 @@
 
 namespace TestsAllocatorVBO {
 	
+	static void NewLine() {
+		printf("\n");
+	}
+	
 // 	struct Pair {
 // 		uint32_t p;
 // 		uint32_t count;
@@ -167,12 +171,28 @@ namespace TestsAllocatorVBO {
 		uint32_t third = allocator.Allocate(128);
 		uint32_t fourth = allocator.Allocate(256);
 		
-		ASSERT_EQUAL(first, 0, "");
-		ASSERT_EQUAL(second, 32, "");
 		allocator.Free(third, 128);
 		allocator.Free(fourth, 256);
 		uint32_t fifth = allocator.Allocate(512);
 		
+		ASSERT_EQUAL(first, 0, "");
+		ASSERT_EQUAL(second, 32, "");
+		ASSERT_EQUAL(fifth, third, "");
+	}
+	
+	void free_single_end_allocate_more_2() {
+		ALLOCATOR(allocator);
+		uint32_t first = allocator.Allocate(1024);
+		uint32_t second = allocator.Allocate(1024);
+		uint32_t third = allocator.Allocate(1024);
+		uint32_t fourth = allocator.Allocate(1024);
+		
+		allocator.Free(third, 1024);
+		allocator.Free(fourth, 1024);
+		uint32_t fifth = allocator.Allocate(3072);
+		
+		ASSERT_EQUAL(first, 0, "");
+		ASSERT_EQUAL(second, 1024, "");
 		ASSERT_EQUAL(fifth, third, "");
 	}
 	
@@ -183,6 +203,7 @@ namespace TestsAllocatorVBO {
 		free_neighboring_middle();
 		free_neighboring_back();
 		free_single_end_allocate_more();
+		free_single_end_allocate_more_2();
 	}
 }
 
