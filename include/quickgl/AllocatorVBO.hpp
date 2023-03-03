@@ -19,30 +19,40 @@
 #ifndef QUICKGL_ALLOCATOR_VBO_HPP
 #define QUICKGL_ALLOCATOR_VBO_HPP
 
-#include <memory>
+#include <cinttypes>
 #include <vector>
 #include <map>
 
-#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+namespace gl {
+	class VBO;
+}
 
 namespace qgl {
 	class AllocatorVBO {
 	public:
 		
-		AllocatorVBO(uint32_t elementSize, bool isElementOtherwiseVertexBuffer);
+		void Init(void* bufferObject,
+				void(*resize)(void*, uint32_t newSize),
+				void(*destructor)(void*));
+		
+		AllocatorVBO(uint32_t vertexSize, bool isElementOtherwiseVertexBuffer);
+		AllocatorVBO(const char* debug);
+		AllocatorVBO(void* bufferObject,
+				void(*resize)(void*, uint32_t newSize),
+				void(*destructor)(void*));
 		~AllocatorVBO();
 		
-		uint32_t Allocate(uint32_t sizeElements);
-		void Free(uint32_t posElements, uint32_t sizeElements);
-		void ReserveAdditional(uint32_t elements);
-		
-		inline gl::VBO& VBO() { return vbo; }
+		uint32_t Allocate(uint32_t count);
+		void Free(uint32_t ptr, uint32_t count);
+		void ReserveAdditional(uint32_t additionalElements);
 		
 	private:
 		
 		std::map<uint32_t, uint32_t> freeRanges; // { offset, size }
-		
-		gl::VBO vbo;
+		uint32_t allocated;
+		void* bufferObject;
+		void(*resize)(void*, uint32_t newSize);
+		void(*destructor)(void*);
 	};
 }
 

@@ -43,7 +43,7 @@ namespace qgl {
 			uint32_t countVertices;
 		};
 		
-		MeshManager(VertexAttributesConfiguration config);
+// 		MeshManager(VertexAttributesConfiguration config);
 		~MeshManager();
 		
 		MeshInfo& GetMeshInfoById(uint32_t id);

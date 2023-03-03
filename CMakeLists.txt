@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_DEBUG "Build debug" ON)
 option(BUILD_RELEASE "Build release" OFF)
+option(BUILD_TEST "Build tests" ON)
 
 add_subdirectory(OpenGLWrapper)
 
@@ -22,6 +23,16 @@ add_library(QuickGL SHARED
 	${source_files}
 )
 target_link_libraries(QuickGL OpenGLWrapper)
+
+
+
+# if(BUILD_TESTS)
+	add_executable(tests
+		tests/TestsMain
+		tests/TestsAllocatorVBO
+	)
+	target_link_libraries(tests QuickGL)
+# endif()
 
 
 
@@ -43,6 +54,7 @@ endif()
 add_compile_options(-ggdb3)
 add_compile_options(-ggdb)
 add_compile_options(-pg)
+add_compile_options(-fprofile-arcs -ftest-coverage --coverage -lgcov)
 
 set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall -ggdb3 -ggdb -pedantic")
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -Ofast -s -pedantic")	
