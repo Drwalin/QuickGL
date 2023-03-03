@@ -19,12 +19,7 @@
 #ifndef QUICKGL_ENGINE_HPP
 #define QUICKGL_ENGINE_HPP
 
-#include "../../OpenGLWrapper/include/openglwrapper/FBO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include <map>
 
 #include "Scheduler.hpp"
 
@@ -37,11 +32,16 @@ namespace qgl {
 		
 		void InitRunAsync();
 		int AddPipeline(class Pipeline* pipeline);
-		int AddPostprocess(class Postprocess* postprocess);
+// 		int AddPostprocess(class Postprocess* postprocess);
 		
-	private:
+	protected:
 		
-		Scheduler scheduler;
+		void Draw();
+		
+	protected:
+		
+// 		Scheduler scheduler;
+		std::map<int, class Pipeline*> pipelines;
 	};
 }
 
