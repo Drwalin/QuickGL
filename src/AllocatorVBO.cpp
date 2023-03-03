@@ -21,24 +21,67 @@
 #include <vector>
 #include <map>
 
+#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+
 #include "../include/quickgl/AllocatorVBO.hpp"
 
+
+
+#include <cstdio>
+// #define DEBUG {printf(" %s : %i\n", __FILE__, __LINE__); fflush(stdout);}
+#define DEBUG
+
+
 namespace qgl {
-	AllocatorVBO::AllocatorVBO(uint32_t elementSize,
-			bool isElementOtherwiseVertexBuffer) :
-		vbo(elementSize, isElementOtherwiseVertexBuffer ?
-				gl::ELEMENT_ARRAY_BUFFER :
-				gl::ARRAY_BUFFER,
-				gl::STATIC_DRAW) {
+	AllocatorVBO::AllocatorVBO(uint32_t vertexSize,
+			bool isElementOtherwiseVertexBuffer) {
+		Init(
+				new gl::VBO(vertexSize, isElementOtherwiseVertexBuffer ?
+						gl::ELEMENT_ARRAY_BUFFER :
+						gl::ARRAY_BUFFER,
+						gl::STATIC_DRAW),
+				[](void* obj, uint32_t size) {
+					((gl::VBO*)obj)->Resize(size);
+				},
+				[](void* obj) {
+					delete (gl::VBO*)obj;
+				});
+	}
+	
+	AllocatorVBO::AllocatorVBO(const char* debug) {
+		Init(
+				new std::vector<uint64_t>(),
+				[](void* obj, uint32_t size) {
+					((std::vector<uint64_t>*)obj)->resize(size);
+				},
+				[](void* obj) {
+					delete (std::vector<uint64_t>*)obj;
+				});
+	}
+	
+	AllocatorVBO::AllocatorVBO(void* bufferObject,
+			void(*resize)(void*, uint32_t newSize),
+			void(*destructor)(void*)) {
+		Init(bufferObject, resize, destructor);
+	}
+	
+	void AllocatorVBO::Init(void* bufferObject,
+			void(*resize)(void*, uint32_t newSize),
+			void(*destructor)(void*)) {
+		this->allocated = 0;
+		this->bufferObject = bufferObject;
+		this->resize = resize;
+		this->destructor = destructor;
 	}
 	
 	AllocatorVBO::~AllocatorVBO() {
+		destructor(bufferObject);
 	}
 	
 	uint32_t AllocatorVBO::Allocate(uint32_t size) {
 		if(freeRanges.size() == 0) {
 			ReserveAdditional(
-					std::max(std::max(size, vbo.GetVertexCount()/2), 4096u));
+					std::max(std::max(size, allocated/2), 4096u));
 		} else {
 			for(auto it : freeRanges) {
 				if(it.second >= size) {
@@ -55,14 +98,14 @@ namespace qgl {
 			}
 		
 			auto p = *freeRanges.rbegin();
-			if(p.first + p.second < vbo.GetVertexCount()) {
+			if(p.first + p.second < allocated) {
 				ReserveAdditional(
-						std::max(std::max(size, vbo.GetVertexCount()/2),
+						std::max(std::max(size, allocated/2),
 							4096u));
 			} else {
 				ReserveAdditional(
 						std::max(std::max(size-p.second,
-								vbo.GetVertexCount()/2), 4096u));
+								allocated), 4096u));
 			}
 		}
 		auto it = freeRanges.rbegin();
@@ -76,11 +119,38 @@ namespace qgl {
 	}
 	
 	void AllocatorVBO::Free(uint32_t pos, uint32_t size) {
-		auto it = freeRanges.upper_bound(pos);
+		if(freeRanges.size() == 0) {
+			freeRanges[pos] = size;
+		} else {
+			freeRanges[pos] = size;
+			auto it = freeRanges.find(pos);
+			{
+				auto next = it; ++next;
+				if(next != freeRanges.end()) {
+					if(pos+size == next->first) {
+						it->second += next->second;
+						freeRanges.erase(next);
+						it = freeRanges.find(pos);
+					}
+				}
+			}
+			if(it == freeRanges.begin()) { // equivalent to if prev exists
+				auto prev = it; --prev;
+				if(prev->first + prev->second == it->first) {
+					prev->second += size;
+					freeRanges.erase(it);
+				}
+			}
+		}
 	}
 	
-	void AllocatorVBO::ReserveAdditional(uint32_t elements) {
-		
+	void AllocatorVBO::ReserveAdditional(uint32_t additionalElements) {
+		uint32_t prevSize = allocated;
+		uint32_t newSize = prevSize+additionalElements;
+		if(resize)
+			resize(bufferObject, newSize);
+		Free(prevSize, additionalElements);
+		allocated = newSize;
 	}
 }
 
