@@ -17,7 +17,7 @@ int main() {
 	
 	int correct = 0;
 	for(int i=0; i<testsInfos.size(); ++i) {
-		testsInfos[i].Print(i ? &(testsInfos[i]) : NULL);
+// 		testsInfos[i].Print(i ? &(testsInfos[i]) : NULL);
 		if(testsInfos[i].success)
 			++correct;
 	}
