@@ -33,10 +33,10 @@ struct TestInfo {
 		}
 		
 		if(level < 1) {
-			printf("\ntest suite '%s'\n", fileName);
+			printf("\n\ntest suite '%s'\n", fileName);
 		}
 		if(level < 2) {
-			printf("\n  test '%s' in function %s\n", name, functionName);
+			printf("\n\n  test '%s' in function %s\n", name, functionName);
 		}
 		printf("    %i\t ... %s", lineNumber, success?"SUCCESS":"FAILED");
 		if(!success) {
@@ -51,9 +51,18 @@ extern std::vector<TestInfo> testsInfos;
 
 #define TO_STR(__X) #__X
 
+inline static void PushASSERT(TestInfo t) {
+	if(testsInfos.size())
+		t.Print(&testsInfos.back());
+	testsInfos.push_back(t);
+// 	if(t.success == false) {
+// 		getchar();
+// 	}
+}
+
 #define ASSERT_BASE_(__A, __B, __OP, __NAME) \
 	{ \
-		testsInfos.push_back(TestInfo{__NAME, __LINE__, __FILE__, __func__, \
+		PushASSERT(TestInfo{__NAME, __LINE__, __FILE__, __func__, \
 		__A __OP __B, \
 			(std::stringstream()<<__A<<" "<<TO_STR(__OP)<<" "<<__B).str() \
 				}); \
