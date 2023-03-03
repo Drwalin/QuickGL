@@ -16,39 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_SCHEDULER_HPP
-#define QUICKGL_SCHEDULER_HPP
-
-#include "EventQueue.hpp"
+#include "../include/quickgl/EventQueue.hpp"
+#include <mutex>
 
 namespace qgl {
-	class Scheduler {
-	public:
-		
-		Scheduler() = default;
-		~Scheduler() = default;
-		
-		void Run();
-		
-		template<typename... Args>
-		void ScheduleTask(std::function<void(Args...)> task, Args... args) {
-			regularEvents.PushEvent(task, args...);
+	
+	template<>
+	void EventQueue::PushEvent(std::function<void()> event) {
+		std::lock_guard lock(mutex);
+		eventsQueue.push(event);
+		counter++;
+	}
+	
+	bool EventQueue::ExecuteOneEvent() {
+		if(popedEventsForRunningThreads.empty()) {
+			std::lock_guard lock(mutex);
+			std::swap(eventsQueue, popedEventsForRunningThreads);
 		}
 		
-		template<typename... Args>
-		void SchedulePriorityTask(std::function<void(Args...)> task, Args... args) {
-			priorityEvents.PushEvent(task, args...);
+		if(popedEventsForRunningThreads.empty() == false) {
+			popedEventsForRunningThreads.front()();
+			popedEventsForRunningThreads.pop();
+			counter--;
+			return true;
 		}
-		
-		bool ExecuteOne(); // returns true if anything was executed
-		
-	private:
-		
-		EventQueue regularEvents;
-		EventQueue priorityEvents;
-		
-	};
+		return false;
+	}
+	
+	bool EventQueue::HasAnyEvents() {
+		return counter != 0;
+	}
 }
-
-#endif
 

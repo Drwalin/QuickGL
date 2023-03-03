@@ -16,39 +16,32 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_SCHEDULER_HPP
-#define QUICKGL_SCHEDULER_HPP
+#include "../include/quickgl/Scheduler.hpp"
 
-#include "EventQueue.hpp"
+#include <thread>
 
 namespace qgl {
-	class Scheduler {
-	public:
-		
-		Scheduler() = default;
-		~Scheduler() = default;
-		
-		void Run();
-		
-		template<typename... Args>
-		void ScheduleTask(std::function<void(Args...)> task, Args... args) {
-			regularEvents.PushEvent(task, args...);
+	
+	void Scheduler::Run() {
+		while(true) {
+			if(ExecuteOne() == false) {
+				std::this_thread::yield();
+			}
 		}
-		
-		template<typename... Args>
-		void SchedulePriorityTask(std::function<void(Args...)> task, Args... args) {
-			priorityEvents.PushEvent(task, args...);
+	}
+	
+	bool Scheduler::ExecuteOne() {
+		if(priorityEvents.HasAnyEvents()) {
+			if(priorityEvents.ExecuteOneEvent()) {
+				return true;
+			}
 		}
-		
-		bool ExecuteOne(); // returns true if anything was executed
-		
-	private:
-		
-		EventQueue regularEvents;
-		EventQueue priorityEvents;
-		
-	};
+		if(regularEvents.HasAnyEvents()) {
+			if(regularEvents.ExecuteOneEvent()) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
-
-#endif
 

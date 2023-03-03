@@ -16,37 +16,43 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_SCHEDULER_HPP
-#define QUICKGL_SCHEDULER_HPP
+#ifndef QUICKGL_EVENT_QUEUE_HPP
+#define QUICKGL_EVENT_QUEUE_HPP
 
-#include "EventQueue.hpp"
+#include <functional>
+#include <atomic>
+#include <queue>
+#include <mutex>
 
 namespace qgl {
-	class Scheduler {
+	class EventQueue {
 	public:
 		
-		Scheduler() = default;
-		~Scheduler() = default;
-		
-		void Run();
+		EventQueue() = default;
+		~EventQueue() = default;
 		
 		template<typename... Args>
-		void ScheduleTask(std::function<void(Args...)> task, Args... args) {
-			regularEvents.PushEvent(task, args...);
+		void PushEvent(std::function<void(Args...)> event, Args... args) {
+			PushEvent<>(std::bind(event, args...));
 		}
 		
-		template<typename... Args>
-		void SchedulePriorityTask(std::function<void(Args...)> task, Args... args) {
-			priorityEvents.PushEvent(task, args...);
-		}
+		template<>
+		void PushEvent(std::function<void()> event);
 		
-		bool ExecuteOne(); // returns true if anything was executed
+		bool ExecuteOneEvent(); // returns true if anything was executed
+		bool HasAnyEvents();
 		
 	private:
 		
-		EventQueue regularEvents;
-		EventQueue priorityEvents;
+		std::atomic<uint32_t> counter;
 		
+		// replace std::function & std::bind with something faster/smaller
+		std::queue<std::function<void()>> eventsQueue;
+		
+		// replace std::queue & std::mutex with something faster
+		std::mutex mutex;
+		
+		std::queue<std::function<void()>> popedEventsForRunningThreads;
 	};
 }
 
