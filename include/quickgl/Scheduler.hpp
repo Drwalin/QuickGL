@@ -31,40 +31,19 @@ namespace qgl {
 		
 		void Run();
 		
-		template<typename... Args>
-		void ScheduleTask(std::function<void(Args...)> task, Args... args) {
-			regularEvents.PushEvent(task, args...);
+		template<typename... Args, typename Fn>
+		void ScheduleTask(Fn task, Args... args) {
+			regularEvents.PushEvent((void(*)(Args...))task, args...);
 		}
 		
-		template<typename... Args>
-		void ScheduleTask(void(*task)(Args...), Args... args) {
-			regularEvents.PushEvent(task, args...);
+		template<typename... Args, typename Fn>
+		void SchedulePriorityTask(Fn task, Args... args) {
+			priorityEvents.PushEvent((void(*)(Args...))task, args...);
 		}
 		
-		
-		template<typename... Args>
-		void SchedulePriorityTask(std::function<void(Args...)> task,
-				Args... args) {
-			priorityEvents.PushEvent(task, args...);
-		}
-		
-		template<typename... Args>
-		void SchedulePriorityTask(void(*task)(Args...),
-				Args... args) {
-			priorityEvents.PushEvent(task, args...);
-		}
-		
-		
-		template<typename... Args>
-		void ScheduleDelayedTask(int msDelay, std::function<void(Args...)> task,
-				Args... args) {
-			delayedEvents.PushEvent(msDelay, task, args...);
-		}
-		
-		template<typename... Args>
-		void ScheduleDelayedTask(int msDelay, void(*task)(Args...),
-				Args... args) {
-			delayedEvents.PushEvent(msDelay, task, args...);
+		template<typename... Args, typename Fn>
+		void ScheduleDelayedTask(int msDelay, Fn task, Args... args) {
+			delayedEvents.PushEvent(msDelay, (void(*)(Args...))task, args...);
 		}
 		
 		bool ExecuteOne(); // returns true if anything was executed
