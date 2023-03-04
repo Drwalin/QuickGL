@@ -21,8 +21,7 @@
 
 namespace qgl {
 	
-	template<>
-	void EventQueue::PushEvent(std::function<void()> event) {
+	void EventQueue::PushEvent_(std::function<void()> event) {
 		std::lock_guard lock(mutex);
 		eventsQueue.push(event);
 		counter++;
