@@ -33,15 +33,8 @@ namespace qgl {
 		DelayedEvents() = default;
 		~DelayedEvents() = default;
 		
-		template<typename... Args>
-		void PushEvent(int msDelay, std::function<void(Args...)> event,
-				Args... args) {
-			PushEvent_(msDelay, std::bind(event, args...));
-		}
-		
-		template<typename... Args>
-		void PushEvent(int msDelay, void(*event)(Args...),
-				Args... args) {
+		template<typename... Args, typename Fn>
+		void PushEvent(int msDelay, Fn event, Args... args) {
 			PushEvent_(msDelay, std::bind(event, args...));
 		}
 		
