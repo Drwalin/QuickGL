@@ -16,47 +16,48 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_EVENT_QUEUE_HPP
-#define QUICKGL_EVENT_QUEUE_HPP
+#ifndef QUICKGL_DELEYED_EVENTS_HPP
+#define QUICKGL_DELEYED_EVENTS_HPP
 
+#include <chrono>
 #include <functional>
 #include <atomic>
-#include <queue>
+#include <map>
 #include <mutex>
 
 namespace qgl {
-	class EventQueue {
+	
+	class DelayedEvents {
 	public:
 		
-		EventQueue() = default;
-		~EventQueue() = default;
+		DelayedEvents() = default;
+		~DelayedEvents() = default;
 		
 		template<typename... Args>
-		void PushEvent(std::function<void(Args...)> event, Args... args) {
-			PushEvent_(std::bind(event, args...));
+		void PushEvent(int msDelay, std::function<void(Args...)> event,
+				Args... args) {
+			PushEvent_(msDelay, std::bind(event, args...));
 		}
 		
 		template<typename... Args>
-		void PushEvent(void(*event)(Args...), Args... args) {
-			PushEvent_(std::bind(event, args...));
+		void PushEvent(int msDelay, void(*event)(Args...),
+				Args... args) {
+			PushEvent_(msDelay, std::bind(event, args...));
 		}
 		
-		void PushEvent_(std::function<void()> event);
+		void PushEvent_(int msDelay, std::function<void()> event);
 		
 		bool ExecuteOneEvent(); // returns true if anything was executed
 		bool HasAnyEvents();
 		
 	private:
 		
-		std::atomic<uint32_t> counter;
-		
 		// replace std::function & std::bind with something faster/smaller
-		std::queue<std::function<void()>> eventsQueue;
+		std::multimap<std::chrono::time_point<std::chrono::steady_clock>,
+			std::function<void()>> events;
 		
 		// replace std::queue & std::mutex with something faster
 		std::mutex mutex;
-		
-		std::queue<std::function<void()>> popedEventsForRunningThreads;
 	};
 }
 

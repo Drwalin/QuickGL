@@ -20,6 +20,7 @@
 #define QUICKGL_SCHEDULER_HPP
 
 #include "EventQueue.hpp"
+#include "DelayedEvents.hpp"
 
 namespace qgl {
 	class Scheduler {
@@ -36,8 +37,34 @@ namespace qgl {
 		}
 		
 		template<typename... Args>
-		void SchedulePriorityTask(std::function<void(Args...)> task, Args... args) {
+		void ScheduleTask(void(*task)(Args...), Args... args) {
+			regularEvents.PushEvent(task, args...);
+		}
+		
+		
+		template<typename... Args>
+		void SchedulePriorityTask(std::function<void(Args...)> task,
+				Args... args) {
 			priorityEvents.PushEvent(task, args...);
+		}
+		
+		template<typename... Args>
+		void SchedulePriorityTask(void(*task)(Args...),
+				Args... args) {
+			priorityEvents.PushEvent(task, args...);
+		}
+		
+		
+		template<typename... Args>
+		void ScheduleDelayedTask(int msDelay, std::function<void(Args...)> task,
+				Args... args) {
+			delayedEvents.PushEvent(msDelay, task, args...);
+		}
+		
+		template<typename... Args>
+		void ScheduleDelayedTask(int msDelay, void(*task)(Args...),
+				Args... args) {
+			delayedEvents.PushEvent(msDelay, task, args...);
 		}
 		
 		bool ExecuteOne(); // returns true if anything was executed
@@ -47,6 +74,7 @@ namespace qgl {
 		EventQueue regularEvents;
 		EventQueue priorityEvents;
 		
+		DelayedEvents delayedEvents;
 	};
 }
 
