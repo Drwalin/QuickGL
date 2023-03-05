@@ -30,6 +30,7 @@ target_link_libraries(QuickGL OpenGLWrapper)
 	add_executable(tests
 		tests/TestsMain
 		tests/TestsAllocatorVBO
+		tests/TestsIdsManager
 	)
 	target_link_libraries(tests QuickGL)
 # endif()

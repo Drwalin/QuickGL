@@ -19,8 +19,7 @@
 #ifndef QUICKGL_PIPELINE_HPP
 #define QUICKGL_PIPELINE_HPP
 
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include <cinttypes>
 
 #include <string>
 #include <vector>
@@ -44,8 +43,8 @@ namespace qgl {
 		
 		virtual void Initialize() = 0;
 		
-		virtual uint32_t CreateEntity();
-		virtual void DeleteEntity(uint32_t entityId);
+		virtual uint32_t CreateEntity() = 0;
+		virtual void DeleteEntity(uint32_t entityId) = 0;
 		
 // 		virtual void SetEntityPos(uint32_t entityId, glm::vec3 pos) = 0;
 // 		virtual void SetEntityTransform(uint32_t entityId, const glm::mat4& matrix) = 0;
@@ -54,11 +53,11 @@ namespace qgl {
 // 		virtual void SetEntityScale(uint32_t entityId, glm::vec3 scale) = 0;
 // 		virtual void SetEntityData(uint32_t entityId, const void* data) = 0;
 		
-		void SetEntityMesh(uint32_t entityId, uint32_t meshId);
+		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
 		
 		virtual uint32_t DrawStage(uint32_t stageId) = 0; // returns number of stages left for drawing
 		
-		MeshManager* GetMeshManager();
+		inline MeshManager* GetMeshManager() { return meshManager; }
 		
 	protected:
 		
@@ -75,9 +74,8 @@ namespace qgl {
 // 			uint32_t verticesStart;
 // 		};
 // 		
-// 		std::vector<uint32_t> entityMeshId;
+// 		std::vector<uint32_t> entityMeshId; // if == 0xFFFFFFFF then entity is not in use
 // 		std::vector<uint32_t> unusedEntityIdsStack;
-// 		std::vector<bool> entityIdsInUse;
 // 		std::vector<PerEntityMeshInfo> entityMeshInfo;
 // 		
 // 		// move this to derived class

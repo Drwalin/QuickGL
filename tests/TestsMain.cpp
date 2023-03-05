@@ -1,6 +1,4 @@
 
-#include "../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-
 #include "Test.hpp"
 
 std::vector<TestInfo> testsInfos;
@@ -9,11 +7,15 @@ namespace TestsAllocatorVBO {
 	void RunAll();
 }
 
+namespace TestsIdsManager {
+	void RunAll();
+}
+
 int main() {
 	(std::stringstream()<<123).str();
-// 	gl::openGL.Init("Window test name 311", 800, 600, true, false);
 	
 	TestsAllocatorVBO::RunAll();
+	TestsIdsManager::RunAll();
 	
 	int correct = 0;
 	for(int i=0; i<testsInfos.size(); ++i) {
@@ -25,8 +27,6 @@ int main() {
 	printf("\n\n Summary:  %i / %i correct\n", correct, (int)testsInfos.size());
 	
 	fflush(stdout);
-	
-// 	gl::openGL.Destroy();
-// 	glfwTerminate();
+	return 0;
 }
 

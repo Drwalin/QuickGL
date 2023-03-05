@@ -16,32 +16,39 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_ENGINE_HPP
-#define QUICKGL_ENGINE_HPP
+#ifndef QUICKGL_IDS_MANAGER_HPP
+#define QUICKGL_IDS_MANAGER_HPP
 
+#include <cinttypes>
+
+#include <vector>
 #include <map>
 
-// #include "Scheduler.hpp"
-
 namespace qgl {
-	class Engine {
+	class IdsManager {
 	public:
 		
-		Engine();
-		~Engine();
+		uint32_t GetNewId();
+		void FreeId(uint32_t id);
 		
-		void InitRunAsync();
-		int AddPipeline(class Pipeline* pipeline);
-// 		int AddPostprocess(class Postprocess* postprocess);
+		inline uint32_t CountIds() const { return arrayOfUsedIds.size(); }
+		inline uint32_t GetArraySize() const {
+			return CountIds() + freeIdsStack.size();
+		}
 		
-	protected:
+		void OptimizeIds();
 		
-		void Draw();
+		inline const uint32_t* GetArrayOfUsedIds() const {
+			return &(arrayOfUsedIds[0]);
+		}
 		
-	protected:
+	private:
 		
-// 		Scheduler scheduler;
-		std::map<int, class Pipeline*> pipelines;
+		std::vector<uint32_t> ids;
+		std::vector<uint32_t> freeIdsStack;
+		
+		std::vector<uint32_t> arrayOfUsedIds;
+		std::map<uint32_t, uint32_t> mapIdToOffsetInArrayOfUsedIds;
 	};
 }
 
