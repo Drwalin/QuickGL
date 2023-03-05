@@ -9,85 +9,9 @@
 
 #include "Test.hpp"
 
-	
 #define ALLOCATOR(name) qgl::AllocatorVBO name("")
 
 namespace TestsAllocatorVBO {
-	
-	static void NewLine() {
-		printf("\n");
-	}
-	
-// 	struct Pair {
-// 		uint32_t p;
-// 		uint32_t count;
-// 		uint64_t vStart;
-// 	};
-// 	
-// 	class TestAllocator {
-// 	public:
-// 		qgl::AllocatorVBO allocator;
-// 		std::map<uint32_t, Pair> allocated;
-// 		std::vector<uint64_t> data;
-// 		
-// 		uint64_t gCounter;
-// 		
-// 		TestAllocator() : allocator(8, false) {}
-// 		
-// 		uint64_t& at(uint32_t id) {
-// 			if(data.size() <= id) {
-// 				data.resize(id+1);
-// 			}
-// 			return data[id];
-// 		}
-// 
-// 		uint32_t AllocateInit(uint32_t count) {
-// 			uint32_t p = allocator.Allocate(count);
-// 			allocated[p] = {p, count, gCounter};
-// 			for(int i=0; i<count; ++i, ++gCounter) {
-// 				at(i) = gCounter;
-// 			}
-// 			return p;
-// 		}
-// 		
-// 		uint64_t FreeCheck(Pair pair) {
-// 			uint64_t counter = pair.vStart;
-// 			uint64_t invalid = 0;
-// 			for(int i=0; i<pair.count; ++i, ++counter) {
-// 				if(data[pair.p+i] != counter) {
-// 					++invalid;
-// 				}
-// 			}
-// 			allocator.Free(pair.p, pair.count);
-// 			allocated.erase(pair.p);
-// 			return invalid;
-// 		}
-// 		
-// 		uint64_t FreeRandom() {
-// 			auto it = allocated.begin();
-// 			std::advance(it, rand() % allocated.size());
-// 			return FreeCheck(it->second);
-// 		}
-// 	};
-// 	
-// 	void TestAllocation() {
-// 		TestAllocator alloc;
-// 
-// 		for(int j=0; j<64; ++j) {
-// 			for(int32_t i=0; i<64; ++i) {
-// 				alloc.AllocateInit(i);
-// 			}
-// 		}
-// 		
-// 		for(int i=0; i<32; ++i) {
-// 			
-// 		}
-// 
-// 
-// 
-// 	}
-	
-	
 	
 	void allocate_one_two() {
 		ALLOCATOR(allocator);
@@ -141,7 +65,7 @@ namespace TestsAllocatorVBO {
 		
 		allocator.Free(second, 64);
 		allocator.Free(third, 128);
-		uint32_t fifth = allocator.Allocate(191);
+		uint32_t fifth = allocator.Allocate(192);
 		
 		ASSERT_EQUAL(first, 0, "");
 		ASSERT_EQUAL(second, 32, "");
