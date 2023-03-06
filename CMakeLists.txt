@@ -16,11 +16,15 @@ include_directories(./include/)
 include_directories(./OpenGLWrapper/include)
 
 aux_source_directory(./include/quickgl/ header_files)
+aux_source_directory(./include/quickgl/util/ header_files_util)
 aux_source_directory(./src/ source_files)
+aux_source_directory(./src/util/ source_files_util)
 
 add_library(QuickGL SHARED
 	${header_files}
 	${source_files}
+	${header_files_util}
+	${source_files_util}
 )
 target_link_libraries(QuickGL OpenGLWrapper)
 

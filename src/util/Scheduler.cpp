@@ -16,34 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../include/quickgl/EventQueue.hpp"
-#include <mutex>
+#include "../../include/quickgl/util/Scheduler.hpp"
+
+#include <thread>
 
 namespace qgl {
 	
-	void EventQueue::PushEvent_(std::function<void()> event) {
-		std::lock_guard lock(mutex);
-		eventsQueue.push(event);
-		counter++;
+	void Scheduler::Run() {
+		while(true) {
+			if(ExecuteOne() == false) {
+				std::this_thread::yield();
+			}
+		}
 	}
 	
-	bool EventQueue::ExecuteOneEvent() {
-		if(popedEventsForRunningThreads.empty()) {
-			std::lock_guard lock(mutex);
-			std::swap(eventsQueue, popedEventsForRunningThreads);
+	bool Scheduler::ExecuteOne() {
+		if(priorityEvents.HasAnyEvents()) {
+			if(priorityEvents.ExecuteOneEvent()) {
+				return true;
+			}
 		}
-		
-		if(popedEventsForRunningThreads.empty() == false) {
-			popedEventsForRunningThreads.front()();
-			popedEventsForRunningThreads.pop();
-			counter--;
+		if(delayedEvents.ExecuteOneEvent()) {
 			return true;
 		}
+		if(regularEvents.HasAnyEvents()) {
+			if(regularEvents.ExecuteOneEvent()) {
+				return true;
+			}
+		}
 		return false;
-	}
-	
-	bool EventQueue::HasAnyEvents() {
-		return counter != 0;
 	}
 }
 

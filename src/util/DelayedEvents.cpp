@@ -19,7 +19,7 @@
 #include <chrono>
 #include <mutex>
 
-#include "../include/quickgl/DelayedEvents.hpp"
+#include "../../include/quickgl/util/DelayedEvents.hpp"
 
 namespace qgl {
 	void DelayedEvents::PushEvent_(int msDelay, std::function<void()> event) {
