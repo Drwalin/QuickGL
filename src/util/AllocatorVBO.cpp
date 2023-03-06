@@ -23,7 +23,7 @@
 
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 
-#include "../include/quickgl/AllocatorVBO.hpp"
+#include "../../include/quickgl/util/AllocatorVBO.hpp"
 
 namespace qgl {
 	AllocatorVBO::AllocatorVBO(uint32_t vertexSize,

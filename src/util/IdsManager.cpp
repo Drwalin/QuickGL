@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../include/quickgl/IdsManager.hpp"
+#include "../../include/quickgl/util/IdsManager.hpp"
 
 namespace qgl {
 	

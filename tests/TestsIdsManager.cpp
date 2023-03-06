@@ -5,7 +5,7 @@
 
 #include <map>
 
-#include "../include/quickgl/IdsManager.hpp"
+#include "../include/quickgl/util/IdsManager.hpp"
 
 #include "Test.hpp"
 

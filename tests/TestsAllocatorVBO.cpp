@@ -5,7 +5,7 @@
 
 #include <map>
 
-#include "../include/quickgl/AllocatorVBO.hpp"
+#include "../include/quickgl/util/AllocatorVBO.hpp"
 
 #include "Test.hpp"
 

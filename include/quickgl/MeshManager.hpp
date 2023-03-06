@@ -28,7 +28,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 
-#include "AllocatorVBO.hpp"
+#include "util/AllocatorVBO.hpp"
 
 namespace qgl {
 	
@@ -43,7 +43,7 @@ namespace qgl {
 			uint32_t countVertices;
 		};
 		
-// 		MeshManager(VertexAttributesConfiguration config);
+		MeshManager(uint32_t vertexSize);
 		~MeshManager();
 		
 		MeshInfo& GetMeshInfoById(uint32_t id);
@@ -61,8 +61,12 @@ namespace qgl {
 		std::set<uint32_t> freeMeshIds;
 		
 		AllocatorVBO verticesBuffer;
+		gl::VBO verticesVBO;
+		
 		AllocatorVBO elementsBuffer;
-		std::shared_ptr<gl::VAO> vao;
+		gl::VBO elementsVBO;
+		
+		uint32_t vertexSize;
 	};
 }
 

@@ -32,7 +32,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
-#include "AllocatorVBO.hpp"
+#include "util/AllocatorVBO.hpp"
 #include "MeshManager.hpp"
 
 namespace qgl {
