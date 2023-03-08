@@ -36,8 +36,6 @@ namespace qgl {
 			return CountIds() + freeIdsStack.size();
 		}
 		
-		void OptimizeIds();
-		
 		inline const uint32_t* GetArrayOfUsedIds() const {
 			return &(arrayOfUsedIds[0]);
 		}

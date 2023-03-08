@@ -16,15 +16,45 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <memory>
+#ifndef QUICKGL_INPUT_MANAGER_HPP
+#define QUICKGL_INPUT_MANAGER_HPP
+
 #include <vector>
-#include <map>
 
-#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
+#include <glm/glm.hpp>
 
-#include "../include/quickgl/MeshManager.hpp"
+class GLFWwindow;
 
 namespace qgl {
+	class InputManager {
+	public:
+		
+		InputManager();
+		~InputManager();
+		
+		void Init();
+		
+		void NewFrame();
+		
+		
+	private:
+		
+		static void KeyCallback(GLFWwindow* window, int key, int scancode,
+				int action, int mode);
+		static void ScrollCallback(GLFWwindow* window, double xOffset,
+				double yOffset);
+		static void MouseCallback(GLFWwindow* window, double xPos, double yPos);
+		
+	private:
+		
+		glm::vec3 mousePrev;
+		glm::vec3 mouseCurrent;
+		
+		std::vector<bool> keysDownPrev;
+		std::vector<bool> keysDownCurrent;
+		
+	};
 }
+
+#endif
 
