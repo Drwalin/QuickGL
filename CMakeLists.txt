@@ -17,14 +17,22 @@ include_directories(./OpenGLWrapper/include)
 
 aux_source_directory(./include/quickgl/ header_files)
 aux_source_directory(./include/quickgl/util/ header_files_util)
+aux_source_directory(./include/quickgl/pipelines/ header_files_pipelines)
+aux_source_directory(./include/quickgl/cameras/ header_files_cameras)
 aux_source_directory(./src/ source_files)
 aux_source_directory(./src/util/ source_files_util)
+aux_source_directory(./src/pipelines/ source_files_pipelines)
+aux_source_directory(./src/cameras/ source_files_cameras)
 
 add_library(QuickGL SHARED
 	${header_files}
 	${source_files}
 	${header_files_util}
 	${source_files_util}
+	${header_files_pipelines}
+	${source_files_pipelines}
+	${header_files_cameras}
+	${source_files_cameras}
 )
 target_link_libraries(QuickGL OpenGLWrapper)
 
@@ -41,12 +49,10 @@ target_link_libraries(QuickGL OpenGLWrapper)
 
 
 
-# if(BUILD_EXAMPLES)
-# 	add_executable(samples
-# 		samples/Sample
-# 	)
-# 	target_link_libraries(samples QuickGL)
-# endif()
+if(BUILD_EXAMPLES)
+	add_executable(sample_conceptual_quickgl samples/conceptual/main.cpp)
+	target_link_libraries(sample_conceptual_quickgl QuickGL)
+endif()
 
 
 
@@ -61,7 +67,7 @@ add_compile_options(-ggdb)
 add_compile_options(-pg)
 add_compile_options(-fprofile-arcs -ftest-coverage --coverage -lgcov)
 
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall -ggdb3 -ggdb -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall -ggdb3 -ggdb -pedantic -fprofile-arcs -ftest-coverage --coverage -lgcov -pg")
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -Ofast -s -pedantic")	
 	
 # if(BUILD_DEBUG)

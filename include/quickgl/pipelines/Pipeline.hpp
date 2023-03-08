@@ -25,6 +25,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
 
 namespace gl {
 	class VBO;
@@ -57,16 +58,16 @@ namespace qgl {
 		
 		virtual uint32_t DrawStage(uint32_t stageId) = 0; // returns number of stages left for drawing
 		
-		inline MeshManager* GetMeshManager() { return meshManager; }
+		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		
 	protected:
 		
-		void FlushMeshManagerStateChangesToGPU();
-		void FlushDataToGPU();
+		virtual void FlushMeshManagerStateChangesToGPU() = 0;
+		virtual void FlushDataToGPU() = 0;
 		
 	protected:
 		
-		MeshManager* meshManager;
+		std::shared_ptr<MeshManager> meshManager;
 		
 // 		struct PerEntityMeshInfo {
 // 			uint32_t elementsStart;

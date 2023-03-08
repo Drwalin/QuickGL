@@ -19,29 +19,44 @@
 #ifndef QUICKGL_ENGINE_HPP
 #define QUICKGL_ENGINE_HPP
 
+#include <memory>
 #include <map>
 
-// #include "Scheduler.hpp"
+#include "InputManager.hpp"
 
 namespace qgl {
+	class Pipeline;
+	class Camera;
+	
 	class Engine {
 	public:
 		
 		Engine();
 		~Engine();
 		
-		void InitRunAsync();
-		int AddPipeline(class Pipeline* pipeline);
-// 		int AddPostprocess(class Postprocess* postprocess);
+		void InitGL();
+		void Destroy();
+		
+		bool IsQuitRequested();
+		
+		void ProcessInput();
+		
+		
+		int AddPipeline(std::shared_ptr<Pipeline> pipeline);
+		std::shared_ptr<Pipeline> GetPipeline(int id);
+		
+		void Render();
+		
+		void SetMainCamera(std::shared_ptr<Camera> camera);
+		
+		inline InputManager& GetInputManager() { return inputManager; }
 		
 	protected:
 		
-		void Draw();
+		InputManager inputManager;
 		
-	protected:
-		
-// 		Scheduler scheduler;
 		std::map<int, class Pipeline*> pipelines;
+		std::shared_ptr<Camera> mainCamera;
 	};
 }
 
