@@ -12,7 +12,7 @@
 int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
-	engine->InitGL();
+	engine->InitGL("Simple conceptual example");
 	
 	// create pipeline
 	std::shared_ptr<qgl::PipelineStatic> pipelineStatic

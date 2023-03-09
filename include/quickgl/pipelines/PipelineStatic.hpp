@@ -19,13 +19,6 @@
 #ifndef QUICKGL_PIPELINE_STATIC_HPP
 #define QUICKGL_PIPELINE_STATIC_HPP
 
-#include <cinttypes>
-
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/fwd.hpp>
@@ -35,20 +28,17 @@
 #include <glm/vector_relational.hpp>
 #include <glm/mat4x4.hpp>
 
-#include "Pipeline.hpp"
+#include "PipelineIdsManagedBase.hpp"
 
 namespace qgl {
 	
-	class PipelineStatic : public Pipeline {
+	class PipelineStatic final : public PipelineIdsManagedBase {
 	public:
 		
 		PipelineStatic();
 		virtual ~PipelineStatic();
 		
 		virtual void Initialize() override;
-		
-// 		virtual uint32_t CreateEntity() override;
-// 		virtual void DeleteEntity(uint32_t entityId) override;
 		
 		void SetEntityPos(uint32_t entityId, glm::vec3 pos);
 		void SetEntityTransform(uint32_t entityId, const glm::mat4& matrix);
@@ -59,7 +49,8 @@ namespace qgl {
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		
-		virtual uint32_t DrawStage(uint32_t stageId) override;
+		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
+				uint32_t stageId) override;
 		
 	protected:
 		

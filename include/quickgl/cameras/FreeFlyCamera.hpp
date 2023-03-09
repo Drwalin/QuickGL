@@ -35,6 +35,7 @@ namespace qgl {
 		FreeFlyCamera() = default;
 		virtual ~FreeFlyCamera() = default;
 		
+		virtual void PrepareDataForNewFrame() override;
 		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) override;
 		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) override;
