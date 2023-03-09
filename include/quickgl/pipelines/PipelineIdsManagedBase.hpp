@@ -16,51 +16,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_ENGINE_HPP
-#define QUICKGL_ENGINE_HPP
+#ifndef QUICKGL_PIPELINE_IDS_MANAGED_BASE_HPP
+#define QUICKGL_PIPELINE_IDS_MANAGED_BASE_HPP
 
-#include <memory>
-#include <vector>
+#include "../util/IdsManager.hpp"
 
-#include "InputManager.hpp"
+#include "Pipeline.hpp"
 
 namespace qgl {
-	class Pipeline;
-	class Camera;
-	
-	class Engine {
+	class PipelineIdsManagedBase : public Pipeline {
 	public:
 		
-		Engine();
-		~Engine();
+		PipelineIdsManagedBase();
+		virtual ~PipelineIdsManagedBase() = default;
 		
-		void InitGL(std::string windowTitle);
-		void Destroy();
-		
-		void SetWindowTItle(std::string title);
-		void LockMouse();
-		void UnlockMouse();
-		
-		bool IsQuitRequested();
-		
-		void ProcessInput();
-		
-		
-		int32_t AddPipeline(std::shared_ptr<Pipeline> pipeline);
-		std::shared_ptr<Pipeline> GetPipeline(int32_t id);
-		
-		void Render();
-		
-		void SetMainCamera(std::shared_ptr<Camera> camera);
-		
-		inline InputManager& GetInputManager() { return inputManager; }
+		virtual uint32_t CreateEntity() final;
+		virtual void DeleteEntity(uint32_t entityId) final;
 		
 	protected:
 		
-		InputManager inputManager;
+		virtual void FlushMeshManagerStateChangesToGPU() override;
+		virtual void FlushDataToGPU() override;
 		
-		std::vector<std::shared_ptr<Pipeline>> pipelines;
-		std::shared_ptr<Camera> mainCamera;
+	protected:
+
+		qgl::IdsManager idsmanager;
+		bool idsWereChanged;
+		gl::VBO* idsBuffer;
 	};
 }
 

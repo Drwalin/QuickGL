@@ -35,28 +35,23 @@ namespace gl {
 namespace qgl {
 	
 	class MeshManager;
+	class Camera;
 	
 	class Pipeline {
 	public:
 		
-		Pipeline();
-		virtual ~Pipeline();
+		Pipeline() = default;
+		virtual ~Pipeline() = default;
 		
 		virtual void Initialize() = 0;
 		
 		virtual uint32_t CreateEntity() = 0;
 		virtual void DeleteEntity(uint32_t entityId) = 0;
 		
-// 		virtual void SetEntityPos(uint32_t entityId, glm::vec3 pos) = 0;
-// 		virtual void SetEntityTransform(uint32_t entityId, const glm::mat4& matrix) = 0;
-// 		virtual void SetEntityRotationScale(uint32_t entityId, const glm::mat3& roration) = 0;
-// 		virtual void SetEntityRotation(uint32_t entityId, glm::quat roration) = 0;
-// 		virtual void SetEntityScale(uint32_t entityId, glm::vec3 scale) = 0;
-// 		virtual void SetEntityData(uint32_t entityId, const void* data) = 0;
-		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
 		
-		virtual uint32_t DrawStage(uint32_t stageId) = 0; // returns number of stages left for drawing
+		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
+				uint32_t stageId) = 0; // returns number of stages left for drawing
 		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		

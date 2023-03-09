@@ -29,6 +29,7 @@ namespace qgl {
 		Camera() = default;
 		virtual ~Camera() = default;
 		
+		virtual void PrepareDataForNewFrame() = 0;
 		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) = 0;
 		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) = 0;
