@@ -37,13 +37,13 @@ namespace qgl {
 		void InitGL(std::string windowTitle);
 		void Destroy();
 		
-		void SetWindowTItle(std::string title);
-		void LockMouse();
-		void UnlockMouse();
+		void SetWindowTitle(std::string title);
+		
+		void SetFullscreen(bool fullscreen);
 		
 		bool IsQuitRequested();
 		
-		void ProcessInput();
+		void BeginNewFrame();
 		
 		
 		int32_t AddPipeline(std::shared_ptr<Pipeline> pipeline);

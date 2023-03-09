@@ -20,6 +20,7 @@
 #define QUICKGL_INPUT_MANAGER_HPP
 
 #include <vector>
+#include <string>
 
 #include <glm/glm.hpp>
 
@@ -29,30 +30,30 @@ namespace qgl {
 	class InputManager {
 	public:
 		
-		InputManager();
-		~InputManager();
+		InputManager() = default;
+		~InputManager() = default;
 		
 		void Init();
 		
 		void NewFrame();
 		
+		std::string GetClipboardContent() const;
+		void SetClipboardContent(std::string value);
+		
+		void LockMouse();
+		void UnlockMouse();
+		
+		glm::vec3 GetMouseDelta() const;
+		glm::vec3 GetMousePos() const;
+		
+		bool IsKeyDown(const int id) const;
+		bool IsKeyUp(const int id) const;
+		bool WasKeyPressed(const int id) const;
+		bool WasKeyReleased(const int id) const;
 		
 	private:
 		
-		static void KeyCallback(GLFWwindow* window, int key, int scancode,
-				int action, int mode);
-		static void ScrollCallback(GLFWwindow* window, double xOffset,
-				double yOffset);
-		static void MouseCallback(GLFWwindow* window, double xPos, double yPos);
-		
-	private:
-		
-		glm::vec3 mousePrev;
-		glm::vec3 mouseCurrent;
-		
-		std::vector<bool> keysDownPrev;
-		std::vector<bool> keysDownCurrent;
-		
+		float time, deltaTime;
 	};
 }
 

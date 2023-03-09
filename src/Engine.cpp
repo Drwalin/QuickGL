@@ -49,7 +49,12 @@ namespace qgl {
 	}
 	
 	
-	void Engine::SetWindowTItle(std::string title) {
+	void Engine::SetFullscreen(bool fullscreen) {
+		gl::openGL.SetFullscreen(fullscreen);
+	}
+	
+	
+	void Engine::SetWindowTitle(std::string title) {
 		glfwSetWindowTitle(gl::openGL.window, title.c_str());
 	}
 	
@@ -58,7 +63,8 @@ namespace qgl {
 		return glfwWindowShouldClose(gl::openGL.window);
 	}
 	
-	void Engine::ProcessInput() {
+	void Engine::BeginNewFrame() {
+		gl::openGL.InitFrame();
 		inputManager.NewFrame();
 	}
 	
@@ -94,6 +100,11 @@ namespace qgl {
 			++drawStageId;
 		}
 		
+		gl::openGL.SwapBuffer();
+		
+		// TODO: is it optional?
+		gl::openGL.PrintErrors();
+		gl::openGL.ClearErrors();
 	}
 	
 	void Engine::SetMainCamera(std::shared_ptr<Camera> camera) {
