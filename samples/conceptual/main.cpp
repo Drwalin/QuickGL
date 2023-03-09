@@ -47,7 +47,7 @@ int main() {
 	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
-		engine->ProcessInput();
+		engine->BeginNewFrame();
 		camera->ProcessDefaultInput(engine);
 		
 		// render
