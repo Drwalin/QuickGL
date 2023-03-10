@@ -5,13 +5,19 @@
 
 #include <map>
 
-#include "../include/quickgl/util/AllocatorVBO.hpp"
+#include "../include/quickgl/util/Allocator.hpp"
 
 #include "Test.hpp"
 
-#define ALLOCATOR(name) qgl::AllocatorVBO name("")
+#define ALLOCATOR(name) qgl::Allocator name(new std::vector<uint64_t>(), \
+				[](void* obj, uint32_t size) { \
+					((std::vector<uint64_t>*)obj)->resize(size); \
+				}, \
+				[](void* obj) { \
+					delete (std::vector<uint64_t>*)obj; \
+				})
 
-namespace TestsAllocatorVBO {
+namespace TestsAllocator {
 	
 	void allocate_one_two() {
 		ALLOCATOR(allocator);
