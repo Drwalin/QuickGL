@@ -41,7 +41,7 @@ target_link_libraries(QuickGL OpenGLWrapper)
 # if(BUILD_TESTS)
 	add_executable(tests
 		tests/TestsMain
-		tests/TestsAllocatorVBO
+		tests/TestsAllocator
 		tests/TestsIdsManager
 	)
 	target_link_libraries(tests QuickGL)

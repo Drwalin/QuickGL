@@ -3,7 +3,7 @@
 
 std::vector<TestInfo> testsInfos;
 
-namespace TestsAllocatorVBO {
+namespace TestsAllocator {
 	void RunAll();
 }
 
@@ -14,7 +14,7 @@ namespace TestsIdsManager {
 int main() {
 	(std::stringstream()<<123).str();
 	
-	TestsAllocatorVBO::RunAll();
+	TestsAllocator::RunAll();
 	TestsIdsManager::RunAll();
 	
 	int correct = 0;
