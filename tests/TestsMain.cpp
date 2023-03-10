@@ -12,8 +12,6 @@ namespace TestsIdsManager {
 }
 
 int main() {
-	(std::stringstream()<<123).str();
-	
 	TestsAllocator::RunAll();
 	TestsIdsManager::RunAll();
 	

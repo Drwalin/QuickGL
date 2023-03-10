@@ -61,12 +61,15 @@ inline static void PushASSERT(TestInfo t) {
 }
 
 #define ASSERT_BASE_(__A, __B, __OP, __NAME) \
-	{ \
-		PushASSERT(TestInfo{__NAME, __LINE__, __FILE__, __func__, \
-		__A __OP __B, \
-			(std::stringstream()<<__A<<" "<<TO_STR(__OP)<<" "<<__B).str() \
-				}); \
-	}
+    { \
+        std::stringstream ss; \
+        ss<<__A<<" "<<TO_STR(__OP)<<" "<<__B; \
+        PushASSERT(TestInfo{__NAME, __LINE__, __FILE__, __func__, \
+        __A __OP __B, \
+            ss.str() \
+                }); \
+    }
+
 // 		if(!(__A __OP __B)) { \
 // 			std::cout<<"    Failed: "<<__FILE__<<":"<<__LINE__<<" ... "; \
 // 			std::cout<<"    "<<__A<<" "<<TO_STR(__OP)<<" "<<__B<<"\n"; \
