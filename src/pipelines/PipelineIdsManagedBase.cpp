@@ -18,12 +18,14 @@
 
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 
+#include "../../include/quickgl/MeshManager.hpp"
+
 #include "../../include/quickgl/pipelines/PipelineIdsManagedBase.hpp"
 
 namespace qgl {
 	PipelineIdsManagedBase::PipelineIdsManagedBase() {
-		idsBuffer = std::make_shared<gl::VBO>(new gl::VBO(sizeof(uint32_t),
-					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW));
+		idsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
+					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 		idsBuffer->Generate(NULL, 1);
 	}
 	
@@ -41,6 +43,13 @@ namespace qgl {
 	
 	void PipelineIdsManagedBase::DeleteEntity(uint32_t entityId) {
 		idsManager.FreeId(entityId);
+	}
+	
+	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
+			uint32_t meshId) {
+		PerEntityMeshInfo& info = perEntityMeshInfo[entityId];
+		meshManager->GetMeshIndices(meshId, info.elementsStart,
+				info.elementsCount);
 	}
 	
 	void PipelineIdsManagedBase::FlushDataToGPU() {
