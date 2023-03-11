@@ -67,11 +67,14 @@ namespace qgl {
 		
 		void ReleaseMeshReference(uint32_t id);
 		
+		void GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
+				uint32_t& indexCount);
+		
 	protected:
 		
 		void FreeMesh(uint32_t id);
 		
-	private:
+	protected:
 		
 		std::map<std::string, uint32_t> mapNameToId;
 		std::vector<MeshInfo> meshInfo;

@@ -29,6 +29,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "PipelineIdsManagedBase.hpp"
+#include "../util/BufferedVBO.hpp"
 
 namespace qgl {
 	
@@ -38,39 +39,37 @@ namespace qgl {
 		PipelineStatic();
 		virtual ~PipelineStatic();
 		
+		virtual uint32_t CreateEntity() override;
+		
 		virtual void Initialize() override;
 		
 		void SetEntityPos(uint32_t entityId, glm::vec3 pos);
 		void SetEntityTransform(uint32_t entityId, const glm::mat4& matrix);
-		void SetEntityRotationScale(uint32_t entityId, const glm::mat3& roration);
-		void SetEntityRotation(uint32_t entityId, glm::quat roration);
+		void SetEntityRotation(uint32_t entityId, glm::quat rotation);
 		void SetEntityScale(uint32_t entityId, glm::vec3 scale);
-		void SetEntityData(uint32_t entityId, const void* data);
-		
-		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		
 		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
 				uint32_t stageId) override;
 		
-	protected:
-		
-		virtual void FlushMeshManagerStateChangesToGPU() override;
 		virtual void FlushDataToGPU() override;
 		
 	protected:
 		
-// 		struct PerEntityMeshInfo {
-// 			uint32_t elementsStart;
-// 			uint32_t elementsCount;
-// 			uint32_t verticesStart;
-// 		};
-// 		
-// 		std::vector<uint32_t> entityMeshId; // if == 0xFFFFFFFF then entity is not in use
-// 		std::vector<uint32_t> unusedEntityIdsStack;
-// 		std::vector<PerEntityMeshInfo> entityMeshInfo;
-// 		
-// 		// move this to derived class
-// 		gl::VBO* vboIndirectDrawBuffer;
+		struct DrawElementsIndirectCommand {
+			uint32_t count;
+			uint32_t instanceCount;
+			uint32_t firstIndex;
+			int32_t  baseVertex;
+			uint32_t baseInstance;
+		};
+		
+		TypedVBO<glm::mat4> transformMatrices;
+		TypedVBO<DrawElementsIndirectCommand> vboIndirectDrawBuffer;
+		
+		std::unique_ptr<gl::VAO> vao;
+		std::unique_ptr<gl::Shader> renderShader;
+		
+		// move this to derived class
 // 		gl::VBO* vboFrustumCulledEntityIds;
 // 		gl::VBO* vboAtomicCounterForCulledEntities;
 	};

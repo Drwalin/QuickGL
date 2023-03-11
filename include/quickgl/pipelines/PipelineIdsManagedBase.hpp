@@ -20,6 +20,7 @@
 #define QUICKGL_PIPELINE_IDS_MANAGED_BASE_HPP
 
 #include "../util/IdsManager.hpp"
+#include "../util/BufferedVBO.hpp"
 
 #include "Pipeline.hpp"
 
@@ -28,21 +29,25 @@ namespace qgl {
 	public:
 		
 		PipelineIdsManagedBase();
-		virtual ~PipelineIdsManagedBase() = default;
+		virtual ~PipelineIdsManagedBase();
 		
-		virtual uint32_t CreateEntity() final;
-		virtual void DeleteEntity(uint32_t entityId) final;
+		virtual uint32_t CreateEntity() override;
+		virtual void DeleteEntity(uint32_t entityId) override;
 		
-	protected:
+		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		
-		virtual void FlushMeshManagerStateChangesToGPU() override;
 		virtual void FlushDataToGPU() override;
 		
 	protected:
 
-		qgl::IdsManager idsmanager;
-		bool idsWereChanged;
-		gl::VBO* idsBuffer;
+		struct PerEntityMeshInfo {
+			uint32_t elementsStart;
+			uint32_t elementsCount;
+		};
+		TypedVBO<PerEntityMeshInfo> perEntityMeshInfo;
+		
+		IdsManager idsManager;
+		std::shared_ptr<gl::VBO> idsBuffer;
 	};
 }
 

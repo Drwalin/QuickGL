@@ -30,6 +30,7 @@
 namespace gl {
 	class VBO;
 	class VAO;
+	class Shader;
 }
 
 namespace qgl {
@@ -40,8 +41,8 @@ namespace qgl {
 	class Pipeline {
 	public:
 		
-		Pipeline() = default;
-		virtual ~Pipeline() = default;
+		Pipeline();
+		virtual ~Pipeline();
 		
 		virtual void Initialize() = 0;
 		
@@ -55,9 +56,6 @@ namespace qgl {
 		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		
-	protected:
-		
-		virtual void FlushMeshManagerStateChangesToGPU() = 0;
 		virtual void FlushDataToGPU() = 0;
 		
 	protected:
