@@ -20,10 +20,10 @@
 #include <vector>
 #include <map>
 
-#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
-#include "../../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/AssimpLoader.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/VAO.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/Texture.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/AssimpLoader.hpp"
 
 #include "../include/quickgl/MeshManager.hpp"
 
@@ -50,7 +50,8 @@ namespace qgl {
 	
 	bool MeshManager::LoadModels(const std::string& fileName) {
 		gl::BasicMeshLoader::AssimpLoader l;
-		l.Load(fileName);
+		if(l.Load(fileName) == false)
+			return false;
 		std::vector<uint8_t> vboSrc, eboSrc;
 		for(auto mesh : l.meshes) {
 			meshAppenderVertices(vboSrc, 0, vertexSize, mesh.get());
