@@ -49,6 +49,10 @@ namespace qgl {
 		renderShader = std::make_unique<gl::Shader>();
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
 		throw "PipelineStatic::Initialize() is not implemented.";
+		this->meshManager = std::make_shared<MeshManager>(4*3+4*1+4*1+2*4,
+				[](std::vector<uint8_t>& buffer, uint32_t, uint32_t,
+					gl::BasicMeshLoader::Mesh* mesh){
+				});
 		// TODO: implement Shader loading, VAO attributes
 	}
 	
