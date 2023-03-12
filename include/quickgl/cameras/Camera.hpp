@@ -26,8 +26,8 @@ namespace qgl {
 	class Camera {
 	public:
 		
-		Camera() = default;
-		virtual ~Camera() = default;
+		Camera();
+		virtual ~Camera();
 		
 		virtual void PrepareDataForNewFrame() = 0;
 		

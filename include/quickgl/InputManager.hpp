@@ -51,6 +51,9 @@ namespace qgl {
 		bool WasKeyPressed(const int id) const;
 		bool WasKeyReleased(const int id) const;
 		
+		inline float GetTime() { return time; }
+		inline float GetDeltaTime() { return deltaTime; }
+		
 	private:
 		
 		float time, deltaTime;

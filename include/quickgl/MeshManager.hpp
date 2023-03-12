@@ -26,6 +26,7 @@
 #include <set>
 
 #include "util/AllocatorVBO.hpp"
+#include "util/BufferedVBO.hpp"
 #include "util/IdsManager.hpp"
 
 namespace gl {
@@ -59,8 +60,8 @@ namespace qgl {
 		
 		bool LoadModels(const std::string& fileName);
 		
-		MeshInfo& GetMeshInfoById(uint32_t id);
-		uint32_t GetMeshIdByName(std::string name);
+		MeshInfo GetMeshInfoById(uint32_t id) const;
+		uint32_t GetMeshIdByName(std::string name) const;
 		
 		uint32_t CreateMeshFrom(std::shared_ptr<MeshManager> otherMeshManager,
 				const std::vector<uint32_t>& sourceMeshesIds);
@@ -78,7 +79,6 @@ namespace qgl {
 		
 		std::map<std::string, uint32_t> mapNameToId;
 		std::vector<MeshInfo> meshInfo;
-		std::set<uint32_t> freeMeshIds;
 		IdsManager idsManager;
 		
 		AllocatorVBO vboAllocator;
@@ -87,14 +87,14 @@ namespace qgl {
 		AllocatorVBO eboAllocator;
 		std::shared_ptr<gl::VBO> ebo;
 		
-		void(*meshAppenderVertices)(
+		void(*const meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				uint32_t stride,
 				gl::BasicMeshLoader::Mesh* mesh
 				);
 		
-		uint32_t vertexSize;
+		const uint32_t vertexSize;
 	};
 }
 

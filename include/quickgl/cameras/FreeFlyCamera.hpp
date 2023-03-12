@@ -23,6 +23,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext/quaternion_float.hpp>
 
 #include "Camera.hpp"
 
@@ -32,8 +33,8 @@ namespace qgl {
 	class FreeFlyCamera : public Camera {
 	public:
 		
-		FreeFlyCamera() = default;
-		virtual ~FreeFlyCamera() = default;
+		FreeFlyCamera();
+		virtual ~FreeFlyCamera();
 		
 		virtual void PrepareDataForNewFrame() override;
 		
@@ -55,11 +56,32 @@ namespace qgl {
 		
 		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) override;
 		
+		void Rotate(glm::vec3 euler);
+		void SetRotation(glm::vec3 euler);
 		virtual void Rotate(glm::quat rotation) override;
 		virtual void SetRotation(glm::quat rotation) override;
 		virtual glm::mat3 GetRotationMatrix() override;
 		
 		void ProcessDefaultInput(std::shared_ptr<Engine> engine);
+		
+	private:
+		
+		float fov;
+		float aspectRatio;
+		
+		glm::mat4 view;
+		glm::mat4 perspective;
+		glm::mat4 transform;
+		
+		glm::quat rotation;
+		
+		glm::vec3 euler;
+		
+		glm::vec3 pos;
+		
+		glm::vec3 front;
+		glm::vec3 up;
+		glm::vec3 right;
 	};
 }
 
