@@ -16,17 +16,18 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/matrix_operation.hpp>
+
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/Mesh.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtx/matrix_operation.hpp>
 
 namespace qgl {
 	PipelineStatic::PipelineStatic() {
@@ -46,13 +47,10 @@ namespace qgl {
 	}
 	
 	void PipelineStatic::Initialize() {
+		PipelineIdsManagedBase::Initialize();
 		renderShader = std::make_unique<gl::Shader>();
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
 		throw "PipelineStatic::Initialize() is not implemented.";
-		this->meshManager = std::make_shared<MeshManager>(4*3+4*1+4*1+2*4,
-				[](std::vector<uint8_t>& buffer, uint32_t, uint32_t,
-					gl::BasicMeshLoader::Mesh* mesh){
-				});
 		// TODO: implement Shader loading, VAO attributes
 	}
 	
@@ -118,6 +116,30 @@ namespace qgl {
 	void PipelineStatic::FlushDataToGPU() {
 		PipelineIdsManagedBase::FlushDataToGPU();
 		transformMatrices.UpdateVertices(0, idsManager.GetArraySize());
+	}
+	
+	
+	
+	std::shared_ptr<MeshManager> PipelineStatic::CreateMeshManager() {
+		static constexpr uint32_t stride
+			= 3*sizeof(float)   // pos
+			+ 4*sizeof(uint8_t) // color
+			+ 4*sizeof(uint8_t) // normal
+			;
+		
+		return std::make_shared<MeshManager>(stride,
+			[](std::vector<uint8_t>& buffer, uint32_t offset,
+					gl::BasicMeshLoader::Mesh* mesh){
+				
+				mesh->ExtractPos<float>(offset, buffer, 0, stride,
+						gl::BasicMeshLoader::ConverterFloatPlain<float, 3>);
+				
+				mesh->ExtractColor<uint8_t>(offset, buffer, 12, stride,
+						gl::BasicMeshLoader::ConverterIntPlainClampScale<uint8_t, 255, 0, 255, 4>);
+				
+				mesh->ExtractNormal(offset, buffer, 16, stride,
+						gl::BasicMeshLoader::ConverterIntNormalized<uint8_t, 127, 3>);
+			});
 	}
 }
 

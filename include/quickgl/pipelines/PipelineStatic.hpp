@@ -55,6 +55,8 @@ namespace qgl {
 		
 	protected:
 		
+		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
+		
 		struct DrawElementsIndirectCommand {
 			uint32_t count;
 			uint32_t instanceCount;
