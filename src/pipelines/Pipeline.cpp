@@ -21,6 +21,11 @@
 namespace qgl {
 	
 	Pipeline::Pipeline() {}
+	
+	void Pipeline::Initialize() {
+		meshManager = CreateMeshManager();
+	}
+	
 	Pipeline::~Pipeline() {}
 }
 

@@ -44,7 +44,7 @@ namespace qgl {
 		Pipeline();
 		virtual ~Pipeline();
 		
-		virtual void Initialize() = 0;
+		virtual void Initialize();
 		
 		virtual uint32_t CreateEntity() = 0;
 		virtual void DeleteEntity(uint32_t entityId) = 0;
@@ -59,6 +59,8 @@ namespace qgl {
 		virtual void FlushDataToGPU() = 0;
 		
 	protected:
+		
+		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
 		std::shared_ptr<MeshManager> meshManager;
 		

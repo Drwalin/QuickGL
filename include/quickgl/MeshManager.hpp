@@ -53,7 +53,6 @@ namespace qgl {
 				void(*meshAppenderVertices)(
 					std::vector<uint8_t>& buffer,
 					uint32_t bufferByteOffset,
-					uint32_t stride,
 					gl::BasicMeshLoader::Mesh* mesh
 				));
 		~MeshManager();
@@ -90,7 +89,6 @@ namespace qgl {
 		void(*const meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
-				uint32_t stride,
 				gl::BasicMeshLoader::Mesh* mesh
 				);
 		
