@@ -42,6 +42,7 @@ namespace qgl {
 	public:
 		
 		struct MeshInfo {
+			MeshInfo() = default;
 			std::string name;
 			uint32_t firstElement;
 			uint32_t countElements;
@@ -69,6 +70,10 @@ namespace qgl {
 		
 		void GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
 				uint32_t& indexCount);
+		
+
+		std::shared_ptr<gl::VBO> GetVBO() { return vbo; }
+		std::shared_ptr<gl::VBO> GetEBO() { return ebo; }
 		
 	protected:
 		

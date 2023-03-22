@@ -34,6 +34,8 @@ namespace qgl {
 		virtual uint32_t CreateEntity() override;
 		virtual void DeleteEntity(uint32_t entityId) override;
 		
+		virtual void Initialize() override;
+		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		
 		virtual void FlushDataToGPU() override;

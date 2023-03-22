@@ -24,9 +24,6 @@
 
 namespace qgl {
 	PipelineIdsManagedBase::PipelineIdsManagedBase() {
-		idsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
-					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
-		idsBuffer->Generate(NULL, 1);
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {
@@ -43,6 +40,19 @@ namespace qgl {
 	
 	void PipelineIdsManagedBase::DeleteEntity(uint32_t entityId) {
 		idsManager.FreeId(entityId);
+	}
+	
+	void PipelineIdsManagedBase::Initialize() {
+	GL_CHECK_PUSH_ERROR;
+		Pipeline::Initialize();
+	GL_CHECK_PUSH_ERROR;
+		idsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
+					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
+	GL_CHECK_PUSH_ERROR;
+		idsBuffer->Generate(nullptr, 128);
+	GL_CHECK_PUSH_ERROR;
+		perEntityMeshInfo.Resize(128);
+	GL_CHECK_PUSH_ERROR;
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,

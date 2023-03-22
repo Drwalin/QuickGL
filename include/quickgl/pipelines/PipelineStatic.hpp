@@ -53,7 +53,7 @@ namespace qgl {
 		
 		virtual void FlushDataToGPU() override;
 		
-	protected:
+	private:
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
 		
@@ -70,10 +70,16 @@ namespace qgl {
 		
 		std::unique_ptr<gl::VAO> vao;
 		std::unique_ptr<gl::Shader> renderShader;
+		int projectionViewLocation;
+		
 		
 		// move this to derived class
 // 		gl::VBO* vboFrustumCulledEntityIds;
 // 		gl::VBO* vboAtomicCounterForCulledEntities;
+	private:
+		
+		static const char* VERTEX_SHADER_SOURCE;
+		static const char* FRAGMENT_SHADER_SOURCE;
 	};
 }
 

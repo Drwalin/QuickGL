@@ -55,6 +55,8 @@ namespace qgl {
 		
 		inline InputManager& GetInputManager() { return inputManager; }
 		
+		void PrintErrors();
+		
 	protected:
 		
 		InputManager inputManager;

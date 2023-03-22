@@ -21,8 +21,8 @@ int main() {
 	
 	// load models
 	auto meshManagerStatic = pipelineStatic->GetMeshManager();
-	meshManagerStatic->LoadModels("../../terrain.fbx");
-	meshManagerStatic->LoadModels("../../chest.fbx");
+	meshManagerStatic->LoadModels("../samples/terrain.fbx");
+	meshManagerStatic->LoadModels("../samples/chest.fbx");
 	
 	// create and init camera
 	std::shared_ptr<qgl::FreeFlyCamera> camera
@@ -45,13 +45,16 @@ int main() {
 	pipelineStatic->SetEntityRotation(chestId, glm::quat(0, {0,1,0}));
 	pipelineStatic->SetEntityScale(chestId, {1,1,1});
 	
-	while(!engine->IsQuitRequested()) {
+	int i=0;
+	while(!engine->IsQuitRequested() && i<5) {
 		// process inputs
+		++i;
 		engine->BeginNewFrame();
 		camera->ProcessDefaultInput(engine);
 		
 		// render
 		engine->Render();
+		engine->PrintErrors();
 	}
 	
 	engine->Destroy();	
