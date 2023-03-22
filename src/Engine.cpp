@@ -33,9 +33,13 @@ namespace qgl {
 	
 	
 	void Engine::InitGL(std::string windowTitle) {
+	GL_CHECK_PUSH_ERROR;
 		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false);
+	GL_CHECK_PUSH_ERROR;
 		gl::openGL.InitGraphic();
+	GL_CHECK_PUSH_ERROR;
 		inputManager.Init();
+	GL_CHECK_PUSH_ERROR;
 	}
 	
 	void Engine::Destroy() {
@@ -72,6 +76,7 @@ namespace qgl {
 	int32_t Engine::AddPipeline(std::shared_ptr<Pipeline> pipeline) {
 		int32_t id = pipelines.size();
 		pipelines.emplace_back(pipeline);
+		pipeline->Initialize();
 		return id;
 	}
 	
@@ -101,14 +106,16 @@ namespace qgl {
 		}
 		
 		gl::openGL.SwapBuffer();
-		
-		// TODO: is it optional?
-		gl::openGL.PrintErrors();
-		gl::openGL.ClearErrors();
 	}
 	
 	void Engine::SetMainCamera(std::shared_ptr<Camera> camera) {
 		mainCamera = camera;
+	}
+	
+	void Engine::PrintErrors() {
+		// TODO: is it optional?
+		gl::openGL.PrintErrors();
+		gl::openGL.ClearErrors();
 	}
 }
 

@@ -37,7 +37,6 @@ namespace qgl {
 			eboAllocator(sizeof(uint32_t), false),
 			meshAppenderVertices(meshAppenderVertices),
 			vertexSize(vertexSize) {
-		this->
 		vbo = std::make_shared<gl::VBO>(vertexSize, gl::ARRAY_BUFFER,
 				gl::DYNAMIC_DRAW);
 		ebo = std::make_shared<gl::VBO>(sizeof(uint32_t),
