@@ -1,4 +1,6 @@
 
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
@@ -9,14 +11,38 @@
 #include <glm/vector_relational.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <GL/glext.h>
+
+#define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
+
 int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
 	engine->InitGL("Simple conceptual example");
 	
+// 	PRINT_PARAMETER(GL_MAX_ELEMENTS_INDICES);
+// 	PRINT_PARAMETER(GL_MAX_ELEMENTS_VERTICES);
+// 	PRINT_PARAMETER(GL_MAX_TEXTURE_SIZE);
+// 	PRINT_PARAMETER(GL_MAX_UNIFORM_BLOCK_SIZE);
+// 	PRINT_PARAMETER(GL_MAX_VERTEX_ATTRIBS);
+// 	PRINT_PARAMETER(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS);
+// 	PRINT_PARAMETER(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+// 	PRINT_PARAMETER(GL_MAX_VERTEX_UNIFORM_COMPONENTS);
+// 	PRINT_PARAMETER(GL_MAX_VERTEX_OUTPUT_COMPONENTS);
+// 	PRINT_PARAMETER(GL_MAX_VIEWPORT_DIMS);
+// 	PRINT_PARAMETER(GL_MAX_VIEWPORTS);
+// 	PRINT_PARAMETER(GL_NUM_COMPRESSED_TEXTURE_FORMATS);
+// 	PRINT_PARAMETER(GL_SAMPLE_BUFFERS);
+// 	PRINT_PARAMETER(GL_SHADER_STORAGE_BUFFER_SIZE);
+// 	PRINT_PARAMETER(GL_MAX_ELEMENT_INDEX);
+// 	PRINT_PARAMETER(GL_SAMPLE_BUFFERS);
+// 	PRINT_PARAMETER(GL_MAX_ARRAY_TEXTURE_LAYERS);
+	
 	// create pipeline
+	GL_CHECK_PUSH_ERROR;
 	std::shared_ptr<qgl::PipelineStatic> pipelineStatic
 		= std::make_shared<qgl::PipelineStatic>();
+	GL_CHECK_PUSH_ERROR;
 	engine->AddPipeline(pipelineStatic);
 	
 	// load models
@@ -46,8 +72,13 @@ int main() {
 	pipelineStatic->SetEntityScale(chestId, {1,1,1});
 	
 	int i=0;
-	while(!engine->IsQuitRequested() && i<5) {
+	while(!engine->IsQuitRequested() && i<5*1000*1000*100) {
 		// process inputs
+		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
+			break;
+		}
+		
 		++i;
 		engine->BeginNewFrame();
 		camera->ProcessDefaultInput(engine);

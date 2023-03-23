@@ -24,6 +24,7 @@
 
 namespace qgl {
 	PipelineIdsManagedBase::PipelineIdsManagedBase() {
+		GL_CHECK_PUSH_ERROR;
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {
