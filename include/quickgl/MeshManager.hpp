@@ -72,8 +72,8 @@ namespace qgl {
 				uint32_t& indexCount);
 		
 
-		std::shared_ptr<gl::VBO> GetVBO() { return vbo; }
-		std::shared_ptr<gl::VBO> GetEBO() { return ebo; }
+		gl::VBO& GetVBO() { return vbo; }
+		gl::VBO& GetEBO() { return ebo; }
 		
 	protected:
 		
@@ -86,10 +86,10 @@ namespace qgl {
 		IdsManager idsManager;
 		
 		AllocatorVBO vboAllocator;
-		std::shared_ptr<gl::VBO> vbo;
+		gl::VBO& vbo;
 		
 		AllocatorVBO eboAllocator;
-		std::shared_ptr<gl::VBO> ebo;
+		gl::VBO& ebo;
 		
 		void(*const meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,

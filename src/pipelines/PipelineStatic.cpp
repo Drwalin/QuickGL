@@ -65,18 +65,20 @@ namespace qgl {
 		// init vao
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
 		vao->Init();
-		gl::VBO& vbo = *meshManager->GetVBO();
+		gl::VBO& vbo = meshManager->GetVBO();
+		vbo.Init();
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_pos"), 3, gl::FLOAT, false, 0, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_color"), 4, gl::UNSIGNED_BYTE, true, 12, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_normal"), 4, gl::BYTE, true, 16, 0);
 		
 		// init model matrix
 		gl::VBO& modelVbo = transformMatrices.Vbo();
+		modelVbo.Init();
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+0, 4, gl::FLOAT, false, 0, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+1, 4, gl::FLOAT, false, 16, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+2, 4, gl::FLOAT, false, 32, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+3, 4, gl::FLOAT, false, 48, 1);
-		vao->BindElementBuffer(*meshManager->GetEBO(), gl::UNSIGNED_INT);
+		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
 		
 		// get shader uniform locations
 		projectionViewLocation = renderShader->GetUniformLocation("projectionView");
@@ -132,14 +134,27 @@ namespace qgl {
 				}
 				
 				vboIndirectDrawBuffer.UpdateVertices(0, idsManager.GetArraySize());
-				return 1;
+				return 2;
 				
 			case 1:
-				renderShader->Use();
-				renderShader->SetMat4(projectionViewLocation,
-						camera->GetPerspectiveMatrix() * camera->GetViewMatrix());
-				vao->BindIndirectBuffer(vboIndirectDrawBuffer.Vbo());
-				vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
+				{
+					glMemoryBarrier(GL_ALL_BARRIER_BITS);
+					renderShader->Use();
+					glm::mat4 pv = camera->GetPerspectiveMatrix()
+						* camera->GetViewMatrix();
+					renderShader->SetMat4(projectionViewLocation, pv);
+					printf("\n\n");
+					float* v = (float*)&pv;
+					printf("sizeof(glm::mat4) = %lu\n", sizeof(glm::mat4));
+					printf(" %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n",
+							v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14], v[15]);
+					vao->BindIndirectBuffer(vboIndirectDrawBuffer.Vbo());
+					vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
+				}
+				return 1;
+			
+			case 2:
+				
 				return 0;
 		}
 		return 0;
@@ -192,7 +207,7 @@ out vec3 normal;
 out vec4 pos;
 
 void main() {
-	gl_Position = pos = projectionView * model * vec4(in_pos, 1);
+	gl_Position = pos = projectionView * /*model **/ vec4(in_pos, 1);
 	normal = normalize((model * vec4(in_normal, 0)).xyz);
 	color = in_color;
 }

@@ -24,9 +24,6 @@ namespace qgl {
 	
 	BufferedVBO::BufferedVBO(uint32_t vertexSize) : vertexSize(vertexSize) {
 		vbo = new gl::VBO(vertexSize, gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
-	GL_CHECK_PUSH_ERROR;
-		vbo->Generate(nullptr, 1);
-	GL_CHECK_PUSH_ERROR;
 		vertices = 0;
 	}
 	
@@ -35,6 +32,10 @@ namespace qgl {
 	}
 	
 	void BufferedVBO::Resize(uint32_t vertices) {
+	GL_CHECK_PUSH_ERROR;
+		if(this->vertices == 0) {
+			vbo->Generate(nullptr, 1);
+		}
 	GL_CHECK_PUSH_ERROR;
 		this->vertices = vertices;
 	GL_CHECK_PUSH_ERROR;

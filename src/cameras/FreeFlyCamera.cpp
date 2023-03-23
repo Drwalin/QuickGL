@@ -27,6 +27,11 @@
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
+		fov = 45;
+		aspectRatio = 1;
+		pos = {0,0,0};
+		front = {0,0,1};
+		rotation = glm::quat(0, {0,1,0});
 	}
 	
 	FreeFlyCamera::~FreeFlyCamera() {

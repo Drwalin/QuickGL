@@ -33,14 +33,10 @@ namespace qgl {
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh))
-		: vboAllocator(vertexSize, false), 
-			eboAllocator(sizeof(uint32_t), false),
+		: vboAllocator(vertexSize, false), vbo(vboAllocator.Vbo()),
+			eboAllocator(sizeof(uint32_t), true), ebo(eboAllocator.Vbo()),
 			meshAppenderVertices(meshAppenderVertices),
 			vertexSize(vertexSize) {
-		vbo = std::make_shared<gl::VBO>(vertexSize, gl::ARRAY_BUFFER,
-				gl::DYNAMIC_DRAW);
-		ebo = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::ELEMENT_ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 	}
 	
 	MeshManager::~MeshManager() {
@@ -70,16 +66,17 @@ namespace qgl {
 				meshInfo.resize(meshId+100);
 			}
 			meshInfo[meshId] = info;
-			if(vbo->GetVertexCount() < info.firstVertex+info.countVertices)
-				vbo->Resize(info.firstVertex+info.countVertices);
+			if(vbo.GetVertexCount() < info.firstVertex+info.countVertices)
+				vbo.Resize(info.firstVertex+info.countVertices);
 			
-			if(ebo->GetVertexCount() < info.firstElement+info.countElements)
-				ebo->Resize(info.firstElement+info.countElements);
-			vbo->Update(&vboSrc.front(), info.firstVertex*vertexSize,
+			if(ebo.GetVertexCount() < info.firstElement+info.countElements)
+				ebo.Resize(info.firstElement+info.countElements);
+			vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
 					info.countVertices*vertexSize);
-			ebo->Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
+			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
 					info.countElements*sizeof(uint32_t));
 		}
+	GL_CHECK_PUSH_ERROR;
 		return l.meshes.size() > 0;
 	}
 	
