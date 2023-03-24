@@ -27,7 +27,7 @@
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
-		fov = 45;
+		fov = 90;
 		aspectRatio = 1;
 		pos = {0,0,0};
 		front = {0,0,1};
@@ -42,7 +42,7 @@ namespace qgl {
 		glm::mat4 rot = glm::mat3_cast(rotation);
 		front = rot * glm::vec4{0,0,1,0};
 		up = rot * glm::vec4{0,1,0,0};
-		right = rot * glm::vec4{1,0,0,0};
+		right = rot * glm::vec4{-1,0,0,0};
 		
 		view = glm::lookAt(pos, pos+front, up);
 		perspective = glm::perspective(fov*0.5f, aspectRatio, 0.1f, 10000.0f);
@@ -114,13 +114,16 @@ namespace qgl {
 			euler.x = M_PI*0.5f;
 		this->euler = euler;
 		SetRotation(
-				glm::rotate(
+// 				glm::rotate(
 					glm::rotate(
 						glm::rotate(
-							glm::quat(0,0,0,1),
-							euler.x, {1,0,0}),
-						euler.y, {0,1,0}),
-					euler.z, {0,0,1})
+							glm::quat(0,0,0,1)
+							,
+							euler.y, {0,1,0})
+						,
+						euler.x, {1,0,0})
+// 					,
+// 					euler.z, {0,0,1})
 				);
 	}
 	
@@ -144,6 +147,9 @@ namespace qgl {
 		InputManager& input = engine->GetInputManager();
 		PrepareDataForNewFrame();
 		
+		SetRenderTargetDimensions(gl::openGL.GetWidth(),
+				gl::openGL.GetHeight());
+		
 		glm::vec3 dp(0,0,0), dr(0,0,0);
 		const float dt = input.GetDeltaTime();
 		
@@ -156,18 +162,18 @@ namespace qgl {
 		if(input.IsKeyDown(GLFW_KEY_D))
 			dp += glm::vec3{1,0,0};
 		if(input.IsKeyDown(GLFW_KEY_SPACE))
-			dp += glm::vec3{-1,0,0};
+			dp += glm::vec3{0,1,0};
 		if(input.IsKeyDown(GLFW_KEY_LEFT_CONTROL))
-			dp += glm::vec3{-1,0,0};
+			dp += glm::vec3{0,-1,0};
 		
 		if(input.IsKeyDown(GLFW_KEY_LEFT))
 			dr.y -= 1.0f;
 		if(input.IsKeyDown(GLFW_KEY_RIGHT))
 			dr.y += 1.0f;
 		if(input.IsKeyDown(GLFW_KEY_DOWN))
-			dr.y -= 1.0f;
+			dr.x -= 1.0f;
 		if(input.IsKeyDown(GLFW_KEY_UP))
-			dr.y += 1.0f;
+			dr.x += 1.0f;
 		
 		if(input.IsKeyDown(GLFW_KEY_LEFT_SHIFT)) {
 			dp *= 5.0f;
@@ -177,11 +183,13 @@ namespace qgl {
 		dr *= dt;
 		dp *= dt;
 		
-		dr.x += input.GetMouseDelta().x * 0.01;
-		dr.y -= input.GetMouseDelta().y * 0.01;
+		dr.x += input.GetMouseDelta().y * 0.01;
+		dr.y -= input.GetMouseDelta().x * 0.01;
+		
+// 		PrepareDataForNewFrame();
 		
 		Rotate(dr);
-		SetPosition(GetPosition() + dp);
+		SetPosition(GetPosition() + (glm::mat3(right, up, front))*dp);
 	}
 }
 
