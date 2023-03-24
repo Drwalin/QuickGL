@@ -48,16 +48,17 @@ namespace qgl {
 			return false;
 		std::vector<uint8_t> vboSrc, eboSrc;
 		for(auto mesh : l.meshes) {
-			vboSrc.clear();
-			eboSrc.clear();
-			meshAppenderVertices(vboSrc, 0, mesh.get());
 			MeshInfo info;
-			info.countElements = mesh->pos.size();
-			info.countVertices = mesh->indices.size();
-			info.firstVertex = vboAllocator.Allocate(mesh->pos.size());
-			info.firstElement = eboAllocator.Allocate(mesh->indices.size());
 			
+			vboSrc.clear();
+			meshAppenderVertices(vboSrc, 0, mesh.get());
+			info.countVertices = mesh->pos.size();
+			info.firstVertex = vboAllocator.Allocate(info.countVertices);
+			
+			eboSrc.clear();
 			mesh->AppendIndices<uint32_t>(info.firstVertex, eboSrc);
+			info.countElements = mesh->indices.size();
+			info.firstElement = eboAllocator.Allocate(info.countElements);
 			
 			std::string name = mesh->name;
 			uint32_t meshId = idsManager.GetNewId();
@@ -66,13 +67,10 @@ namespace qgl {
 				meshInfo.resize(meshId+100);
 			}
 			meshInfo[meshId] = info;
-			if(vbo.GetVertexCount() < info.firstVertex+info.countVertices)
-				vbo.Resize(info.firstVertex+info.countVertices);
 			
-			if(ebo.GetVertexCount() < info.firstElement+info.countElements)
-				ebo.Resize(info.firstElement+info.countElements);
 			vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
 					info.countVertices*vertexSize);
+			
 			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
 					info.countElements*sizeof(uint32_t));
 		}

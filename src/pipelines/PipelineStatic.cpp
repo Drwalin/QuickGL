@@ -121,6 +121,7 @@ namespace qgl {
 			uint32_t stageId) {
 		switch(stageId) {
 			case 0:
+				// init indirect draw buffer for every object
 				vboIndirectDrawBuffer.Resize(idsManager.CountIds());
 				for(uint32_t i=0; i<idsManager.CountIds(); ++i) {
 					uint32_t id = idsManager.GetArrayOfUsedIds()[i];
@@ -137,17 +138,12 @@ namespace qgl {
 				return 2;
 				
 			case 1:
+				// draw with indirect draw buffer
 				{
-					glMemoryBarrier(GL_ALL_BARRIER_BITS);
 					renderShader->Use();
 					glm::mat4 pv = camera->GetPerspectiveMatrix()
 						* camera->GetViewMatrix();
 					renderShader->SetMat4(projectionViewLocation, pv);
-					printf("\n\n");
-					float* v = (float*)&pv;
-					printf("sizeof(glm::mat4) = %lu\n", sizeof(glm::mat4));
-					printf(" %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n %.4f %.4f %.4f %.4f \n",
-							v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14], v[15]);
 					vao->BindIndirectBuffer(vboIndirectDrawBuffer.Vbo());
 					vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
 				}

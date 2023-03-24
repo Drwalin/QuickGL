@@ -57,7 +57,7 @@ int main() {
 	
 	// add terrain object
 	uint32_t terrainId = pipelineStatic->CreateEntity();
-	uint32_t terrainMeshId = meshManagerStatic->GetMeshIdByName("terrain");
+	uint32_t terrainMeshId = meshManagerStatic->GetMeshIdByName("Grid");
 	pipelineStatic->SetEntityMesh(terrainId, terrainMeshId);
 	pipelineStatic->SetEntityPos(terrainId, {0,0,0});
 	pipelineStatic->SetEntityRotation(terrainId, glm::quat(0, {0,1,0}));
@@ -65,7 +65,7 @@ int main() {
 	
 	// add box object
 	uint32_t chestId = pipelineStatic->CreateEntity();
-	uint32_t chestMeshId = meshManagerStatic->GetMeshIdByName("chest");
+	uint32_t chestMeshId = meshManagerStatic->GetMeshIdByName("Cube");
 	pipelineStatic->SetEntityMesh(chestId, chestMeshId);
 	pipelineStatic->SetEntityPos(chestId, {0,10,0});
 	pipelineStatic->SetEntityRotation(chestId, glm::quat(0, {0,1,0}));
