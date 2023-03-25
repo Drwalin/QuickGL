@@ -27,6 +27,9 @@
 #include <unordered_set>
 #include <memory>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 namespace gl {
 	class VBO;
 	class VAO;
@@ -50,6 +53,11 @@ namespace qgl {
 		virtual void DeleteEntity(uint32_t entityId) = 0;
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
+		void SetEntityMeshByName(uint32_t entityId, const char* meshName);
+		virtual void SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos={0,0,0},
+				glm::quat rot={0,0,0,1}, glm::vec3 scale={1,1,1}) = 0;
+		void SetEntityTransformsEuler(uint32_t entityId, glm::vec3 pos={0,0,0},
+				glm::vec3 eulerRot={0,0,0}, glm::vec3 scale={1,1,1});
 		
 		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
 				uint32_t stageId) = 0; // returns number of stages left for drawing

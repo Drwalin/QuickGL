@@ -84,37 +84,10 @@ namespace qgl {
 		projectionViewLocation = renderShader->GetUniformLocation("projectionView");
 	}
 	
-	void PipelineStatic::SetEntityPos(uint32_t entityId, glm::vec3 pos) {
-		glm::mat4& m = transformMatrices[entityId];
-		glm::vec3 _scale, _pos, _skew; 
-		glm::vec4 _persp;
-		glm::quat _rot;
-		glm::decompose(m, _scale, _rot, _pos, _skew, _persp);
-		m = glm::translate(glm::scale(glm::mat4_cast(_rot), _scale), pos);
-	}
-	
-	void PipelineStatic::SetEntityTransform(uint32_t entityId,
-			const glm::mat4& matrix) {
-		transformMatrices[entityId] = matrix;
-	}
-	
-	void PipelineStatic::SetEntityRotation(uint32_t entityId,
-			glm::quat rotation) {
-		glm::mat4& m = transformMatrices[entityId];
-		glm::vec3 _scale, _pos, _skew; 
-		glm::vec4 _persp;
-		glm::quat _rot;
-		glm::decompose(m, _scale, _rot, _pos, _skew, _persp);
-		m = glm::translate(glm::scale(glm::mat4_cast(rotation), _scale), _pos);
-	}
-	
-	void PipelineStatic::SetEntityScale(uint32_t entityId, glm::vec3 scale) {
-		glm::mat4& m = transformMatrices[entityId];
-		glm::vec3 _scale, _pos, _skew; 
-		glm::vec4 _persp;
-		glm::quat _rot;
-		glm::decompose(m, _scale, _rot, _pos, _skew, _persp);
-		m = glm::translate(glm::scale(glm::mat4_cast(_rot), scale), _pos);
+	void PipelineStatic::SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos,
+			glm::quat rot, glm::vec3 scale) {
+		transformMatrices[entityId] = glm::translate(glm::scale(
+					glm::mat4_cast(rot), scale), pos);
 	}
 	
 	uint32_t PipelineStatic::DrawStage(std::shared_ptr<Camera> camera,
@@ -203,7 +176,7 @@ out vec3 normal;
 out vec4 pos;
 
 void main() {
-	gl_Position = pos = projectionView * /*model **/ vec4(in_pos, 1);
+	gl_Position = pos = projectionView * model * vec4(in_pos, 1);
 	normal = normalize((model * vec4(in_normal, 0)).xyz);
 	color = in_color;
 }
