@@ -49,6 +49,7 @@ int main() {
 	auto meshManagerStatic = pipelineStatic->GetMeshManager();
 	meshManagerStatic->LoadModels("../samples/terrain.fbx");
 	meshManagerStatic->LoadModels("../samples/chest.fbx");
+	meshManagerStatic->LoadModels("../samples/temple.fbx");
 	
 	// create and init camera
 	std::shared_ptr<qgl::FreeFlyCamera> camera
@@ -56,30 +57,33 @@ int main() {
 	engine->SetMainCamera(camera);
 	
 	// add terrain object
+	if(1){
 	uint32_t terrainId = pipelineStatic->CreateEntity();
-	uint32_t terrainMeshId = meshManagerStatic->GetMeshIdByName("Grid");
-	pipelineStatic->SetEntityMesh(terrainId, terrainMeshId);
-	pipelineStatic->SetEntityPos(terrainId, {0,0,0});
-	pipelineStatic->SetEntityRotation(terrainId, glm::quat(0, {0,1,0}));
-	pipelineStatic->SetEntityScale(terrainId, {1,1,1});
+	pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
+	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,0,0});
+	}
 	
 	// add box object
+	if(1){
 	uint32_t chestId = pipelineStatic->CreateEntity();
-	uint32_t chestMeshId = meshManagerStatic->GetMeshIdByName("Cube");
-	pipelineStatic->SetEntityMesh(chestId, chestMeshId);
-	pipelineStatic->SetEntityPos(chestId, {0,10,0});
-	pipelineStatic->SetEntityRotation(chestId, glm::quat(0, {0,1,0}));
-	pipelineStatic->SetEntityScale(chestId, {1,1,1});
+	pipelineStatic->SetEntityMeshByName(chestId, "temple");
+	pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,0,0});
+	}
 	
-	int i=0;
-	while(!engine->IsQuitRequested() && i<5*1000*1000*100) {
+	// add box object
+	{
+	uint32_t standId = pipelineStatic->CreateEntity();
+	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
+	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{10,0,0});
+	}
+	
+	while(!engine->IsQuitRequested()) {
 		// process inputs
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
 			break;
 		}
 		
-		++i;
 		engine->BeginNewFrame();
 		camera->ProcessDefaultInput(engine);
 		

@@ -93,6 +93,10 @@ namespace qgl {
 		std::set<std::shared_ptr<Pipeline>> pendingRenders(pipelines.begin(),
 				pipelines.end()), nextStage;
 		
+		for(auto& p : pipelines) {
+			p->FlushDataToGPU();
+		}
+		
 		uint32_t drawStageId = 0;
 		while(!pendingRenders.empty()) {
 			nextStage.clear();

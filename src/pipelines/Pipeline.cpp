@@ -16,16 +16,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../../include/quickgl/MeshManager.hpp"
+
 #include "../../include/quickgl/pipelines/Pipeline.hpp"
 
 namespace qgl {
 	
 	Pipeline::Pipeline() {}
 	
+	Pipeline::~Pipeline() {}
+	
 	void Pipeline::Initialize() {
 		meshManager = CreateMeshManager();
 	}
 	
-	Pipeline::~Pipeline() {}
+	void Pipeline::SetEntityMeshByName(uint32_t entityId, const char* meshName) {
+		SetEntityMesh(entityId, meshManager->GetMeshIdByName(meshName));
+	}
+	
+	void Pipeline::SetEntityTransformsEuler(uint32_t entityId, glm::vec3 pos,
+			glm::vec3 eulerRot, glm::vec3 scale) {
+		SetEntityTransformsQuat(entityId, pos, glm::quat(eulerRot), scale);
+	}
 }
 

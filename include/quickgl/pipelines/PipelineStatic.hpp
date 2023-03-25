@@ -43,10 +43,8 @@ namespace qgl {
 		
 		virtual void Initialize() override;
 		
-		void SetEntityPos(uint32_t entityId, glm::vec3 pos);
-		void SetEntityTransform(uint32_t entityId, const glm::mat4& matrix);
-		void SetEntityRotation(uint32_t entityId, glm::quat rotation);
-		void SetEntityScale(uint32_t entityId, glm::vec3 scale);
+		virtual void SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos={0,0,0},
+				glm::quat rot={0,0,0,1}, glm::vec3 scale={1,1,1}) override;
 		
 		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
 				uint32_t stageId) override;
