@@ -70,11 +70,18 @@ int main() {
 	pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,0,0});
 	}
 	
-	// add box object
+	// add fire stand object
 	{
 	uint32_t standId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
 	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{10,0,0});
+	}
+	
+	// add 2. fire stand object
+	{
+	uint32_t standId = pipelineStatic->CreateEntity();
+	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
+	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{0,20,0});
 	}
 	
 	while(!engine->IsQuitRequested()) {

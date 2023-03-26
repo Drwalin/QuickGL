@@ -32,6 +32,7 @@ namespace qgl {
 		pos = {0,0,0};
 		front = {0,0,1};
 		rotation = glm::quat(0, {0,1,0});
+		euler = {0,0,0};
 	}
 	
 	FreeFlyCamera::~FreeFlyCamera() {
@@ -39,7 +40,7 @@ namespace qgl {
 	
 	
 	void FreeFlyCamera::PrepareDataForNewFrame() {
-		glm::mat4 rot = glm::mat3_cast(rotation);
+		glm::mat4 rot = glm::mat4_cast(rotation);
 		front = rot * glm::vec4{0,0,1,0};
 		up = rot * glm::vec4{0,1,0,0};
 		right = rot * glm::vec4{-1,0,0,0};
@@ -114,14 +115,15 @@ namespace qgl {
 			euler.x = M_PI*0.5f;
 		this->euler = euler;
 		SetRotation(
+				glm::quat(euler + glm::vec3{0,0,M_PI})
 // 				glm::rotate(
-					glm::rotate(
-						glm::rotate(
-							glm::quat(0,0,0,1)
-							,
-							euler.y, {0,1,0})
-						,
-						euler.x, {1,0,0})
+// 					glm::rotate(
+// 						glm::rotate(
+// 							glm::quat(0,0,0,1)
+// 							,
+// 							euler.y, {0,1,0})
+// 						,
+// 						euler.x, {1,0,0})
 // 					,
 // 					euler.z, {0,0,1})
 				);
