@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 
@@ -38,24 +40,26 @@ namespace qgl {
 	
 	template<typename T>
 	void ManagedSparselyUpdatedVBO<T>::Init() {
+		maxId = 0;
 		if(!vbo) {
 			vbo = new gl::VBO(sizeof(T), gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 		}
 		vbo->Init();
+		vbo->Resize(100);
 		if(!deltaVbo) {
 			deltaVbo = new gl::VBO(sizeof(UpdateDataStruct), gl::ARRAY_BUFFER,
 					gl::DYNAMIC_DRAW);;
 		}
 		deltaVbo->Init();
+		deltaVbo->Resize(100);
 		if(!shader) {
 			shader = new gl::Shader();
 			shader->Compile(
 					std::string(R"(#version 430 core
-const uint ELEMENT_SIZE = "
-)") +
+const uint ELEMENT_SIZE = )") +
 					std::to_string(sizeof(T)) + R"(;
 struct Data {
-	byte data[ELEMENT_SIZE];
+	uint data[ELEMENT_SIZE/4];
 };
 struct DeltaData {
 	Data data;
@@ -108,13 +112,16 @@ void main() {
 	
 	template<typename T>
 	void ManagedSparselyUpdatedVBO<T>::UpdateVBO() {
+		if(vbo->GetVertexCount() <= maxId) {
+			vbo->Resize(maxId + 100);
+		}
 		deltaVbo->Update(&deltaData.front(), 0,
 				deltaData.size()*sizeof(UpdateDataStruct));
 		shader->Use();
 		shader->SetInt(1, deltaData.size());
 		deltaVbo->BindBufferBase(gl::ARRAY_BUFFER, 1);
 		vbo->BindBufferBase(gl::ARRAY_BUFFER, 2);
-		shader->DispatchRoundGroupNumbers(deltaData.size());
+		shader->DispatchRoundGroupNumbers(deltaData.size(), 1, 1);
 		deltaData.clear();
 		whereSomethingWasUpdated.clear();
 	}
@@ -123,11 +130,18 @@ void main() {
 	void ManagedSparselyUpdatedVBO<T>::SetValue(const T& value, uint32_t id) {
 		auto it = whereSomethingWasUpdated.find(id);
 		if(it != whereSomethingWasUpdated.end()) {
-			deltaData[it->second] = value;
+			deltaData[it->second].value = value;
+			deltaData[it->second].id = id;
 		} else {
 			whereSomethingWasUpdated[id] = deltaData.size();
-			deltaData.emplace_back(value, id);
+			deltaData.push_back({value, id});
 		}
+		maxId = std::max(maxId, id);
+	}
+
+	template<typename T>
+	uint32_t ManagedSparselyUpdatedVBO<T>::Count() const {
+		return vbo->GetVertexCount();
 	}
 }
 

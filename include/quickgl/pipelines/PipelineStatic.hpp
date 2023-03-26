@@ -30,6 +30,7 @@
 
 #include "PipelineIdsManagedBase.hpp"
 #include "../util/BufferedVBO.hpp"
+#include "../util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace qgl {
 	
@@ -63,7 +64,7 @@ namespace qgl {
 			uint32_t baseInstance;
 		};
 		
-		TypedVBO<glm::mat4> transformMatrices;
+		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		TypedVBO<DrawElementsIndirectCommand> vboIndirectDrawBuffer;
 		
 		std::unique_ptr<gl::VAO> vao;
