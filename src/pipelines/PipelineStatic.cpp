@@ -49,6 +49,7 @@ namespace qgl {
 	}
 	
 	void PipelineStatic::Initialize() {
+		transformMatrices.Init();
 	GL_CHECK_PUSH_ERROR;
 		PipelineIdsManagedBase::Initialize();
 	GL_CHECK_PUSH_ERROR;
@@ -87,8 +88,8 @@ namespace qgl {
 	
 	void PipelineStatic::SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos,
 			glm::quat rot, glm::vec3 scale) {
-		transformMatrices[entityId] = glm::translate(glm::scale(
-					glm::mat4_cast(rot), scale), pos);
+		transformMatrices.SetValue(glm::translate(glm::scale(
+					glm::mat4_cast(rot), scale), pos), entityId);
 	}
 	
 	uint32_t PipelineStatic::DrawStage(std::shared_ptr<Camera> camera,
@@ -133,7 +134,7 @@ namespace qgl {
 	
 	void PipelineStatic::FlushDataToGPU() {
 		PipelineIdsManagedBase::FlushDataToGPU();
-		transformMatrices.UpdateVertices(0, idsManager.GetArraySize());
+		transformMatrices.UpdateVBO();
 	}
 	
 	

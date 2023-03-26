@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #ifndef QUICKGL_MANAGED_SPARSELY_UPDATED_VBO_HPP
 #define QUICKGL_MANAGED_SPARSELY_UPDATED_VBO_HPP
 
@@ -48,6 +50,8 @@ namespace qgl {
 		
 		void SetValue(const T& value, uint32_t id);
 		
+		uint32_t Count() const;
+		
 	private:
 		
 		struct UpdateDataStruct {
@@ -59,11 +63,14 @@ namespace qgl {
 		gl::VBO* deltaVbo;
 		gl::Shader* shader;
 		
+		uint32_t maxId;
+		
 		std::vector<UpdateDataStruct> deltaData;
 		std::unordered_map<uint32_t, uint32_t> whereSomethingWasUpdated;
 	};
 }
 
-#endif
+#include "../../../src/util/ManagedSparselyUpdatedVBO.cpp"
 
+#endif
 
