@@ -16,15 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-#include "../../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
-
-#include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
+// #include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+// #include "../../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
+// 
+// #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace qgl {
 	
+	/*
 	template<typename T>
 	ManagedSparselyUpdatedVBO<T>::ManagedSparselyUpdatedVBO() {
 		vbo = new gl::VBO(sizeof(T), gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);;
@@ -54,10 +53,9 @@ namespace qgl {
 		deltaVbo->Resize(100);
 		if(!shader) {
 			shader = new gl::Shader();
-			shader->Compile(
-					std::string(R"(#version 430 core
+			const std::string shaderSource = std::string(R"(#version 430 core
 const uint ELEMENT_SIZE = )") +
-					std::to_string(sizeof(T)) + R"(;
+std::to_string(sizeof(T)) + R"(;
 struct Data {
 	uint data[ELEMENT_SIZE/4];
 };
@@ -83,7 +81,8 @@ void main() {
 	uint id = deltaData[gl_GlobalInvocationID.x].id;
 	data[id] = deltaData[gl_GlobalInvocationID.x].data;
 }
-)");
+)";
+			shader->Compile(shaderSource);
 		}
 		deltaData.clear();
 	}
@@ -143,5 +142,6 @@ void main() {
 	uint32_t ManagedSparselyUpdatedVBO<T>::Count() const {
 		return vbo->GetVertexCount();
 	}
+*/
 }
 
