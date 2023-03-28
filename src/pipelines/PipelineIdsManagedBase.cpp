@@ -24,7 +24,6 @@
 
 namespace qgl {
 	PipelineIdsManagedBase::PipelineIdsManagedBase() {
-		GL_CHECK_PUSH_ERROR;
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {
@@ -44,29 +43,33 @@ namespace qgl {
 	}
 	
 	void PipelineIdsManagedBase::Initialize() {
-	GL_CHECK_PUSH_ERROR;
 		Pipeline::Initialize();
-	GL_CHECK_PUSH_ERROR;
 		idsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
-	GL_CHECK_PUSH_ERROR;
 		idsBuffer->Generate(nullptr, 128);
-	GL_CHECK_PUSH_ERROR;
 		perEntityMeshInfo.Resize(128);
-	GL_CHECK_PUSH_ERROR;
+		transformMatrices.Init();
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
 			uint32_t meshId) {
-		PerEntityMeshInfo& info = perEntityMeshInfo[entityId];
+		PerEntityMeshInfo info;
 		meshManager->GetMeshIndices(meshId, info.elementsStart,
 				info.elementsCount);
+		perEntityMeshInfo.SetValue(info, entityId);
+	}
+	
+	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
+			glm::vec3 pos, glm::quat rot, glm::vec3 scale) {
+		transformMatrices.SetValue(glm::translate(glm::scale(
+					glm::mat4_cast(rot), scale), pos), entityId);
 	}
 	
 	void PipelineIdsManagedBase::FlushDataToGPU() {
 		idsBuffer->Update(idsManager.GetArrayOfUsedIds(), 0,
 				idsBuffer->VertexSize()*idsManager.GetArraySize());
-		perEntityMeshInfo.UpdateVertices(0, idsManager.GetArraySize());
+		perEntityMeshInfo.UpdateVBO();
+		transformMatrices.UpdateVBO();
 	}
 }
 

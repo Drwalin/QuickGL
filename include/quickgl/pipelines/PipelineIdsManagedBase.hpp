@@ -22,6 +22,8 @@
 #include "../util/IdsManager.hpp"
 #include "../util/BufferedVBO.hpp"
 
+#include "../util/ManagedSparselyUpdatedVBO.hpp"
+
 #include "Pipeline.hpp"
 
 namespace qgl {
@@ -37,6 +39,9 @@ namespace qgl {
 		virtual void Initialize() override;
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
+		virtual void SetEntityTransformsQuat(uint32_t entityId,
+				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
+				glm::vec3 scale={1,1,1}) override;
 		
 		virtual void FlushDataToGPU() override;
 		
@@ -46,7 +51,9 @@ namespace qgl {
 			uint32_t elementsStart;
 			uint32_t elementsCount;
 		};
-		TypedVBO<PerEntityMeshInfo> perEntityMeshInfo;
+		ManagedSparselyUpdatedVBO<PerEntityMeshInfo> perEntityMeshInfo;
+		
+		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		
 		IdsManager idsManager;
 		std::shared_ptr<gl::VBO> idsBuffer;

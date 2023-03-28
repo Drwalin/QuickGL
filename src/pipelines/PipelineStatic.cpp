@@ -41,28 +41,28 @@ namespace qgl {
 	
 	uint32_t PipelineStatic::CreateEntity() {
 		uint32_t id = PipelineIdsManagedBase::CreateEntity();
-		if(id >= transformMatrices.Count()) {
-			transformMatrices.Resize(id + 100);
-			vboIndirectDrawBuffer.Resize(id + 100);
+		if(id >= vboIndirectDrawBuffer->GetVertexCount()) {
+			vboIndirectDrawBuffer->Generate(nullptr, id+100);
+			vboFrustumCulledEntitiesIds->Generate(nullptr, id+100);
 		}
 		return id;
 	}
 	
 	void PipelineStatic::Initialize() {
-		transformMatrices.Init();
-	GL_CHECK_PUSH_ERROR;
 		PipelineIdsManagedBase::Initialize();
-	GL_CHECK_PUSH_ERROR;
-		transformMatrices.Resize(128);
-	GL_CHECK_PUSH_ERROR;
-		vboIndirectDrawBuffer.Resize(128);
-	GL_CHECK_PUSH_ERROR;
+		vboIndirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		vboIndirectDrawBuffer->Init();
+		vboFrustumCulledEntitiesIds = std::make_shared<gl::VBO>(
+				sizeof(uint32_t), gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		vboFrustumCulledEntitiesIds->Init();
+		vboAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		vboAtomicCounter->Generate(nullptr, 1024);
 		
 		// init shader
 		renderShader = std::make_unique<gl::Shader>();
-	GL_CHECK_PUSH_ERROR;
 		renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE);
-	GL_CHECK_PUSH_ERROR;
 		
 		// init vao
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
@@ -84,12 +84,6 @@ namespace qgl {
 		
 		// get shader uniform locations
 		projectionViewLocation = renderShader->GetUniformLocation("projectionView");
-	}
-	
-	void PipelineStatic::SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos,
-			glm::quat rot, glm::vec3 scale) {
-		transformMatrices.SetValue(glm::translate(glm::scale(
-					glm::mat4_cast(rot), scale), pos), entityId);
 	}
 	
 	uint32_t PipelineStatic::DrawStage(std::shared_ptr<Camera> camera,
@@ -134,7 +128,6 @@ namespace qgl {
 	
 	void PipelineStatic::FlushDataToGPU() {
 		PipelineIdsManagedBase::FlushDataToGPU();
-		transformMatrices.UpdateVBO();
 	}
 	
 	
@@ -201,5 +194,39 @@ void main() {
 	PosColor = pos;
 }
 		)";
+	
+	const char* PipelineStatic::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
+#version 450 core
+
+layout (std430, binding=1) buffer uint inFrustumIds[];
+layout (std430, binding=2) buffer uint sourceIds[];
+layout (std430, binding=3) buffer mat4 model[];
+layout (std430, binding=4) buffer uint atomicCounter[];
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+uniform uint elementsToUpdate;
+
+shared uint atomicCountShared[local_size_x];
+
+void main() {
+	atomicCountShared[gl_LocalInvocationID.x] = 0;
+	uint numberOfEntitiesPerShader =
+		(elementsToUpdate + gl_NumWorkGroups.x*local_size_x-1) /
+		(gl_NumWorkGroups.x*local_size_x);
+	uint firstId = numberOfEntitiesPerShader * gl_GlobalInvocationID.x;
+	if(firstId >= updateElements)
+		return;
+	uint number = numberOfEntitiesPerShader;
+	if(firstId+numberOfEntitiesPerShader >= updateElements) {
+		number = updateElements - firstId;
+	}
+	
+	
+}
+)";
+		
+	const char* PipelineStatic::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
+)";
 }
 

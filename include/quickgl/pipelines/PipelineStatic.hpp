@@ -28,9 +28,9 @@
 #include <glm/vector_relational.hpp>
 #include <glm/mat4x4.hpp>
 
-#include "PipelineIdsManagedBase.hpp"
 #include "../util/BufferedVBO.hpp"
-#include "../util/ManagedSparselyUpdatedVBO.hpp"
+
+#include "PipelineIdsManagedBase.hpp"
 
 namespace qgl {
 	
@@ -44,8 +44,6 @@ namespace qgl {
 		
 		virtual void Initialize() override;
 		
-		virtual void SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos={0,0,0},
-				glm::quat rot={0,0,0,1}, glm::vec3 scale={1,1,1}) override;
 		
 		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
 				uint32_t stageId) override;
@@ -64,21 +62,21 @@ namespace qgl {
 			uint32_t baseInstance;
 		};
 		
-		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
-		TypedVBO<DrawElementsIndirectCommand> vboIndirectDrawBuffer;
+		std::shared_ptr<gl::VBO> vboFrustumCulledEntitiesIds;
+		std::shared_ptr<gl::VBO> vboAtomicCounter;
+		std::shared_ptr<gl::VBO> vboIndirectDrawBuffer;
 		
 		std::unique_ptr<gl::VAO> vao;
 		std::unique_ptr<gl::Shader> renderShader;
+		
 		int projectionViewLocation;
 		
-		
-		// move this to derived class
-// 		gl::VBO* vboFrustumCulledEntityIds;
-// 		gl::VBO* vboAtomicCounterForCulledEntities;
 	private:
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;
+		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
+		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 	};
 }
 
