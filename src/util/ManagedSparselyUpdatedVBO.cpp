@@ -16,46 +16,44 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// #include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
-// #include "../../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
-// 
-// #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
+#include <cstring>
+
+#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
+
+#include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace qgl {
-	
-	/*
-	template<typename T>
-	ManagedSparselyUpdatedVBO<T>::ManagedSparselyUpdatedVBO() {
-		vbo = new gl::VBO(sizeof(T), gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);;
-		deltaVbo = new gl::VBO(sizeof(UpdateDataStruct), gl::ARRAY_BUFFER,
-				gl::DYNAMIC_DRAW);;
+	UntypedManagedSparselyUpdatedVBO::UntypedManagedSparselyUpdatedVBO(
+			uint32_t elementSize) : ELEMENT_SIZE(elementSize),
+   			UPDATE_STRUCUTRE_SIZE(ELEMENT_SIZE+sizeof(uint32_t))	{
+		vbo = nullptr;
+		deltaVbo = nullptr;
 		shader = nullptr;
 	}
 	
-	template<typename T>
-	ManagedSparselyUpdatedVBO<T>::~ManagedSparselyUpdatedVBO() {
+	UntypedManagedSparselyUpdatedVBO::~UntypedManagedSparselyUpdatedVBO() {
 		Destroy();
 	}
 	
-	template<typename T>
-	void ManagedSparselyUpdatedVBO<T>::Init() {
+	void UntypedManagedSparselyUpdatedVBO::Init() {
 		maxId = 0;
 		if(!vbo) {
-			vbo = new gl::VBO(sizeof(T), gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
+			vbo = new gl::VBO(ELEMENT_SIZE, gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 		}
 		vbo->Init();
 		vbo->Resize(100);
 		if(!deltaVbo) {
-			deltaVbo = new gl::VBO(sizeof(UpdateDataStruct), gl::ARRAY_BUFFER,
-					gl::DYNAMIC_DRAW);;
+			deltaVbo = new gl::VBO(UPDATE_STRUCUTRE_SIZE,
+					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);;
 		}
 		deltaVbo->Init();
 		deltaVbo->Resize(100);
 		if(!shader) {
 			shader = new gl::Shader();
-			const std::string shaderSource = std::string(R"(#version 430 core
+			const std::string shaderSource = std::string(R"(#version 450 core
 const uint ELEMENT_SIZE = )") +
-std::to_string(sizeof(T)) + R"(;
+std::to_string(ELEMENT_SIZE) + R"(;
 struct Data {
 	uint data[ELEMENT_SIZE/4];
 };
@@ -64,16 +62,16 @@ struct DeltaData {
 	uint id;
 };
 
-layout (std430, binding=1) buffer updateData {
+layout (std430, binding=4) buffer updateData {
 	DeltaData deltaData[];
 };
-layout (std430, binding=2) buffer dataBuffer {
+layout (std430, binding=5) buffer dataBuffer {
 	Data data[];
 };
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-layout (location=1) uniform uint updateElements;
+uniform uint updateElements;
 
 void main() {
 	if(gl_GlobalInvocationID.x >= updateElements)
@@ -83,12 +81,12 @@ void main() {
 }
 )";
 			shader->Compile(shaderSource);
+			shaderDeltaCommandsLocation = shader->GetUniformLocation("updateElements");
 		}
 		deltaData.clear();
 	}
 	
-	template<typename T>
-	void ManagedSparselyUpdatedVBO<T>::Destroy() {
+	void UntypedManagedSparselyUpdatedVBO::Destroy() {
 		if(vbo) {
 			delete vbo;
 			vbo = nullptr;
@@ -104,44 +102,42 @@ void main() {
 		deltaData.clear();
 	}
 	
-	template<typename T>
-	void ManagedSparselyUpdatedVBO<T>::Resize(uint32_t size) {
+	void UntypedManagedSparselyUpdatedVBO::Resize(uint32_t size) {
 		vbo->Resize(size);
 	}
 	
-	template<typename T>
-	void ManagedSparselyUpdatedVBO<T>::UpdateVBO() {
+	void UntypedManagedSparselyUpdatedVBO::UpdateVBO() {
 		if(vbo->GetVertexCount() <= maxId) {
 			vbo->Resize(maxId + 100);
 		}
-		deltaVbo->Update(&deltaData.front(), 0,
-				deltaData.size()*sizeof(UpdateDataStruct));
-		shader->Use();
-		shader->SetInt(1, deltaData.size());
-		deltaVbo->BindBufferBase(gl::ARRAY_BUFFER, 1);
-		vbo->BindBufferBase(gl::ARRAY_BUFFER, 2);
-		shader->DispatchRoundGroupNumbers(deltaData.size(), 1, 1);
-		deltaData.clear();
-		whereSomethingWasUpdated.clear();
+		if(deltaData.size() != 0) {
+			deltaVbo->Update(&deltaData.front(), 0,
+					deltaData.size()*UPDATE_STRUCUTRE_SIZE);
+			shader->Use();
+			shader->SetUInt(shaderDeltaCommandsLocation, deltaData.size());
+			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
+			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+			shader->DispatchRoundGroupNumbers(deltaData.size(), 1, 1);
+			deltaData.clear();
+			whereSomethingWasUpdated.clear();
+		}
 	}
 	
-	template<typename T>
-	void ManagedSparselyUpdatedVBO<T>::SetValue(const T& value, uint32_t id) {
+	void UntypedManagedSparselyUpdatedVBO::SetValue(const void* value, uint32_t id) {
 		auto it = whereSomethingWasUpdated.find(id);
+		uint32_t p = deltaData.size();
 		if(it != whereSomethingWasUpdated.end()) {
-			deltaData[it->second].value = value;
-			deltaData[it->second].id = id;
+			p = it->second*UPDATE_STRUCUTRE_SIZE;
 		} else {
-			whereSomethingWasUpdated[id] = deltaData.size();
-			deltaData.push_back({value, id});
+			deltaData.resize(p+UPDATE_STRUCUTRE_SIZE);
 		}
+		memcpy(&(deltaData[p]), value, ELEMENT_SIZE);
+		*(uint32_t*)&(deltaData[p+ELEMENT_SIZE]) = id;
 		maxId = std::max(maxId, id);
 	}
 
-	template<typename T>
-	uint32_t ManagedSparselyUpdatedVBO<T>::Count() const {
+	uint32_t UntypedManagedSparselyUpdatedVBO::Count() const {
 		return vbo->GetVertexCount();
 	}
-*/
 }
 
