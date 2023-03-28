@@ -106,7 +106,7 @@ namespace qgl {
 		deltaVbo->Resize(100);
 		if(!shader) {
 			shader = new gl::Shader();
-			const std::string shaderSource = std::string(R"(#version 430 core
+			const std::string shaderSource = std::string(R"(#version 450 core
 const uint ELEMENT_SIZE = )") +
 std::to_string(sizeof(T)) + R"(;
 struct Data {

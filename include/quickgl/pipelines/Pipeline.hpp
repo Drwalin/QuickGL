@@ -71,21 +71,6 @@ namespace qgl {
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
 		std::shared_ptr<MeshManager> meshManager;
-		
-// 		struct PerEntityMeshInfo {
-// 			uint32_t elementsStart;
-// 			uint32_t elementsCount;
-// 			uint32_t verticesStart;
-// 		};
-// 		
-// 		std::vector<uint32_t> entityMeshId; // if == 0xFFFFFFFF then entity is not in use
-// 		std::vector<uint32_t> unusedEntityIdsStack;
-// 		std::vector<PerEntityMeshInfo> entityMeshInfo;
-// 		
-// 		// move this to derived class
-// 		gl::VBO* vboIndirectDrawBuffer;
-// 		gl::VBO* vboFrustumCulledEntityIds;
-// 		gl::VBO* vboAtomicCounterForCulledEntities;
 	};
 }
 
