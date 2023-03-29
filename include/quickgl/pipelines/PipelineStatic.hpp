@@ -62,20 +62,19 @@ namespace qgl {
 			uint32_t baseInstance;
 		};
 		
-		std::shared_ptr<gl::VBO> vboFrustumCulledEntitiesIds;
-		std::shared_ptr<gl::VBO> vboAtomicCounter;
 		std::shared_ptr<gl::VBO> vboIndirectDrawBuffer;
 		
 		std::unique_ptr<gl::VAO> vao;
 		std::unique_ptr<gl::Shader> renderShader;
+		std::unique_ptr<gl::Shader> generateIndirectDrawBufferShader;
 		
 		int projectionViewLocation;
+		int entitesCountToRenderLocation;
 		
 	private:
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;
-		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
 		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 	};
 }

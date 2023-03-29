@@ -24,12 +24,16 @@
 #include <vector>
 #include <map>
 
+#include "ManagedSparselyUpdatedVBO.hpp"
+
 namespace qgl {
 	class IdsManager {
 	public:
 		
-		uint32_t GetNewId();
-		void FreeId(uint32_t id);
+		virtual ~IdsManager() = default;
+		
+		virtual uint32_t GetNewId();
+		virtual void FreeId(uint32_t id);
 		
 		inline uint32_t CountIds() const { return arrayOfUsedIds.size(); }
 		inline uint32_t GetArraySize() const {
@@ -40,7 +44,36 @@ namespace qgl {
 			return &(arrayOfUsedIds[0]);
 		}
 		
+	protected:
+		
+		std::vector<uint32_t> ids;
+		std::vector<uint32_t> freeIdsStack;
+		
+		std::vector<uint32_t> arrayOfUsedIds;
+		std::map<uint32_t, uint32_t> mapIdToOffsetInArrayOfUsedIds;
+	};
+	
+	class IdsManagerVBOManaged final {
+	public:
+		
+		virtual ~IdsManagerVBOManaged() = default;
+		
+		void InitVBO();
+		
+		uint32_t GetNewId();
+		void FreeId(uint32_t id);
+		
+		inline uint32_t CountIds() const { return arrayOfUsedIds.size(); }
+		inline uint32_t GetArraySize() const {
+			return CountIds() + freeIdsStack.size();
+		}
+		
+		void UpdateVBO();
+		inline gl::VBO& Vbo() { return vbo.Vbo(); }
+		
 	private:
+		
+		ManagedSparselyUpdatedVBO<uint32_t> vbo;
 		
 		std::vector<uint32_t> ids;
 		std::vector<uint32_t> freeIdsStack;

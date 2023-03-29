@@ -43,7 +43,6 @@ namespace qgl {
 		uint32_t id = PipelineIdsManagedBase::CreateEntity();
 		if(id >= vboIndirectDrawBuffer->GetVertexCount()) {
 			vboIndirectDrawBuffer->Generate(nullptr, id+100);
-			vboFrustumCulledEntitiesIds->Generate(nullptr, id+100);
 		}
 		return id;
 	}
@@ -53,16 +52,12 @@ namespace qgl {
 		vboIndirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		vboIndirectDrawBuffer->Init();
-		vboFrustumCulledEntitiesIds = std::make_shared<gl::VBO>(
-				sizeof(uint32_t), gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		vboFrustumCulledEntitiesIds->Init();
-		vboAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		vboAtomicCounter->Generate(nullptr, 1024);
 		
 		// init shader
 		renderShader = std::make_unique<gl::Shader>();
 		renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE);
+		generateIndirectDrawBufferShader = std::make_unique<gl::Shader>();
+		generateIndirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE);
 		
 		// init vao
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
@@ -75,7 +70,6 @@ namespace qgl {
 		
 		// init model matrix
 		gl::VBO& modelVbo = transformMatrices.Vbo();
-		modelVbo.Init();
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+0, 4, gl::FLOAT, false, 0, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+1, 4, gl::FLOAT, false, 16, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+2, 4, gl::FLOAT, false, 32, 1);
@@ -83,37 +77,108 @@ namespace qgl {
 		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
 		
 		// get shader uniform locations
-		projectionViewLocation = renderShader->GetUniformLocation("projectionView");
+		projectionViewLocation =
+			renderShader->GetUniformLocation("projectionView");
+		entitesCountToRenderLocation =
+			generateIndirectDrawBufferShader
+			->GetUniformLocation("entitiesCount");
 	}
 	
 	uint32_t PipelineStatic::DrawStage(std::shared_ptr<Camera> camera,
 			uint32_t stageId) {
 		switch(stageId) {
-			case 0:
-				// init indirect draw buffer for every object
-				vboIndirectDrawBuffer.Resize(idsManager.CountIds());
-				for(uint32_t i=0; i<idsManager.CountIds(); ++i) {
-					uint32_t id = idsManager.GetArrayOfUsedIds()[i];
-					vboIndirectDrawBuffer[i] = {
-						perEntityMeshInfo[id].elementsCount,
-						1,
-						perEntityMeshInfo[id].elementsStart,
-						0,
-						id
-					};
+			case 0: {
+				// set visible entities count
+				generateIndirectDrawBufferShader->Use();
+				generateIndirectDrawBufferShader
+					->SetUInt(entitesCountToRenderLocation,
+							idsManager.CountIds());
+				
+// 				glFlush();
+				
+				// bind buffers
+				vboIndirectDrawBuffer
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+				idsManager.Vbo().BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+				perEntityMeshInfo.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
+				
+				// generate indirect draw command buffer
+				generateIndirectDrawBufferShader
+					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
+				
+				glFlush();
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				
+				{
+					constexpr uint32_t c = 4;
+					constexpr uint32_t n = 16;
+					float d[4*c*n];
+					memset(d, 0, 4*c*n);
+					transformMatrices.Vbo().Fetch(d, 0, 4*c*n);
+					for(int i=0; i<c*n; i++) {
+						if(i % n == 0)
+							printf("\n  ");
+						if(i % 4 == 0)
+							printf("\n  ");
+						printf(" %f", d[i]);
+					}
+					printf("\n");
 				}
 				
-				vboIndirectDrawBuffer.UpdateVertices(0, idsManager.GetArraySize());
-				return 2;
+				{
+					constexpr uint32_t c = 4;
+					constexpr uint32_t n = 2;
+					uint32_t d[4*c*n];
+					memset(d, 0, 4*c*n);
+					perEntityMeshInfo.Vbo().Fetch(d, 0, 4*c*n);
+					for(int i=0; i<c*n; i++) {
+						if(i % n == 0)
+							printf("\n  ");
+						printf(" %u", d[i]);
+					}
+					printf("\n");
+				}
+				
+				{
+					constexpr uint32_t c = 4;
+					constexpr uint32_t n = 5;
+					uint32_t d[4*c*n];
+					memset(d, 0, 4*c*n);
+					vboIndirectDrawBuffer->Fetch(d, 0, 4*c*n);
+					for(int i=0; i<c*n; i++) {
+						if(i % n == 0)
+							printf("\n  ");
+						printf(" %u", d[i]);
+					}
+					printf("\n");
+				}
+				
+				{
+					constexpr uint32_t c = 4;
+					constexpr uint32_t n = 1;
+					uint32_t d[4*c*n];
+					memset(d, 0, 4*c*n);
+					idsManager.Vbo().Fetch(d, 0, 4*c*n);
+					for(int i=0; i<c*n; i++) {
+						if(i % n == 0)
+							printf("\n  ");
+						printf(" %u", d[i]);
+					}
+					printf("\n");
+				}
+				
+				} return 2;
 				
 			case 1:
 				// draw with indirect draw buffer
 				{
+					glMemoryBarrier(GL_ALL_BARRIER_BITS);
 					renderShader->Use();
 					glm::mat4 pv = camera->GetPerspectiveMatrix()
 						* camera->GetViewMatrix();
 					renderShader->SetMat4(projectionViewLocation, pv);
-					vao->BindIndirectBuffer(vboIndirectDrawBuffer.Vbo());
+					vao->BindIndirectBuffer(*vboIndirectDrawBuffer);
 					vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
 				}
 				return 1;
@@ -128,6 +193,10 @@ namespace qgl {
 	
 	void PipelineStatic::FlushDataToGPU() {
 		PipelineIdsManagedBase::FlushDataToGPU();
+		if(vboIndirectDrawBuffer->GetVertexCount()
+				< idsManager.CountIds()) {
+			vboIndirectDrawBuffer->Resize(idsManager.CountIds());
+		}
 	}
 	
 	
@@ -175,7 +244,7 @@ void main() {
 	normal = normalize((model * vec4(in_normal, 0)).xyz);
 	color = in_color;
 }
-		)";
+)";
 	
 	const char* PipelineStatic::FRAGMENT_SHADER_SOURCE = R"(
 #version 450 core
@@ -193,40 +262,50 @@ void main() {
 	NormalColor = vec4(normal, 0);
 	PosColor = pos;
 }
-		)";
-	
-	const char* PipelineStatic::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
-
-layout (std430, binding=1) buffer uint inFrustumIds[];
-layout (std430, binding=2) buffer uint sourceIds[];
-layout (std430, binding=3) buffer mat4 model[];
-layout (std430, binding=4) buffer uint atomicCounter[];
-
-layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
-
-uniform uint elementsToUpdate;
-
-shared uint atomicCountShared[local_size_x];
-
-void main() {
-	atomicCountShared[gl_LocalInvocationID.x] = 0;
-	uint numberOfEntitiesPerShader =
-		(elementsToUpdate + gl_NumWorkGroups.x*local_size_x-1) /
-		(gl_NumWorkGroups.x*local_size_x);
-	uint firstId = numberOfEntitiesPerShader * gl_GlobalInvocationID.x;
-	if(firstId >= updateElements)
-		return;
-	uint number = numberOfEntitiesPerShader;
-	if(firstId+numberOfEntitiesPerShader >= updateElements) {
-		number = updateElements - firstId;
-	}
-	
-	
-}
 )";
 		
 	const char* PipelineStatic::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
+#version 450 core
+
+struct DrawElementsIndirectCommand {
+	uint count;
+	uint instanceCount;
+	uint firstIndex;
+	int  baseVertex;
+	uint baseInstance;
+};
+
+struct PerEntityMeshInfo {
+	uint elementsStart;
+	uint elementsCount;
+};
+
+layout (packed, std430, binding=5) writeonly buffer aaa {
+	DrawElementsIndirectCommand indirectCommands[];
+};
+layout (packed, std430, binding=7) readonly buffer bbb {
+	PerEntityMeshInfo meshInfo[];
+};
+layout (packed, std430, binding=6) readonly buffer ccc {
+	uint visibleEntityIds[];
+};
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+uniform uint entitiesCount;
+
+void main() {
+	if(gl_GlobalInvocationID.x >= entitiesCount)
+		return;
+	uint id = visibleEntityIds[gl_GlobalInvocationID.x];
+	indirectCommands[gl_GlobalInvocationID.x] = DrawElementsIndirectCommand(
+		meshInfo[id].elementsCount,
+		1,
+		meshInfo[id].elementsStart,
+		0,
+		id
+	);
+}
 )";
 }
 

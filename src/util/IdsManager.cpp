@@ -50,5 +50,51 @@ namespace qgl {
 		
 		arrayOfUsedIds.resize(arrayOfUsedIds.size()-1);
 	}
+	
+	
+	
+	
+	
+	void IdsManagerVBOManaged::InitVBO() {
+		vbo.Init();
+	}
+	
+	uint32_t IdsManagerVBOManaged::GetNewId() {
+		if(freeIdsStack.size()) {
+			uint32_t id = freeIdsStack.back();
+			freeIdsStack.resize(freeIdsStack.size()-1);
+			uint32_t arrayOfUsedIdsOffset = arrayOfUsedIds.size();
+			mapIdToOffsetInArrayOfUsedIds[id] = arrayOfUsedIdsOffset;
+			vbo.SetValue(id, arrayOfUsedIds.size());
+			arrayOfUsedIds.emplace_back(id);
+			return id;
+		} else {
+			uint32_t id = ids.size();
+			ids.resize(id+1);
+			vbo.SetValue(id, arrayOfUsedIds.size());
+			arrayOfUsedIds.push_back(id);
+			mapIdToOffsetInArrayOfUsedIds[id] = id; 
+			return id;
+		}
+	}
+	
+	void IdsManagerVBOManaged::FreeId(uint32_t id) {
+		freeIdsStack.emplace_back(id);
+		uint32_t arrayOfUsedIdsOffset = mapIdToOffsetInArrayOfUsedIds[id];
+		mapIdToOffsetInArrayOfUsedIds.erase(id);
+		
+		if(arrayOfUsedIdsOffset != arrayOfUsedIds.size()-1) {
+			uint32_t movingId = arrayOfUsedIds.back();
+			vbo.SetValue(movingId, arrayOfUsedIdsOffset);
+			arrayOfUsedIds[arrayOfUsedIdsOffset] = movingId;
+			mapIdToOffsetInArrayOfUsedIds[movingId] = arrayOfUsedIdsOffset;
+		}
+		
+		arrayOfUsedIds.resize(arrayOfUsedIds.size()-1);
+	}
+	
+	void IdsManagerVBOManaged::UpdateVBO() {
+		vbo.UpdateVBO();
+	}
 }
 
