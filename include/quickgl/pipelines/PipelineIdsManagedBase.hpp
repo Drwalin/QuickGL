@@ -55,8 +55,7 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		
-		IdsManager idsManager;
-		std::shared_ptr<gl::VBO> idsBuffer;
+		IdsManagerVBOManaged idsManager;
 	};
 }
 

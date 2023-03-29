@@ -31,10 +31,6 @@ namespace qgl {
 	
 	uint32_t PipelineIdsManagedBase::CreateEntity() {
 		uint32_t id = idsManager.GetNewId();
-		if(id >= perEntityMeshInfo.Count()) {
-			perEntityMeshInfo.Resize(id + 100);
-			idsBuffer->Resize(id+100);
-		}
 		return id;
 	}
 	
@@ -44,11 +40,9 @@ namespace qgl {
 	
 	void PipelineIdsManagedBase::Initialize() {
 		Pipeline::Initialize();
-		idsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
-					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
-		idsBuffer->Generate(nullptr, 128);
-		perEntityMeshInfo.Resize(128);
+		perEntityMeshInfo.Init();
 		transformMatrices.Init();
+		idsManager.InitVBO();
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
@@ -61,14 +55,14 @@ namespace qgl {
 	
 	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
 			glm::vec3 pos, glm::quat rot, glm::vec3 scale) {
-		transformMatrices.SetValue(glm::translate(glm::scale(
-					glm::mat4_cast(rot), scale), pos), entityId);
+		glm::mat4 t = glm::translate(glm::scale(
+					glm::mat4_cast(rot), scale), pos);
+		transformMatrices.SetValue(t, entityId);
 	}
 	
 	void PipelineIdsManagedBase::FlushDataToGPU() {
-		idsBuffer->Update(idsManager.GetArrayOfUsedIds(), 0,
-				idsBuffer->VertexSize()*idsManager.GetArraySize());
 		perEntityMeshInfo.UpdateVBO();
+		idsManager.UpdateVBO();
 		transformMatrices.UpdateVBO();
 	}
 }

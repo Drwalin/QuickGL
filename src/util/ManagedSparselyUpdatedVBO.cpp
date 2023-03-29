@@ -62,10 +62,10 @@ struct DeltaData {
 	uint id;
 };
 
-layout (std430, binding=4) buffer updateData {
+layout (packed, std430, binding=4) readonly buffer updateData {
 	DeltaData deltaData[];
 };
-layout (std430, binding=5) buffer dataBuffer {
+layout (packed, std430, binding=5) writeonly buffer dataBuffer {
 	Data data[];
 };
 
@@ -110,15 +110,16 @@ void main() {
 		if(vbo->GetVertexCount() <= maxId) {
 			vbo->Resize(maxId + 100);
 		}
-		if(deltaData.size() != 0) {
-			deltaVbo->Update(&deltaData.front(), 0,
-					deltaData.size()*UPDATE_STRUCUTRE_SIZE);
+		deltaData.swap(deltaDataGPU);
+		deltaData.clear();
+		if(deltaDataGPU.size() != 0) {
+			deltaVbo->Update(&deltaDataGPU.front(), 0,
+					deltaDataGPU.size()*UPDATE_STRUCUTRE_SIZE);
 			shader->Use();
-			shader->SetUInt(shaderDeltaCommandsLocation, deltaData.size());
+			shader->SetUInt(shaderDeltaCommandsLocation, deltaDataGPU.size());
 			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-			shader->DispatchRoundGroupNumbers(deltaData.size(), 1, 1);
-			deltaData.clear();
+			shader->DispatchRoundGroupNumbers(deltaDataGPU.size(), 1, 1);
 			whereSomethingWasUpdated.clear();
 		}
 	}
