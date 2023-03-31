@@ -38,5 +38,14 @@ namespace qgl {
 			glm::vec3 eulerRot, glm::vec3 scale) {
 		SetEntityTransformsQuat(entityId, pos, glm::quat(eulerRot), scale);
 	}
+	
+	void Pipeline::AppendRenderStages(std::vector<StageFunction>& stages) {
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+				this->FlushDataToGPU(0);
+			});
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+				this->FlushDataToGPU(1);
+			});
+	}
 }
 

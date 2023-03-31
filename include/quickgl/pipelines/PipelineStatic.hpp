@@ -44,9 +44,11 @@ namespace qgl {
 		
 		virtual void Initialize() override;
 		
+	public:
 		
-		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
-				uint32_t stageId) override;
+		virtual void AppendRenderStages(std::vector<StageFunction>& stages) override;
+		
+	protected:
 		
 		virtual uint32_t FlushDataToGPU(uint32_t stageId) override;
 		

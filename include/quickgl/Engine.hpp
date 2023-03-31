@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "InputManager.hpp"
+#include "util/RenderStageComposer.hpp"
 
 namespace qgl {
 	class Pipeline;
@@ -60,6 +61,7 @@ namespace qgl {
 	protected:
 		
 		InputManager inputManager;
+		RenderStageComposer renderStageComposer;
 		
 		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		std::shared_ptr<Camera> mainCamera;

@@ -84,10 +84,19 @@ namespace qgl {
 			->GetUniformLocation("entitiesCount");
 	}
 	
-	uint32_t PipelineStatic::DrawStage(std::shared_ptr<Camera> camera,
-			uint32_t stageId) {
-		switch(stageId) {
-			case 0: {
+	uint32_t PipelineStatic::FlushDataToGPU(uint32_t stageId) {
+		if(stageId==0 &&
+				vboIndirectDrawBuffer->GetVertexCount()
+				< idsManager.CountIds()) {
+			vboIndirectDrawBuffer->Generate(NULL, idsManager.CountIds());
+		}
+		return PipelineIdsManagedBase::FlushDataToGPU(stageId);
+	}
+	
+	void PipelineStatic::AppendRenderStages(std::vector<StageFunction>& stages) {
+		PipelineIdsManagedBase::AppendRenderStages(stages);
+		
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				generateIndirectDrawBufferShader->Use();
 				generateIndirectDrawBufferShader
@@ -106,33 +115,18 @@ namespace qgl {
 				// generate indirect draw command buffer
 				generateIndirectDrawBufferShader
 					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
-				} return 2;
-				
-			case 1: {
+			});
+		
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
-					glMemoryBarrier(GL_ALL_BARRIER_BITS);
-					renderShader->Use();
-					glm::mat4 pv = camera->GetPerspectiveMatrix()
-						* camera->GetViewMatrix();
-					renderShader->SetMat4(projectionViewLocation, pv);
-					vao->BindIndirectBuffer(*vboIndirectDrawBuffer);
-					vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
-				} return 1;
-			
-			case 2:
-				
-				return 0;
-		}
-		return 0;
-	}
-	
-	
-	uint32_t PipelineStatic::FlushDataToGPU(uint32_t stageId) {
-		if(stageId==0 && vboIndirectDrawBuffer->GetVertexCount()
-				< idsManager.CountIds()) {
-			vboIndirectDrawBuffer->Generate(NULL, idsManager.CountIds());
-		}
-		return PipelineIdsManagedBase::FlushDataToGPU(stageId);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				renderShader->Use();
+				glm::mat4 pv = camera->GetPerspectiveMatrix()
+					* camera->GetViewMatrix();
+				renderShader->SetMat4(projectionViewLocation, pv);
+				vao->BindIndirectBuffer(*vboIndirectDrawBuffer);
+				vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
+			});
 	}
 	
 	

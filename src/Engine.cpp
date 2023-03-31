@@ -18,11 +18,12 @@
 
 #include <set>
 
-#include "../include/quickgl/Engine.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+
 #include "../include/quickgl/cameras/Camera.hpp"
 #include "../include/quickgl/pipelines/Pipeline.hpp"
 
-#include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include "../include/quickgl/Engine.hpp"
 
 namespace qgl {
 	Engine::Engine() {
@@ -77,6 +78,7 @@ namespace qgl {
 		int32_t id = pipelines.size();
 		pipelines.emplace_back(pipeline);
 		pipeline->Initialize();
+		renderStageComposer.AddPipelineStages(pipeline);
 		return id;
 	}
 	
@@ -90,33 +92,12 @@ namespace qgl {
 	void Engine::Render() {
 		mainCamera->PrepareDataForNewFrame();
 		
-		{
-			bool moreUpdatesRequired = true;
-			for(int i=0;moreUpdatesRequired; ++i) {
-				moreUpdatesRequired = false;
-				for(auto& p : pipelines) {
-					if(p->FlushDataToGPU(i) > 0) {
-						moreUpdatesRequired = true;
-					}
-				}
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-			}
-		}
-		
-		std::set<std::shared_ptr<Pipeline>> pendingRenders(pipelines.begin(),
-				pipelines.end()), nextStage;
-		uint32_t drawStageId = 0;
-		while(!pendingRenders.empty()) {
-			nextStage.clear();
-			for(auto pipeline : pendingRenders) {
-				if(pipeline->DrawStage(mainCamera, drawStageId) > 0) {
-					nextStage.insert(pipeline);
-				}
-			}
-			std::swap(pendingRenders, nextStage);
-			++drawStageId;
+		renderStageComposer.RestartStages();
+		bool end = false;
+		do {
+			end = renderStageComposer.NextStage(mainCamera) > 0 ? false : true;
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
-		}
+		} while(!end);
 		
 		gl::openGL.SwapBuffer();
 	}
