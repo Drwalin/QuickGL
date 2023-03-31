@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
+#include <functional>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -59,10 +60,15 @@ namespace qgl {
 		void SetEntityTransformsEuler(uint32_t entityId, glm::vec3 pos={0,0,0},
 				glm::vec3 eulerRot={0,0,0}, glm::vec3 scale={1,1,1});
 		
-		virtual uint32_t DrawStage(std::shared_ptr<Camera> camera,
-				uint32_t stageId) = 0; // returns number of stages left for drawing
-		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
+		
+	public:
+		
+		using StageFunction = std::function<void(std::shared_ptr<Camera>)>;
+		
+		virtual void AppendRenderStages(std::vector<StageFunction>& stages);
+		
+	protected:
 		
 		virtual uint32_t FlushDataToGPU(uint32_t stageId) = 0;
 		
