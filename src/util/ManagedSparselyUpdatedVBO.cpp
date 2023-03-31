@@ -106,25 +106,37 @@ void main() {
 		vbo->Resize(size);
 	}
 	
-	void UntypedManagedSparselyUpdatedVBO::UpdateVBO() {
-		if(vbo->GetVertexCount() <= maxId) {
-			vbo->Resize(maxId + 100);
-		}
-		deltaData.swap(deltaDataGPU);
-		deltaData.clear();
-		if(deltaDataGPU.size() != 0) {
-			const uint32_t elementsToUpdate =
-				deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
-			deltaVbo->Update(&deltaDataGPU.front(), 0,
-					deltaDataGPU.size());
-			shader->Use();
-			shader->SetUInt(shaderDeltaCommandsLocation,
-					elementsToUpdate);
-			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-			glMemoryBarrier(GL_ALL_BARRIER_BITS);
-			shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
-			whereSomethingWasUpdated.clear();
+	uint32_t UntypedManagedSparselyUpdatedVBO::UpdateVBO(uint32_t stageId) {
+		switch(stageId) {
+		case 0: {
+			if(vbo->GetVertexCount() <= maxId) {
+				vbo->Resize(maxId + 100);
+			}
+			deltaData.swap(deltaDataGPU);
+			deltaData.clear();
+			if(deltaDataGPU.size() != 0) {
+				deltaVbo->Update(&deltaDataGPU.front(), 0,
+						deltaDataGPU.size());
+			} else {
+				return 0;
+			}
+			} return 1;
+		case 1:
+			if(deltaDataGPU.size() != 0) {
+				const uint32_t elementsToUpdate =
+					deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				shader->Use();
+				shader->SetUInt(shaderDeltaCommandsLocation,
+						elementsToUpdate);
+				deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
+				vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+				shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
+				whereSomethingWasUpdated.clear();
+			}
+			return 0;
+		default:
+			return 0;
 		}
 	}
 	

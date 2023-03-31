@@ -127,12 +127,12 @@ namespace qgl {
 	}
 	
 	
-	void PipelineStatic::FlushDataToGPU() {
-		PipelineIdsManagedBase::FlushDataToGPU();
-		if(vboIndirectDrawBuffer->GetVertexCount()
+	uint32_t PipelineStatic::FlushDataToGPU(uint32_t stageId) {
+		if(stageId==0 && vboIndirectDrawBuffer->GetVertexCount()
 				< idsManager.CountIds()) {
-			vboIndirectDrawBuffer->Resize(idsManager.CountIds());
+			vboIndirectDrawBuffer->Generate(NULL, idsManager.CountIds());
 		}
+		return PipelineIdsManagedBase::FlushDataToGPU(stageId);
 	}
 	
 	

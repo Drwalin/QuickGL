@@ -43,7 +43,7 @@ namespace qgl {
 		
 		inline gl::VBO& Vbo() { return *vbo; }
 		
-		void UpdateVBO();
+		uint32_t UpdateVBO(uint32_t stageId);
 		
 		void SetValue(const void* value, uint32_t id);
 		
@@ -65,8 +65,6 @@ namespace qgl {
 		const uint32_t ELEMENT_SIZE;
 		const uint32_t UPDATE_STRUCUTRE_SIZE;
 	};
-	
-	
 	
 	template<typename T>
 	class ManagedSparselyUpdatedVBO final : public UntypedManagedSparselyUpdatedVBO {

@@ -68,7 +68,7 @@ namespace qgl {
 			return CountIds() + freeIdsStack.size();
 		}
 		
-		void UpdateVBO();
+		uint32_t UpdateVBO(uint32_t stageId);
 		inline gl::VBO& Vbo() { return vbo.Vbo(); }
 		
 	private:

@@ -93,8 +93,11 @@ namespace qgl {
 		std::set<std::shared_ptr<Pipeline>> pendingRenders(pipelines.begin(),
 				pipelines.end()), nextStage;
 		
-		for(auto& p : pipelines) {
-			p->FlushDataToGPU();
+		for(int i=0; i<2; ++i) {
+			for(auto& p : pipelines) {
+				p->FlushDataToGPU(i);
+			}
+			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		}
 		
 		uint32_t drawStageId = 0;
@@ -107,6 +110,7 @@ namespace qgl {
 			}
 			std::swap(pendingRenders, nextStage);
 			++drawStageId;
+			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		}
 		
 		gl::openGL.SwapBuffer();
