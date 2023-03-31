@@ -45,15 +45,14 @@ namespace qgl {
 		vbo->Resize(100);
 		if(!deltaVbo) {
 			deltaVbo = new gl::VBO(UPDATE_STRUCUTRE_SIZE,
-					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);;
+					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 		}
 		deltaVbo->Init();
 		deltaVbo->Resize(100);
 		if(!shader) {
 			shader = new gl::Shader();
 			const std::string shaderSource = std::string(R"(#version 450 core
-const uint ELEMENT_SIZE = )") +
-std::to_string(ELEMENT_SIZE) + R"(;
+const uint ELEMENT_SIZE = )") + std::to_string(ELEMENT_SIZE) + R"(;
 struct Data {
 	uint data[ELEMENT_SIZE/4];
 };
@@ -74,12 +73,13 @@ layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 uniform uint updateElements;
 
 void main() {
-	if(gl_GlobalInvocationID.x >= updateElements)
+	uint self = gl_GlobalInvocationID.x;
+	if(self >= updateElements)
 		return;
-	uint id = deltaData[gl_GlobalInvocationID.x].id;
-	data[id] = deltaData[gl_GlobalInvocationID.x].data;
-}
-)";
+	uint id = deltaData[self].id;
+	data[id] = deltaData[self].data;
+// 	data[0].data[0] = updateElements;
+})";
 			shader->Compile(shaderSource);
 			shaderDeltaCommandsLocation = shader->GetUniformLocation("updateElements");
 		}
@@ -113,13 +113,17 @@ void main() {
 		deltaData.swap(deltaDataGPU);
 		deltaData.clear();
 		if(deltaDataGPU.size() != 0) {
+			const uint32_t elementsToUpdate =
+				deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
 			deltaVbo->Update(&deltaDataGPU.front(), 0,
-					deltaDataGPU.size()*UPDATE_STRUCUTRE_SIZE);
+					deltaDataGPU.size());
 			shader->Use();
-			shader->SetUInt(shaderDeltaCommandsLocation, deltaDataGPU.size());
+			shader->SetUInt(shaderDeltaCommandsLocation,
+					elementsToUpdate);
 			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-			shader->DispatchRoundGroupNumbers(deltaDataGPU.size(), 1, 1);
+			glMemoryBarrier(GL_ALL_BARRIER_BITS);
+			shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
 			whereSomethingWasUpdated.clear();
 		}
 	}

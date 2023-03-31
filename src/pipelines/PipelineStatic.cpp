@@ -94,7 +94,7 @@ namespace qgl {
 					->SetUInt(entitesCountToRenderLocation,
 							idsManager.CountIds());
 				
-// 				glFlush();
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
 				// bind buffers
 				vboIndirectDrawBuffer
@@ -106,73 +106,10 @@ namespace qgl {
 				// generate indirect draw command buffer
 				generateIndirectDrawBufferShader
 					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
-				
-				glFlush();
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				
-				{
-					constexpr uint32_t c = 4;
-					constexpr uint32_t n = 16;
-					float d[4*c*n];
-					memset(d, 0, 4*c*n);
-					transformMatrices.Vbo().Fetch(d, 0, 4*c*n);
-					for(int i=0; i<c*n; i++) {
-						if(i % n == 0)
-							printf("\n  ");
-						if(i % 4 == 0)
-							printf("\n  ");
-						printf(" %f", d[i]);
-					}
-					printf("\n");
-				}
-				
-				{
-					constexpr uint32_t c = 4;
-					constexpr uint32_t n = 2;
-					uint32_t d[4*c*n];
-					memset(d, 0, 4*c*n);
-					perEntityMeshInfo.Vbo().Fetch(d, 0, 4*c*n);
-					for(int i=0; i<c*n; i++) {
-						if(i % n == 0)
-							printf("\n  ");
-						printf(" %u", d[i]);
-					}
-					printf("\n");
-				}
-				
-				{
-					constexpr uint32_t c = 4;
-					constexpr uint32_t n = 5;
-					uint32_t d[4*c*n];
-					memset(d, 0, 4*c*n);
-					vboIndirectDrawBuffer->Fetch(d, 0, 4*c*n);
-					for(int i=0; i<c*n; i++) {
-						if(i % n == 0)
-							printf("\n  ");
-						printf(" %u", d[i]);
-					}
-					printf("\n");
-				}
-				
-				{
-					constexpr uint32_t c = 4;
-					constexpr uint32_t n = 1;
-					uint32_t d[4*c*n];
-					memset(d, 0, 4*c*n);
-					idsManager.Vbo().Fetch(d, 0, 4*c*n);
-					for(int i=0; i<c*n; i++) {
-						if(i % n == 0)
-							printf("\n  ");
-						printf(" %u", d[i]);
-					}
-					printf("\n");
-				}
-				
 				} return 2;
 				
-			case 1:
+			case 1: {
 				// draw with indirect draw buffer
-				{
 					glMemoryBarrier(GL_ALL_BARRIER_BITS);
 					renderShader->Use();
 					glm::mat4 pv = camera->GetPerspectiveMatrix()
@@ -180,8 +117,7 @@ namespace qgl {
 					renderShader->SetMat4(projectionViewLocation, pv);
 					vao->BindIndirectBuffer(*vboIndirectDrawBuffer);
 					vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
-				}
-				return 1;
+				} return 1;
 			
 			case 2:
 				
