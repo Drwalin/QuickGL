@@ -53,7 +53,15 @@ namespace qgl {
 			uint32_t elementsStart;
 			uint32_t elementsCount;
 		};
+		
+		struct PerEntityMeshInfoBoundingSphere {
+			float boundingSphereCenterOffset[3];
+			float boundingSphereRadius;
+		};
+		
 		ManagedSparselyUpdatedVBO<PerEntityMeshInfo> perEntityMeshInfo;
+		
+		ManagedSparselyUpdatedVBO<PerEntityMeshInfoBoundingSphere> perEntityMeshInfoBoundingSphere;
 		
 		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		

@@ -50,6 +50,9 @@ namespace qgl {
 		for(auto mesh : l.meshes) {
 			MeshInfo info;
 			
+			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
+					info.boundingSphereRadius);
+			
 			vboSrc.clear();
 			meshAppenderVertices(vboSrc, 0, mesh.get());
 			info.countVertices = mesh->pos.size();
@@ -74,7 +77,6 @@ namespace qgl {
 			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
 					info.countElements*sizeof(uint32_t));
 		}
-	GL_CHECK_PUSH_ERROR;
 		return l.meshes.size() > 0;
 	}
 	
@@ -95,6 +97,13 @@ namespace qgl {
 		MeshInfo info = GetMeshInfoById(meshId);
 		indexStart = info.firstElement;
 		indexCount = info.countElements;
+	}
+	
+	void MeshManager::GetMeshBoundingSphere(uint32_t meshId, float* offset,
+			float& radius) {
+		MeshInfo info = GetMeshInfoById(meshId);
+		memcpy(offset, info.boundingSphereCenterOffset, sizeof(float)*3);
+		radius = info.boundingSphereRadius;
 	}
 }
 

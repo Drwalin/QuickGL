@@ -55,6 +55,7 @@ namespace qgl {
 		virtual glm::vec3 GetUp() override;
 		
 		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) override;
+		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) override;
 		
 		void Rotate(glm::vec3 euler);
 		void SetRotation(glm::vec3 euler);
@@ -65,6 +66,8 @@ namespace qgl {
 		void ProcessDefaultInput(std::shared_ptr<Engine> engine);
 		
 	private:
+		
+		float near, far;
 		
 		float fov;
 		float aspectRatio;
@@ -82,6 +85,8 @@ namespace qgl {
 		glm::vec3 front;
 		glm::vec3 up;
 		glm::vec3 right;
+		
+		glm::vec4 clippingPlanes[5]; // {n.x, n.y, n.z, distance from origin}
 	};
 }
 

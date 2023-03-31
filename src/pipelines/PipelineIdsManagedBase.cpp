@@ -41,6 +41,7 @@ namespace qgl {
 	void PipelineIdsManagedBase::Initialize() {
 		Pipeline::Initialize();
 		perEntityMeshInfo.Init();
+		perEntityMeshInfoBoundingSphere.Init();
 		transformMatrices.Init();
 		idsManager.InitVBO();
 	}
@@ -51,6 +52,11 @@ namespace qgl {
 		meshManager->GetMeshIndices(meshId, info.elementsStart,
 				info.elementsCount);
 		perEntityMeshInfo.SetValue(info, entityId);
+		
+		PerEntityMeshInfoBoundingSphere info2;
+		meshManager->GetMeshBoundingSphere(meshId, info2.boundingSphereCenterOffset,
+				info2.boundingSphereRadius);
+		perEntityMeshInfoBoundingSphere.SetValue(info2, entityId);
 	}
 	
 	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
@@ -63,6 +69,7 @@ namespace qgl {
 	uint32_t PipelineIdsManagedBase::FlushDataToGPU(uint32_t stageId) {
 		uint32_t ret = 0;
 		ret = std::max(ret, perEntityMeshInfo.UpdateVBO(stageId));
+		ret = std::max(ret, perEntityMeshInfoBoundingSphere.UpdateVBO(stageId));
 		ret = std::max(ret, idsManager.UpdateVBO(stageId));
 		ret = std::max(ret, transformMatrices.UpdateVBO(stageId));
 		return ret;
