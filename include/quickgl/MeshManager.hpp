@@ -48,6 +48,8 @@ namespace qgl {
 			uint32_t countElements;
 			uint32_t firstVertex;
 			uint32_t countVertices;
+			float boundingSphereCenterOffset[3];
+			float boundingSphereRadius;
 		};
 		
 		MeshManager(uint32_t vertexSize,
@@ -70,6 +72,8 @@ namespace qgl {
 		
 		void GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
 				uint32_t& indexCount);
+		void GetMeshBoundingSphere(uint32_t meshId, float* offset,
+				float& radius);
 		
 
 		gl::VBO& GetVBO() { return vbo; }

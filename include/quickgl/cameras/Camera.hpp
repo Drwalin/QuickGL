@@ -48,6 +48,7 @@ namespace qgl {
 		virtual glm::vec3 GetUp() = 0;
 		
 		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) = 0;
+		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) = 0;
 		
 		virtual void Rotate(glm::quat rotation) = 0;
 		virtual void SetRotation(glm::quat rotation) = 0;

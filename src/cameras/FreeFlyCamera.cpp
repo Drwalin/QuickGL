@@ -20,7 +20,6 @@
 
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
-
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/InputManager.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
@@ -33,6 +32,8 @@ namespace qgl {
 		front = {0,0,1};
 		rotation = glm::quat(0, {0,1,0});
 		euler = {0,0,0};
+		near = 0.1;
+		far = 10000;
 	}
 	
 	FreeFlyCamera::~FreeFlyCamera() {
@@ -46,8 +47,47 @@ namespace qgl {
 		right = rot * glm::vec4{-1,0,0,0};
 		
 		view = glm::lookAt(pos, pos+front, up);
-		perspective = glm::perspective(fov*0.5f, aspectRatio, 0.1f, 10000.0f);
+		perspective = glm::perspective(fov*0.5f, aspectRatio, near, far);
 		transform = glm::translate(rot, pos);
+		
+		{
+			glm::mat4 invPV = glm::inverse(perspective*view);
+			
+			glm::vec4 _p[4] = {
+				invPV * glm::vec4{-1,-1,1,1},
+				invPV * glm::vec4{-1,1,1,1},
+				invPV * glm::vec4{1,1,1,1},
+				invPV * glm::vec4{1,-1,1,1},
+			};
+			
+			glm::vec3 p[4];
+			for(int i=0; i<4; ++i) {
+				p[i] = _p[i];
+			}
+			
+			glm::vec3 p0 = pos;
+			
+			for(int i=0; i<4; ++i) {
+				glm::vec3 a = p[i%4];
+				glm::vec3 b = p[(i+1)%4];
+				glm::vec3 c = p[(i+2)%4];
+				glm::vec3 n = glm::cross(a-p0, b-p0);
+				if(glm::dot(n, c-p0) < 0)
+					n = -n;
+				float d = glm::dot(p0, n);
+				clippingPlanes[i] = {n.x, n.y, n.z, d};
+			}
+			{
+				glm::vec3 a = p[0];
+				glm::vec3 b = p[1];
+				glm::vec3 c = p[2];
+				glm::vec3 n = glm::cross(a-c, b-c);
+				if(glm::dot(n, p0-a) < 0)
+					n = -n;
+				float d = glm::dot(a, n);
+				clippingPlanes[4] = {n.x, n.y, n.z, d};
+			}
+		}
 	}
 		
 	void FreeFlyCamera::SetRenderTargetDimensions(uint32_t width,
@@ -100,9 +140,17 @@ namespace qgl {
 	
 	void FreeFlyCamera::GetClippingPlanes(glm::vec3 normals[5],
 			float offsets[5]) {
-		throw "FreeFlyCamera::GetClippingPlanes is not implemented.";
+		for(int i=0; i<5; ++i) {
+			normals[i] = clippingPlanes[i];
+			offsets[i] = clippingPlanes[i][3];
+		}
 	}
 	
+	void FreeFlyCamera::GetClippingPlanes(glm::vec4 normalsOffsets[5]) {
+		for(int i=0; i<5; ++i) {
+			normalsOffsets[i] = clippingPlanes[i];
+		}
+	}
 	
 	void FreeFlyCamera::Rotate(glm::vec3 euler) {
 		SetRotation(this->euler + euler);

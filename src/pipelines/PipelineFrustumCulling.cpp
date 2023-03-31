@@ -42,6 +42,8 @@ namespace qgl {
 	
 	void PipelineFrustumCulling::Initialize() {
 		PipelineIdsManagedBase::Initialize();
+		
+		// init buffer objects
 		indirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t)*5,
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		indirectDrawBuffer->Init();
@@ -49,6 +51,10 @@ namespace qgl {
 		frustumCulledIdsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsBuffer->Init();
+		
+		clippingPlanes = std::make_shared<gl::VBO>(sizeof(float)*4,
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		clippingPlanes->Init();
 		
 		frustumCulledIdsCountAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
@@ -83,49 +89,62 @@ namespace qgl {
 		PipelineIdsManagedBase::AppendRenderStages(stages);
 		
 		{
+		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+				camera->GetClippingPlanes(clippingPlanesValues);
+				clippingPlanes->Update(clippingPlanesValues, 0, 5);
+			});
+		}
+
+		{
 		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
 			frustumCullingShader->GetUniformLocation("entitiesCount");
-		
+
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				frustumCullingShader->Use();
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
 							idsManager.CountIds());
-				
+
 				// bind buffers
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				idsManager.Vbo().BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+				idsManager.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 				transformMatrices.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
 				frustumCulledIdsCountAtomicCounter
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 8);
-				
+				clippingPlanes
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 9);
+				perEntityMeshInfoBoundingSphere.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 10);
+
 				// perform frustum culling
 				frustumCullingShader
 					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
 			});
 		}
-		
+
 		{
 		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+				// fetch number of entities to render after culling
 				frustumCulledIdsCountAtomicCounter
 					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 			});
 		}
-		
+
 		{
 		const int32_t INDIRECT_GENERATION_LOCATION_ENTITIES_COUNT =
 			indirectDrawBufferShader->GetUniformLocation("entitiesCount");
-		
+
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				indirectDrawBufferShader->Use();
 				indirectDrawBufferShader
 					->SetUInt(INDIRECT_GENERATION_LOCATION_ENTITIES_COUNT,
 							frustumCulledEntitiesCount);
-				
+
 				// bind buffers
 				indirectDrawBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
@@ -133,7 +152,7 @@ namespace qgl {
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
-				
+
 				// generate indirect draw command buffer
 				indirectDrawBufferShader
 					->DispatchRoundGroupNumbers(frustumCulledEntitiesCount, 1, 1);
@@ -143,6 +162,10 @@ namespace qgl {
 	
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
 #version 450 core
+
+struct PerEntityMeshInfo {
+	vec4 boundingSphereInfo;
+};
 
 layout (packed, std430, binding=5) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
@@ -155,6 +178,12 @@ layout (packed, std430, binding=7) readonly buffer ccc {
 };
 layout (packed, std430, binding=8) buffer ddd {
 	uint globalAtomicCounter;
+};
+layout (packed, std430, binding=9) readonly buffer eee {
+	vec4 clippingPlanes[5];
+};
+layout (packed, std430, binding=10) readonly buffer fff {
+	PerEntityMeshInfo meshInfo[];
 };
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
@@ -176,6 +205,9 @@ void main() {
 	// check frustum culling
 	// if in view then
 	{
+		
+		
+		
 		inViewCount = 1;
 	}
 	uint localStartingLocation = atomicAdd(localAtomicCounter, inViewCount);
