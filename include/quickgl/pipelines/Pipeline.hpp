@@ -64,7 +64,7 @@ namespace qgl {
 		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		
-		virtual void FlushDataToGPU() = 0;
+		virtual uint32_t FlushDataToGPU(uint32_t stageId) = 0;
 		
 	protected:
 		

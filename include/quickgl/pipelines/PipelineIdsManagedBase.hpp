@@ -43,7 +43,7 @@ namespace qgl {
 				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
 				glm::vec3 scale={1,1,1}) override;
 		
-		virtual void FlushDataToGPU() override;
+		virtual uint32_t FlushDataToGPU(uint32_t stageId) override;
 		
 	protected:
 

@@ -60,10 +60,12 @@ namespace qgl {
 		transformMatrices.SetValue(t, entityId);
 	}
 	
-	void PipelineIdsManagedBase::FlushDataToGPU() {
-		perEntityMeshInfo.UpdateVBO();
-		idsManager.UpdateVBO();
-		transformMatrices.UpdateVBO();
+	uint32_t PipelineIdsManagedBase::FlushDataToGPU(uint32_t stageId) {
+		uint32_t ret = 0;
+		ret = std::max(ret, perEntityMeshInfo.UpdateVBO(stageId));
+		ret = std::max(ret, idsManager.UpdateVBO(stageId));
+		ret = std::max(ret, transformMatrices.UpdateVBO(stageId));
+		return ret;
 	}
 }
 
