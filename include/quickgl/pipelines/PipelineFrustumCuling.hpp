@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_PIPELINE_STATIC_HPP
-#define QUICKGL_PIPELINE_STATIC_HPP
+#ifndef QUICKGL_PIPELINE_FRUSTUM_CULLING_HPP
+#define QUICKGL_PIPELINE_FRUSTUM_CULLING_HPP
 
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -30,15 +30,15 @@
 
 #include "../util/BufferedVBO.hpp"
 
-#include "PipelineFrustumCuling.hpp"
+#include "PipelineIdsManagedBase.hpp"
 
 namespace qgl {
 	
-	class PipelineStatic final : public PipelineFrustumCulling {
+	class PipelineFrustumCulling : public PipelineIdsManagedBase {
 	public:
 		
-		PipelineStatic();
-		virtual ~PipelineStatic();
+		PipelineFrustumCulling();
+		virtual ~PipelineFrustumCulling();
 		
 		virtual void Initialize() override;
 		
@@ -48,15 +48,23 @@ namespace qgl {
 		
 	protected:
 		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
+		virtual uint32_t FlushDataToGPU(uint32_t stageId) override;
+		
+	protected:
+		
+		uint32_t frustumCulledEntitiesCount;
+		std::shared_ptr<gl::VBO> indirectDrawBuffer;
 		
 	private:
 		
-		std::unique_ptr<gl::VAO> vao;
-		std::unique_ptr<gl::Shader> renderShader;
+		std::unique_ptr<gl::Shader> indirectDrawBufferShader;
 		
-		static const char* VERTEX_SHADER_SOURCE;
-		static const char* FRAGMENT_SHADER_SOURCE;
+		std::unique_ptr<gl::Shader> frustumCullingShader;
+		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
+		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounter;
+		
+		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
+		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 	};
 }
 

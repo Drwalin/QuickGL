@@ -39,31 +39,17 @@ namespace qgl {
 	PipelineStatic::~PipelineStatic() {
 	}
 	
-	uint32_t PipelineStatic::CreateEntity() {
-		uint32_t id = PipelineIdsManagedBase::CreateEntity();
-		if(id >= vboIndirectDrawBuffer->GetVertexCount()) {
-			vboIndirectDrawBuffer->Generate(nullptr, id+100);
-		}
-		return id;
-	}
-	
 	void PipelineStatic::Initialize() {
-		PipelineIdsManagedBase::Initialize();
-		vboIndirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		vboIndirectDrawBuffer->Init();
+		PipelineFrustumCulling::Initialize();
 		
-		// init shader
+		// init shaders
 		renderShader = std::make_unique<gl::Shader>();
 		renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE);
-		generateIndirectDrawBufferShader = std::make_unique<gl::Shader>();
-		generateIndirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE);
 		
 		// init vao
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
 		vao->Init();
 		gl::VBO& vbo = meshManager->GetVBO();
-		vbo.Init();
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_pos"), 3, gl::FLOAT, false, 0, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_color"), 4, gl::UNSIGNED_BYTE, true, 12, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_normal"), 4, gl::BYTE, true, 16, 0);
@@ -75,61 +61,27 @@ namespace qgl {
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+2, 4, gl::FLOAT, false, 32, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+3, 4, gl::FLOAT, false, 48, 1);
 		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
-		
-		// get shader uniform locations
-		projectionViewLocation =
-			renderShader->GetUniformLocation("projectionView");
-		entitesCountToRenderLocation =
-			generateIndirectDrawBufferShader
-			->GetUniformLocation("entitiesCount");
-	}
-	
-	uint32_t PipelineStatic::FlushDataToGPU(uint32_t stageId) {
-		if(stageId==0 &&
-				vboIndirectDrawBuffer->GetVertexCount()
-				< idsManager.CountIds()) {
-			vboIndirectDrawBuffer->Generate(NULL, idsManager.CountIds());
-		}
-		return PipelineIdsManagedBase::FlushDataToGPU(stageId);
 	}
 	
 	void PipelineStatic::AppendRenderStages(std::vector<StageFunction>& stages) {
-		PipelineIdsManagedBase::AppendRenderStages(stages);
+		PipelineFrustumCulling::AppendRenderStages(stages);
 		
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
-				// set visible entities count
-				generateIndirectDrawBufferShader->Use();
-				generateIndirectDrawBufferShader
-					->SetUInt(entitesCountToRenderLocation,
-							idsManager.CountIds());
-				
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				
-				// bind buffers
-				vboIndirectDrawBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				idsManager.Vbo().BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
-				perEntityMeshInfo.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
-				
-				// generate indirect draw command buffer
-				generateIndirectDrawBufferShader
-					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
-			});
+		// get shader uniform locations
+		const int32_t PROJECTION_VIEW_LOCATION =
+			renderShader->GetUniformLocation("projectionView");
 		
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
-				renderShader->SetMat4(projectionViewLocation, pv);
-				vao->BindIndirectBuffer(*vboIndirectDrawBuffer);
-				vao->DrawMultiElementsIndirect(NULL, idsManager.CountIds());
+				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
+				vao->BindIndirectBuffer(*indirectDrawBuffer);
+				vao->DrawMultiElementsIndirect(NULL,
+						frustumCulledEntitiesCount);
 			});
 	}
-	
-	
 	
 	std::shared_ptr<MeshManager> PipelineStatic::CreateMeshManager() {
 		static constexpr uint32_t stride
@@ -146,10 +98,12 @@ namespace qgl {
 						gl::BasicMeshLoader::ConverterFloatPlain<float, 3>);
 				
 				mesh->ExtractColor<uint8_t>(offset, buffer, 12, stride,
-						gl::BasicMeshLoader::ConverterIntPlainClampScale<uint8_t, 255, 0, 255, 4>);
+						gl::BasicMeshLoader::ConverterIntPlainClampScale
+							<uint8_t, 255, 0, 255, 4>);
 				
 				mesh->ExtractNormal(offset, buffer, 16, stride,
-						gl::BasicMeshLoader::ConverterIntNormalized<uint8_t, 127, 3>);
+						gl::BasicMeshLoader::ConverterIntNormalized
+							<uint8_t, 127, 3>);
 			});
 	}
 	
@@ -191,50 +145,6 @@ void main() {
 	FragColor = color;
 	NormalColor = vec4(normal, 0);
 	PosColor = pos;
-}
-)";
-		
-	const char* PipelineStatic::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
-
-struct DrawElementsIndirectCommand {
-	uint count;
-	uint instanceCount;
-	uint firstIndex;
-	int  baseVertex;
-	uint baseInstance;
-};
-
-struct PerEntityMeshInfo {
-	uint elementsStart;
-	uint elementsCount;
-};
-
-layout (packed, std430, binding=5) writeonly buffer aaa {
-	DrawElementsIndirectCommand indirectCommands[];
-};
-layout (packed, std430, binding=7) readonly buffer bbb {
-	PerEntityMeshInfo meshInfo[];
-};
-layout (packed, std430, binding=6) readonly buffer ccc {
-	uint visibleEntityIds[];
-};
-
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-uniform uint entitiesCount;
-
-void main() {
-	if(gl_GlobalInvocationID.x >= entitiesCount)
-		return;
-	uint id = visibleEntityIds[gl_GlobalInvocationID.x];
-	indirectCommands[gl_GlobalInvocationID.x] = DrawElementsIndirectCommand(
-		meshInfo[id].elementsCount,
-		1,
-		meshInfo[id].elementsStart,
-		0,
-		id
-	);
 }
 )";
 }
