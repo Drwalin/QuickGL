@@ -90,16 +90,21 @@ namespace qgl {
 	void Engine::Render() {
 		mainCamera->PrepareDataForNewFrame();
 		
-		std::set<std::shared_ptr<Pipeline>> pendingRenders(pipelines.begin(),
-				pipelines.end()), nextStage;
-		
-		for(int i=0; i<2; ++i) {
-			for(auto& p : pipelines) {
-				p->FlushDataToGPU(i);
+		{
+			bool moreUpdatesRequired = true;
+			for(int i=0;moreUpdatesRequired; ++i) {
+				moreUpdatesRequired = false;
+				for(auto& p : pipelines) {
+					if(p->FlushDataToGPU(i) > 0) {
+						moreUpdatesRequired = true;
+					}
+				}
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 			}
-			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		}
 		
+		std::set<std::shared_ptr<Pipeline>> pendingRenders(pipelines.begin(),
+				pipelines.end()), nextStage;
 		uint32_t drawStageId = 0;
 		while(!pendingRenders.empty()) {
 			nextStage.clear();
