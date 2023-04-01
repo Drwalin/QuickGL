@@ -72,7 +72,6 @@ namespace qgl {
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();

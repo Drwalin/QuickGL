@@ -88,10 +88,12 @@ namespace qgl {
 			std::vector<StageFunction>& stages) {
 		PipelineIdsManagedBase::AppendRenderStages(stages);
 		
+// 		return;
+		
 		{
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				camera->GetClippingPlanes(clippingPlanesValues);
-				clippingPlanes->Update(clippingPlanesValues, 0, 5);
+				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
 			});
 		}
 
@@ -163,10 +165,6 @@ namespace qgl {
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
 #version 450 core
 
-struct PerEntityMeshInfo {
-	vec4 boundingSphereInfo;
-};
-
 layout (packed, std430, binding=5) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
 };
@@ -180,45 +178,59 @@ layout (packed, std430, binding=8) buffer ddd {
 	uint globalAtomicCounter;
 };
 layout (packed, std430, binding=9) readonly buffer eee {
-	vec4 clippingPlanes[5];
+	vec4 clippingPlanes[];
 };
 layout (packed, std430, binding=10) readonly buffer fff {
-	PerEntityMeshInfo meshInfo[];
+	vec4 meshInfo[];
 };
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout (location=1) uniform uint entitiesCount;
 
-shared uint localAtomicCounter;
+shared uint localAtomicCounter[1024];
 shared uint commonStartingLocation;
 
 void main() {
-	if(gl_LocalInvocationID.x == 0)
-		atomicAnd(localAtomicCounter, 0);
-	
-	if(gl_GlobalInvocationID.x >= entitiesCount)
-		return;
-	
+	localAtomicCounter[gl_LocalInvocationID.x] = 0;
+	barrier();
+
 	uint inViewCount = 0;
 	
 	// check frustum culling
 	// if in view then
 	{
-		
-		
-		
-		inViewCount = 1;
+		if(gl_GlobalInvocationID.x < entitiesCount) {
+			int i=0;
+			for(; i<5; ++i) {
+				float d
+					= dot(clippingPlanes[i].xyz,
+						meshInfo[gl_GlobalInvocationID.x].xyz);
+				if(clippingPlanes[i].w > d+meshInfo[gl_GlobalInvocationID.x].w)
+					break;
+			}
+			if(i==5)
+				inViewCount = 1;
+		}
 	}
-	uint localStartingLocation = atomicAdd(localAtomicCounter, inViewCount);
+
+	uint localStartingLocation = 0;
+	if(gl_GlobalInvocationID.x < entitiesCount) // @TODO: this condition can be removed
+	                                            // and code still will work:
+	                                            // @TODO: check if removign this condition is faster
+		localStartingLocation = atomicAdd(localAtomicCounter[0], inViewCount);
 	
 	barrier();
-	if(gl_GlobalInvocationID.x == 0)
-		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter);
+	memoryBarrier();
+	memoryBarrierShared();
+	if(gl_LocalInvocationID.x == 0)
+		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter[0]);
 	barrier();
+	memoryBarrier();
+	memoryBarrierShared();
 	
 	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
-	if(inViewCount == 1) {
+	if(inViewCount > 0) {
 		frustumCulledEntitiesIds[globalStartingLocation] =
 			allEntitiesIds[gl_GlobalInvocationID.x];
 	}
