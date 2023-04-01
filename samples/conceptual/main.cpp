@@ -84,11 +84,28 @@ int main() {
 	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{0,20,0});
 	}
 	
+	int I=0;
+	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
 			break;
+		}
+		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
+			for(int i=0; i<500; ++i) {
+				uint32_t standId = pipelineStatic->CreateEntity();
+				pipelineStatic->SetEntityMeshByName(standId, "fireStand");
+				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%100)-50),4*((I/100)-50),0});
+				++I;
+				printf("i = %i\n", I);
+				printf("deltaTime = %f\n", engine->GetInputManager().GetDeltaTime());
+			}
+		}
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_Y)) {
+			printf("i = %i\n", I);
+			printf("deltaTime = %f\n", engine->GetInputManager().GetDeltaTime());
 		}
 		
 		engine->BeginNewFrame();
