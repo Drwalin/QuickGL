@@ -69,7 +69,7 @@ namespace qgl {
 		
 		float near, far;
 		
-		float fov;
+		float fov, fovy;
 		float aspectRatio;
 		
 		glm::mat4 view;

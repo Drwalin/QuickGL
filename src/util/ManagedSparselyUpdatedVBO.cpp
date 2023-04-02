@@ -80,7 +80,8 @@ void main() {
 	data[id] = deltaData[self].data;
 // 	data[0].data[0] = updateElements;
 })";
-			shader->Compile(shaderSource);
+			if(shader->Compile(shaderSource))
+				exit(31);
 			shaderDeltaCommandsLocation = shader->GetUniformLocation("updateElements");
 		}
 		deltaData.clear();
