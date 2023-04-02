@@ -17,6 +17,7 @@
  */
 
 #include <glm/gtc/quaternion.hpp>
+#include <glm/matrix.hpp>
 
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
@@ -26,7 +27,7 @@
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
-		SetFov(60.0f);
+		SetFov(75.0f);
 		aspectRatio = 1;
 		pos = {0,0,0};
 		front = {0,0,1};
@@ -46,8 +47,14 @@ namespace qgl {
 		up = rot * glm::vec4{0,1,0,0};
 		right = rot * glm::vec4{-1,0,0,0};
 		
-		view = glm::lookAt(pos, pos+front, up);
 		perspective = glm::perspective(fovy, aspectRatio, near, far);
+		
+// 		printf(" up = %f %f %f\n", up.x, up.y, up.z);
+		view = glm::lookAt(pos, pos+front, up);
+// 		view = glm::translate(glm::mat4_cast(glm::inverse(rotation)), -pos);
+// 		view = glm::lookAt(pos, pos+front, {0,1,0});//up);
+// 		transform = glm::inverse(view);//glm::translate(rot, pos);
+
 		transform = glm::translate(rot, pos);
 		
 		{

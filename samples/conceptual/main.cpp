@@ -15,6 +15,8 @@
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
+#include "../../include/quickgl/Gui.hpp"
+
 int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
@@ -55,6 +57,7 @@ int main() {
 	std::shared_ptr<qgl::FreeFlyCamera> camera
 		= std::make_shared<qgl::FreeFlyCamera>();
 	engine->SetMainCamera(camera);
+	camera->SetFov(75);
 	
 	// add terrain object
 	if(1){
@@ -86,11 +89,17 @@ int main() {
 	
 	int I=0;
 	const uint32_t fireStandIdMesh = pipelineStatic->GetMeshManager()->GetMeshIdByName("fireStand");
-	bool mouseLocked = true;
+	bool mouseLocked = true, fullscreen = false;
 	engine->GetInputManager().LockMouse();
+	engine->SetFullscreen(fullscreen);
 	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
+			mouseLocked = !mouseLocked;
+			engine->SetFullscreen(fullscreen);
+		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
 			mouseLocked = !mouseLocked;
@@ -119,12 +128,26 @@ int main() {
 			printf("deltaTime = %f\n", engine->GetInputManager().GetDeltaTime());
 		}
 		
+		// begin new frame
+		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
 		engine->BeginNewFrame();
 		if(mouseLocked)
 			camera->ProcessDefaultInput(engine);
 		
 		// render
 		engine->Render();
+		
+		// render gui
+		ImGui::Begin("Frames per second", NULL,
+				ImGuiWindowFlags_NoTitleBar |
+				ImGuiWindowFlags_NoResize |
+				ImGuiWindowFlags_NoBackground |
+				ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::Text("fps: %f", engine->GetInputManager().GetDeltaTime());
+		ImGui::End();
+		
+		// swap buffers
+		engine->SwapBuffers();
 		engine->PrintErrors();
 	}
 	

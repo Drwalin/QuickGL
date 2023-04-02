@@ -36,12 +36,13 @@ namespace qgl {
 	
 	void Engine::InitGL(std::string windowTitle) {
 	GL_CHECK_PUSH_ERROR;
-		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false);
+		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false, true, 4, 5);
 	GL_CHECK_PUSH_ERROR;
 		gl::openGL.InitGraphic();
 	GL_CHECK_PUSH_ERROR;
 		inputManager.Init();
 	GL_CHECK_PUSH_ERROR;
+		Gui::InitIMGUI();
 	}
 	
 	void Engine::Destroy() {
@@ -50,6 +51,7 @@ namespace qgl {
 		}
 		mainCamera = NULL;
 		
+		Gui::DeinitIMGUI();
 		gl::openGL.Destroy();
 		glfwTerminate();
 	}
@@ -69,11 +71,6 @@ namespace qgl {
 		return glfwWindowShouldClose(gl::openGL.window);
 	}
 	
-	void Engine::BeginNewFrame() {
-		gl::openGL.InitFrame();
-		inputManager.NewFrame();
-	}
-	
 	
 	int32_t Engine::AddPipeline(std::shared_ptr<Pipeline> pipeline) {
 		int32_t id = pipelines.size();
@@ -90,6 +87,12 @@ namespace qgl {
 	}
 	
 	
+	void Engine::BeginNewFrame() {
+		gl::openGL.InitFrame();
+		inputManager.NewFrame();
+		Gui::BeginNewFrame();
+	}
+	
 	void Engine::Render() {
 		mainCamera->PrepareDataForNewFrame();
 		
@@ -99,22 +102,16 @@ namespace qgl {
 			end = renderStageComposer.NextStage(mainCamera) > 0 ? false : true;
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		} while(!end);
-		
-		if(currentGui) {
-			Gui::BeginNewFrame();
-			currentGui->RenderGui(this);
-			Gui::EndFrame();
-		}
-		
+	}
+	
+	void Engine::SwapBuffers() {
+		Gui::EndFrame();
+		glFlush();
 		gl::openGL.SwapBuffer();
 	}
 	
 	void Engine::SetMainCamera(std::shared_ptr<Camera> camera) {
 		mainCamera = camera;
-	}
-	
-	void Engine::SetGui(std::shared_ptr<Gui> gui) {
-		currentGui = gui;
 	}
 	
 	void Engine::PrintErrors() {
