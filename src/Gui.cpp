@@ -34,7 +34,7 @@ namespace qgl {
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		ImGui::StyleColorsDark();
 		ImGui_ImplGlfw_InitForOpenGL(gl::openGL.window, true);
-		ImGui_ImplOpenGL3_Init("#version 430");
+		ImGui_ImplOpenGL3_Init("#version 450");
 	}
 	
 	void Gui::DeinitIMGUI() {
