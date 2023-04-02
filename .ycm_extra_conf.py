@@ -5,4 +5,5 @@ def Settings( **kwargs ):
         '-I./include',
         '-I./OpenGLWrapper/include',
         '-I./OpenGLWrapper/thirdparty/assimp/include',
+        '-I./thirdparty/imgui',
     ],}

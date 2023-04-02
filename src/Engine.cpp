@@ -22,6 +22,7 @@
 
 #include "../include/quickgl/cameras/Camera.hpp"
 #include "../include/quickgl/pipelines/Pipeline.hpp"
+#include "../include/quickgl/Gui.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -99,11 +100,21 @@ namespace qgl {
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		} while(!end);
 		
+		if(currentGui) {
+			Gui::BeginNewFrame();
+			currentGui->RenderGui(this);
+			Gui::EndFrame();
+		}
+		
 		gl::openGL.SwapBuffer();
 	}
 	
 	void Engine::SetMainCamera(std::shared_ptr<Camera> camera) {
 		mainCamera = camera;
+	}
+	
+	void Engine::SetGui(std::shared_ptr<Gui> gui) {
+		currentGui = gui;
 	}
 	
 	void Engine::PrintErrors() {
