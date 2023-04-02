@@ -86,9 +86,19 @@ int main() {
 	
 	int I=0;
 	const uint32_t fireStandIdMesh = pipelineStatic->GetMeshManager()->GetMeshIdByName("fireStand");
+	bool mouseLocked = true;
+	engine->GetInputManager().LockMouse();
 	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
+			mouseLocked = !mouseLocked;
+			if(mouseLocked)
+				engine->GetInputManager().LockMouse();
+			else
+				engine->GetInputManager().UnlockMouse();
+		}
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
 			break;
@@ -110,7 +120,8 @@ int main() {
 		}
 		
 		engine->BeginNewFrame();
-		camera->ProcessDefaultInput(engine);
+		if(mouseLocked)
+			camera->ProcessDefaultInput(engine);
 		
 		// render
 		engine->Render();

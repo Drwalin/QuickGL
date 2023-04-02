@@ -24,6 +24,11 @@ aux_source_directory(./src/util/ source_files_util)
 aux_source_directory(./src/pipelines/ source_files_pipelines)
 aux_source_directory(./src/cameras/ source_files_cameras)
 
+# imgui
+include_directories(./thirdparty/imgui/)
+include_directories(./thirdparty/imgui/backends)
+aux_source_directory(./thirdparty/imgui/ imgui)
+
 add_library(QuickGL SHARED
 	${header_files}
 	${source_files}
@@ -33,8 +38,16 @@ add_library(QuickGL SHARED
 	${source_files_pipelines}
 	${header_files_cameras}
 	${source_files_cameras}
+	
+	${imgui}
+	./thirdparty/imgui/backends/imgui_impl_opengl3.h
+	./thirdparty/imgui/backends/imgui_impl_opengl3.cpp
+	./thirdparty/imgui/backends/imgui_impl_opengl3_loader.h
+	./thirdparty/imgui/backends/imgui_impl_glfw.h
+	./thirdparty/imgui/backends/imgui_impl_glfw.cpp
 )
 target_link_libraries(QuickGL OpenGLWrapper)
+
 
 
 

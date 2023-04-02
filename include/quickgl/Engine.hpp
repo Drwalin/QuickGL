@@ -28,6 +28,7 @@
 namespace qgl {
 	class Pipeline;
 	class Camera;
+	class Gui;
 	
 	class Engine {
 	public:
@@ -45,6 +46,8 @@ namespace qgl {
 		bool IsQuitRequested();
 		
 		void BeginNewFrame();
+		
+		void SetGui(std::shared_ptr<Gui> gui);
 		
 		
 		int32_t AddPipeline(std::shared_ptr<Pipeline> pipeline);
@@ -65,6 +68,8 @@ namespace qgl {
 		
 		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		std::shared_ptr<Camera> mainCamera;
+		
+		std::shared_ptr<Gui> currentGui;
 	};
 }
 
