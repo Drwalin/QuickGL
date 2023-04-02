@@ -44,7 +44,8 @@ namespace qgl {
 		
 		// init shaders
 		renderShader = std::make_unique<gl::Shader>();
-		renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE);
+		if(renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE))
+			exit(31);
 		
 		// init vao
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);

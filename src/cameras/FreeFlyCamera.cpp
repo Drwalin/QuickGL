@@ -26,7 +26,7 @@
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
-		fov = 90;
+		SetFov(60.0f);
 		aspectRatio = 1;
 		pos = {0,0,0};
 		front = {0,0,1};
@@ -47,22 +47,22 @@ namespace qgl {
 		right = rot * glm::vec4{-1,0,0,0};
 		
 		view = glm::lookAt(pos, pos+front, up);
-		perspective = glm::perspective(fov*0.5f, aspectRatio, near, far);
+		perspective = glm::perspective(fovy, aspectRatio, near, far);
 		transform = glm::translate(rot, pos);
 		
 		{
-			glm::mat4 invPV = glm::inverse(perspective*view);
-			
-			glm::vec4 _p[4] = {
-				invPV * glm::vec4{-1,-1,1,1},
-				invPV * glm::vec4{-1,1,1,1},
-				invPV * glm::vec4{1,1,1,1},
-				invPV * glm::vec4{1,-1,1,1},
+			glm::vec3 pp;
+			pp.z = far;
+			pp.y = pp.z * tan(fovy/2.0f);
+			pp.x = pp.y * aspectRatio;
+			glm::vec3 p[4] = {
+				{1,1,1},
+				{-1,1,1},
+				{-1,-1,1},
+				{1,-1,1},
 			};
-			
-			glm::vec3 p[4];
 			for(int i=0; i<4; ++i) {
-				p[i] = _p[i];
+				p[i] = transform * glm::vec4(p[i]*pp, 1);
 			}
 			
 			glm::vec3 p0 = pos;
@@ -71,7 +71,7 @@ namespace qgl {
 				glm::vec3 a = p[i%4];
 				glm::vec3 b = p[(i+1)%4];
 				glm::vec3 c = p[(i+2)%4];
-				glm::vec3 n = glm::cross(a-p0, b-p0);
+				glm::vec3 n = glm::normalize(glm::cross(a-p0, b-p0));
 				if(glm::dot(n, c-p0) < 0)
 					n = -n;
 				float d = glm::dot(p0, n);
@@ -81,7 +81,7 @@ namespace qgl {
 				glm::vec3 a = p[0];
 				glm::vec3 b = p[1];
 				glm::vec3 c = p[2];
-				glm::vec3 n = glm::cross(a-c, b-c);
+				glm::vec3 n = glm::normalize(glm::cross(a-c, b-c));
 				if(glm::dot(n, p0-a) < 0)
 					n = -n;
 				float d = glm::dot(a, n);
@@ -93,6 +93,7 @@ namespace qgl {
 	void FreeFlyCamera::SetRenderTargetDimensions(uint32_t width,
 			uint32_t height) {
 		aspectRatio = ((float)width)/((float)height);
+		fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
 	}
 	
 	void FreeFlyCamera::GetRenderTargetDimensions(uint32_t& width,
@@ -101,7 +102,9 @@ namespace qgl {
 	}
 	
 	void FreeFlyCamera::SetFov(float fov) {
+		fov = glm::radians(fov);
 		this->fov = fov;
+		fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
 	}
 	
 	float FreeFlyCamera::GetFov() {

@@ -63,9 +63,11 @@ namespace qgl {
 		
 		// init shaders
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
-		indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE);
+		if(indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE))
+			exit(31);
 		frustumCullingShader = std::make_unique<gl::Shader>();
-		frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE);
+		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
+			exit(31);
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
@@ -87,8 +89,6 @@ namespace qgl {
 	void PipelineFrustumCulling::AppendRenderStages(
 			std::vector<StageFunction>& stages) {
 		PipelineIdsManagedBase::AppendRenderStages(stages);
-		
-// 		return;
 		
 		{
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
@@ -197,16 +197,14 @@ void main() {
 
 	uint inViewCount = 0;
 	
-	// check frustum culling
-	// if in view then
 	{
 		if(gl_GlobalInvocationID.x < entitiesCount) {
+			vec3 pos = (entitesTransformations[gl_GlobalInvocationID.x] *
+				vec4(meshInfo[gl_GlobalInvocationID.x].xyz, 1)).xyz;
 			int i=0;
 			for(; i<5; ++i) {
-				float d
-					= dot(clippingPlanes[i].xyz,
-						meshInfo[gl_GlobalInvocationID.x].xyz);
-				if(clippingPlanes[i].w > d+meshInfo[gl_GlobalInvocationID.x].w)
+				float d = dot(clippingPlanes[i].xyz, pos);
+				if(d+meshInfo[gl_GlobalInvocationID.x].w < clippingPlanes[i].w)
 					break;
 			}
 			if(i==5)
