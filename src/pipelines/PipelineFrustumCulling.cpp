@@ -60,7 +60,7 @@ namespace qgl {
 				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsCountAtomicCounter->Init();
 		frustumCulledIdsCountAtomicCounter->Generate(NULL, 3);
-		uint32_t ints[3] = {0, 1, 1};
+		const static uint32_t ints[3] = {0, 1, 1};
 		frustumCulledIdsCountAtomicCounter->Update(ints, 0, sizeof(ints));
 		
 		// init shaders
