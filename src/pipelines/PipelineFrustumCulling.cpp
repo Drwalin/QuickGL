@@ -57,9 +57,11 @@ namespace qgl {
 		clippingPlanes->Init();
 		
 		frustumCulledIdsCountAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsCountAtomicCounter->Init();
-		frustumCulledIdsCountAtomicCounter->Generate(NULL, 1024);
+		frustumCulledIdsCountAtomicCounter->Generate(NULL, 3);
+		uint32_t ints[3] = {0, 1, 1};
+		frustumCulledIdsCountAtomicCounter->Update(ints, 0, sizeof(ints));
 		
 		// init shaders
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
@@ -129,23 +131,10 @@ namespace qgl {
 		}
 
 		{
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
-				// fetch number of entities to render after culling
-				frustumCulledIdsCountAtomicCounter
-					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-			});
-		}
-
-		{
-		const int32_t INDIRECT_GENERATION_LOCATION_ENTITIES_COUNT =
-			indirectDrawBufferShader->GetUniformLocation("entitiesCount");
 
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				indirectDrawBufferShader->Use();
-				indirectDrawBufferShader
-					->SetUInt(INDIRECT_GENERATION_LOCATION_ENTITIES_COUNT,
-							frustumCulledEntitiesCount);
 
 				// bind buffers
 				indirectDrawBuffer
@@ -154,10 +143,21 @@ namespace qgl {
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
-
+				
+				indirectDrawBufferShader->DispatchBuffer(
+					*frustumCulledIdsCountAtomicCounter, 0);
+				
 				// generate indirect draw command buffer
 				indirectDrawBufferShader
 					->DispatchRoundGroupNumbers(frustumCulledEntitiesCount, 1, 1);
+			});
+		}
+
+		{
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+				// fetch number of entities to render after culling
+				frustumCulledIdsCountAtomicCounter
+					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 			});
 		}
 	}
@@ -251,6 +251,9 @@ struct PerEntityMeshInfo {
 	uint elementsCount;
 };
 
+layout (packed, std430, binding=4) readonly buffer cccaaa {
+	uint entitiesCount;
+};
 layout (packed, std430, binding=5) writeonly buffer aaa {
 	DrawElementsIndirectCommand indirectCommands[];
 };
@@ -262,8 +265,6 @@ layout (packed, std430, binding=7) readonly buffer ccc {
 };
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-layout (location=1) uniform uint entitiesCount;
 
 void main() {
 	if(gl_GlobalInvocationID.x >= entitiesCount)
