@@ -140,10 +140,12 @@ int main() {
 		// render gui
 		ImGui::Begin("Frames per second", NULL,
 				ImGuiWindowFlags_NoTitleBar |
-				ImGuiWindowFlags_NoResize |
 				ImGuiWindowFlags_NoBackground |
-				ImGuiWindowFlags_NoFocusOnAppearing);
-		ImGui::Text("fps: %f", engine->GetInputManager().GetDeltaTime());
+				ImGuiWindowFlags_NoFocusOnAppearing |
+				ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
+		ImGui::Text("Entities count: %i", pipelineStatic->GetEntitiesCount());
+		ImGui::Text("Rendering entities: %i", pipelineStatic->GetEntitiesToRender());
 		ImGui::End();
 		
 		// swap buffers

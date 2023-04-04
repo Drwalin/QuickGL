@@ -40,6 +40,10 @@ namespace qgl {
 	PipelineFrustumCulling::~PipelineFrustumCulling() {
 	}
 	
+	uint32_t PipelineFrustumCulling::GetEntitiesToRender() const {
+		return frustumCulledEntitiesCount;
+	}
+	
 	void PipelineFrustumCulling::Initialize() {
 		PipelineIdsManagedBase::Initialize();
 		

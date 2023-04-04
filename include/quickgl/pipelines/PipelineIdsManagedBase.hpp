@@ -35,6 +35,7 @@ namespace qgl {
 		
 		virtual uint32_t CreateEntity() override;
 		virtual void DeleteEntity(uint32_t entityId) override;
+		virtual uint32_t GetEntitiesCount() const override;
 		
 		virtual void Initialize() override;
 		

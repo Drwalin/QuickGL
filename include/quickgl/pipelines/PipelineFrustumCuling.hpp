@@ -40,6 +40,8 @@ namespace qgl {
 		PipelineFrustumCulling();
 		virtual ~PipelineFrustumCulling();
 		
+		virtual uint32_t GetEntitiesToRender() const override;
+		
 		virtual void Initialize() override;
 		
 	public:

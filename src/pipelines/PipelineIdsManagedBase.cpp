@@ -38,6 +38,10 @@ namespace qgl {
 		idsManager.FreeId(entityId);
 	}
 	
+	uint32_t PipelineIdsManagedBase::GetEntitiesCount() const {
+		return idsManager.CountIds();
+	}
+	
 	void PipelineIdsManagedBase::Initialize() {
 		Pipeline::Initialize();
 		perEntityMeshInfo.Init();
