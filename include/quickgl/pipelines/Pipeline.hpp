@@ -52,6 +52,11 @@ namespace qgl {
 		
 		virtual uint32_t CreateEntity() = 0;
 		virtual void DeleteEntity(uint32_t entityId) = 0;
+		virtual uint32_t GetEntitiesCount() const = 0;
+		virtual uint32_t GetEntitiesToRender() const = 0; // losely defined (returns
+													// aproximate number of
+													// rendered objects),
+													// implementation dependant
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
 		void SetEntityMeshByName(uint32_t entityId, const char* meshName);

@@ -40,6 +40,9 @@ namespace qgl {
 	}
 	
 	void AllocatorVBO::Resize(void* obj, uint32_t size) {
+		if(!((gl::VBO*)obj)->GetIdGL()) {
+			((gl::VBO*)obj)->Init();
+		}
 		((gl::VBO*)obj)->Resize(size);
 	}
 	

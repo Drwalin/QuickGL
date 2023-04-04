@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+
 #include "../../include/quickgl/MeshManager.hpp"
 
 #include "../../include/quickgl/pipelines/Pipeline.hpp"
@@ -42,6 +44,7 @@ namespace qgl {
 	void Pipeline::AppendRenderStages(std::vector<StageFunction>& stages) {
 		stages.emplace_back([this](std::shared_ptr<Camera> camera){
 				this->FlushDataToGPU(0);
+				gl::Flush();
 			});
 		stages.emplace_back([this](std::shared_ptr<Camera> camera){
 				this->FlushDataToGPU(1);
