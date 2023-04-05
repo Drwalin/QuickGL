@@ -139,7 +139,7 @@ namespace qgl {
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				indirectDrawBufferShader->Use();
-
+			
 				// bind buffers
 				indirectDrawBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
@@ -148,12 +148,11 @@ namespace qgl {
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
 				
+				// generate indirect draw command
 				indirectDrawBufferShader->DispatchBuffer(
 					*frustumCulledIdsCountAtomicCounter, 0);
-				
-				// generate indirect draw command buffer
-				indirectDrawBufferShader
-					->DispatchRoundGroupNumbers(frustumCulledEntitiesCount, 1, 1);
+// 				indirectDrawBufferShader->DispatchRoundGroupNumbers(
+// 						frustumCulledEntitiesCount, 1, 1);
 			});
 		}
 
@@ -192,11 +191,12 @@ layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout (location=1) uniform uint entitiesCount;
 
-shared uint localAtomicCounter[1024];
+shared uint localAtomicCounter;
 shared uint commonStartingLocation;
 
 void main() {
-	localAtomicCounter[gl_LocalInvocationID.x] = 0;
+	if(gl_LocalInvocationID.x == 0)
+		localAtomicCounter = 0;
 	barrier();
 
 	uint inViewCount = 0;
@@ -211,7 +211,7 @@ void main() {
 				if(d+meshInfo[gl_GlobalInvocationID.x].w < clippingPlanes[i].w)
 					break;
 			}
-			if(i==5)
+			if(i >= 5)
 				inViewCount = 1;
 		}
 	}
@@ -220,16 +220,12 @@ void main() {
 	if(gl_GlobalInvocationID.x < entitiesCount) // @TODO: this condition can be removed
 	                                            // and code still will work:
 	                                            // @TODO: check if removign this condition is faster
-		localStartingLocation = atomicAdd(localAtomicCounter[0], inViewCount);
+		localStartingLocation = atomicAdd(localAtomicCounter, inViewCount);
 	
 	barrier();
-	memoryBarrier();
-	memoryBarrierShared();
 	if(gl_LocalInvocationID.x == 0)
-		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter[0]);
+		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter);
 	barrier();
-	memoryBarrier();
-	memoryBarrierShared();
 	
 	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
 	if(inViewCount > 0) {

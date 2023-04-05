@@ -22,8 +22,16 @@
 #include "../pipelines/Pipeline.hpp"
 
 #include <list>
+#include <thread>
 
 namespace qgl {
+	
+	struct Timings {
+		uint32_t stage;
+		uint32_t pipeline;
+		uint64_t seconds_queue;
+		std::string name;
+	};
 	
 	class RenderStageComposer final {
 	public:
@@ -33,7 +41,11 @@ namespace qgl {
 		uint32_t RestartStages();
 		uint32_t NextStage(std::shared_ptr<Camera> camera);
 		
+		const std::vector<Timings>& GetTimings() const { return timings; }
+		
 	private:
+		
+		std::vector<Timings> timings;
 		
 		std::list<std::vector<Pipeline::StageFunction>> currentStagingFunctions;
 		uint32_t currentStage;
