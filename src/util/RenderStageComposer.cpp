@@ -16,7 +16,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
+
+#include <chrono>
 
 namespace qgl {
 	
@@ -33,18 +36,52 @@ namespace qgl {
 		for(const auto& e : currentStagingFunctions) {
 			max = std::max<uint32_t>(e.size(), max);
 		}
+		timings.clear();
 		return max;
 	}
 	
 	uint32_t RenderStageComposer::NextStage(std::shared_ptr<Camera> camera) {
 		std::list<std::vector<Pipeline::StageFunction>> copy;
+		uint32_t i=0;
 		for(auto& e : currentStagingFunctions) {
+			auto s = std::chrono::steady_clock::now();
 			e[currentStage](camera);
+			gl::Finish();
+			auto e1 = std::chrono::steady_clock::now();
+			uint64_t t1 = (e1-s).count();
+			timings.push_back({currentStage, i, t1});
+			switch(currentStage) {
+				case 0:
+					timings.back().name = "update data copy delta";
+					break;
+				case 1:
+					timings.back().name = "update data compute shader update";
+					break;
+				case 2:
+					timings.back().name = "update camera clipping planes";
+					break;
+				case 3:
+					timings.back().name = "generate frustum culled entity ids buffer";
+					break;
+				case 4:
+					timings.back().name = "generate indirect buffer";
+					break;
+				case 5:
+					timings.back().name = "fetch frustum culled entities count";
+					break;
+				case 6:
+					timings.back().name = "multi draw indirect";
+					break;
+			}
 			if(currentStage+1 < e.size()) {
 				copy.emplace_back();
 				copy.back().swap(e);
 			}
+			++i;
 		}
+		
+		gl::Flush();
+		
 		currentStagingFunctions.swap(copy);
 		++currentStage;
 		return copy.size()>0 ? 1 : 0;

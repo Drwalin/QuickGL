@@ -5,6 +5,8 @@
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
+#include "../../include/quickgl/Gui.hpp"
+
 
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
@@ -15,7 +17,9 @@
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
-#include "../../include/quickgl/Gui.hpp"
+
+#include <chrono>
+#include <cstdio>
 
 int main() {
 	std::shared_ptr<qgl::Engine> engine
@@ -119,13 +123,7 @@ int main() {
 				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
 				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
 				++I;
-				printf("i = %i\n", I);
-				printf("deltaTime = %f\n", engine->GetInputManager().GetDeltaTime());
 			}
-		}
-		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_Y)) {
-			printf("i = %i\n", I);
-			printf("deltaTime = %f\n", engine->GetInputManager().GetDeltaTime());
 		}
 		
 		// begin new frame
@@ -135,22 +133,52 @@ int main() {
 			camera->ProcessDefaultInput(engine);
 		
 		// render
+		auto s = std::chrono::steady_clock::now();
 		engine->Render();
-		
+		// optionally sync CPU with all GPU draw calls
+		gl::Finish();
+		auto e1 = std::chrono::steady_clock::now();
+		uint64_t renderTime = (e1-s).count();
+			
+
 		// render gui
-		ImGui::Begin("Frames per second", NULL,
-				ImGuiWindowFlags_NoTitleBar |
-				ImGuiWindowFlags_NoBackground |
-				ImGuiWindowFlags_NoFocusOnAppearing |
-				ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
-		ImGui::Text("Entities count: %i", pipelineStatic->GetEntitiesCount());
-		ImGui::Text("Rendering entities: %i", pipelineStatic->GetEntitiesToRender());
+		ImGui::SetNextWindowBgAlpha(0.5);
+			ImGui::Begin("Frames per second", NULL,
+					ImGuiWindowFlags_NoTitleBar |
+	// 				ImGuiWindowFlags_NoBackground |
+					ImGuiWindowFlags_NoFocusOnAppearing |
+					ImGuiWindowFlags_AlwaysAutoResize);
+			ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
+			ImGui::Text("Entities count: %i", pipelineStatic->GetEntitiesCount());
+			ImGui::Text("Rendering entities: %i", pipelineStatic->GetEntitiesToRender());
+			glm::vec3 p = camera->GetPosition();
+			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
 		ImGui::End();
 		
+		ImGui::SetNextWindowBgAlpha(0.0);
+		ImGui::Begin("Timings", NULL,
+				ImGuiWindowFlags_NoTitleBar |
+// 				ImGuiWindowFlags_NoBackground |
+				ImGuiWindowFlags_NoFocusOnAppearing |
+				ImGuiWindowFlags_AlwaysAutoResize);
+			for(auto t : engine->GetTimings()) {
+				ImGui::Text("Stage %u of %u: %6.lu.%3.3lu \t  %s",
+						t.stage, t.pipeline,
+						t.seconds_queue /1000, t.seconds_queue %1000,
+						t.name.c_str());
+			}
+			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
+					renderTime/1000000, renderTime%1000000);
+		ImGui::End();
+		
+		
 		// swap buffers
+		
 		engine->SwapBuffers();
 		engine->PrintErrors();
+		
+		// optionally sync CPU with all gui GPU draw calls and buffer swap
+		gl::Finish();
 	}
 	
 	engine->Destroy();	

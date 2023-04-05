@@ -57,6 +57,8 @@ namespace qgl {
 		
 		void PrintErrors();
 		
+		const std::vector<Timings>& GetTimings() const { return renderStageComposer.GetTimings(); }
+		
 	protected:
 		
 		InputManager inputManager;
