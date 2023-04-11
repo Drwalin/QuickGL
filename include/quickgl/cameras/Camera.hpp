@@ -58,4 +58,3 @@ namespace qgl {
 
 #endif
 
-

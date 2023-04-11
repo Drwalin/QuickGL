@@ -23,6 +23,7 @@
 
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/InputManager.hpp"
+
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 
 namespace qgl {
@@ -43,19 +44,11 @@ namespace qgl {
 	
 	void FreeFlyCamera::PrepareDataForNewFrame() {
 		glm::mat4 rot = glm::mat4_cast(rotation);
-		front = rot * glm::vec4{0,0,1,0};
+		front = rot * glm::vec4{0,0,-1,0};
 		up = rot * glm::vec4{0,1,0,0};
-		right = rot * glm::vec4{-1,0,0,0};
+		right = rot * glm::vec4{1,0,0,0};
 		
 		perspective = glm::perspective(fovy, aspectRatio, near, far);
-		
-// 		printf(" up = %f %f %f\n", up.x, up.y, up.z);
-		view = glm::lookAt(pos, pos+front, up);
-// 		view = glm::translate(glm::mat4_cast(glm::inverse(rotation)), -pos);
-// 		view = glm::lookAt(pos, pos+front, {0,1,0});//up);
-// 		transform = glm::inverse(view);//glm::translate(rot, pos);
-
-		transform = glm::translate(rot, pos);
 		
 		{
 			glm::vec3 pp;
@@ -63,16 +56,16 @@ namespace qgl {
 			pp.y = pp.z * tan(fovy/2.0f);
 			pp.x = pp.y * aspectRatio;
 			glm::vec3 p[4] = {
-				{1,1,1},
-				{-1,1,1},
-				{-1,-1,1},
-				{1,-1,1},
+				{1,1,-1},
+				{-1,1,-1},
+				{-1,-1,-1},
+				{1,-1,-1},
 			};
 			for(int i=0; i<4; ++i) {
-				p[i] = transform * glm::vec4(p[i]*pp, 1);
+				p[i] = p[i]*pp;
 			}
 			
-			glm::vec3 p0 = pos;
+			constexpr glm::vec3 p0 = {0,0,0};
 			
 			for(int i=0; i<4; ++i) {
 				glm::vec3 a = p[i%4];
@@ -95,6 +88,9 @@ namespace qgl {
 				clippingPlanes[4] = {n.x, n.y, n.z, d};
 			}
 		}
+		
+		transform = glm::translate(rot, pos);
+		view = glm::inverse(rot) * glm::translate(glm::mat4(1), -pos);
 	}
 		
 	void FreeFlyCamera::SetRenderTargetDimensions(uint32_t width,
@@ -174,16 +170,6 @@ namespace qgl {
 		this->euler = euler;
 		SetRotation(
 				glm::quat(euler + glm::vec3{0,0,M_PI})
-// 				glm::rotate(
-// 					glm::rotate(
-// 						glm::rotate(
-// 							glm::quat(0,0,0,1)
-// 							,
-// 							euler.y, {0,1,0})
-// 						,
-// 						euler.x, {1,0,0})
-// 					,
-// 					euler.z, {0,0,1})
 				);
 	}
 	
@@ -232,9 +218,9 @@ namespace qgl {
 			dpx += glm::vec3{0,-1,0};
 		
 		if(input.IsKeyDown(GLFW_KEY_LEFT))
-			dr.y -= 1.0f;
-		if(input.IsKeyDown(GLFW_KEY_RIGHT))
 			dr.y += 1.0f;
+		if(input.IsKeyDown(GLFW_KEY_RIGHT))
+			dr.y -= 1.0f;
 		if(input.IsKeyDown(GLFW_KEY_DOWN))
 			dr.x -= 1.0f;
 		if(input.IsKeyDown(GLFW_KEY_UP))
@@ -250,8 +236,8 @@ namespace qgl {
 		dp *= dt * 5.0f;
 		dpx *= dt * 5.0f;
 		
-		dr.x += input.GetMouseDelta().y * 0.01;
-		dr.y -= input.GetMouseDelta().x * 0.01;
+		dr.x -= input.GetMouseDelta().y * 0.003;
+		dr.y -= input.GetMouseDelta().x * 0.003;
 		
 // 		PrepareDataForNewFrame();
 		
