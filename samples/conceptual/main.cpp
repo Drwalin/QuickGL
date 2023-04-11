@@ -126,6 +126,17 @@ int main() {
 			}
 		}
 		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
+			for(int i=0; i<1000000; ++i) {
+				uint32_t standId = pipelineStatic->CreateEntity();
+				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				++I;
+			}
+		}
+		
+		
+		
 		// begin new frame
 		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
 		engine->BeginNewFrame();

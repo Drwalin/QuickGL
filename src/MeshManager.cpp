@@ -42,12 +42,20 @@ namespace qgl {
 	MeshManager::~MeshManager() {
 	}
 	
-	bool MeshManager::LoadModels(const std::string& fileName) {
-		gl::BasicMeshLoader::AssimpLoader l;
-		if(l.Load(fileName) == false)
+	bool MeshManager::LoadModels(
+			const std::string& fileName) {
+		std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader
+			= std::make_shared<gl::BasicMeshLoader::AssimpLoader>();
+		if(loader->Load(fileName) == false)
 			return false;
+		if(loader->meshes.size() == 0)
+			return false;
+		return LoadModels(loader);
+	}
+	
+	bool MeshManager::LoadModels(std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
 		std::vector<uint8_t> vboSrc, eboSrc;
-		for(auto mesh : l.meshes) {
+		for(auto mesh : loader->meshes) {
 			MeshInfo info;
 			
 			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
@@ -77,7 +85,7 @@ namespace qgl {
 			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
 					info.countElements*sizeof(uint32_t));
 		}
-		return l.meshes.size() > 0;
+		return loader->meshes.size() > 0;
 	}
 	
 	MeshManager::MeshInfo MeshManager::GetMeshInfoById(uint32_t id) const {

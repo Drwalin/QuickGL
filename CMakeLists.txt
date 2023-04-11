@@ -3,7 +3,8 @@ project(QuickGL)
 cmake_policy(SET CMP0115 OLD)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_DEBUG "Build debug" ON)
