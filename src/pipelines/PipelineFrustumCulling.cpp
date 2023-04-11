@@ -79,12 +79,13 @@ namespace qgl {
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
 		uint32_t ret = PipelineIdsManagedBase::FlushDataToGPU(stageId);
 		if(stageId==0) {
-			if(indirectDrawBuffer->GetVertexCount() < idsManager.CountIds()) {
-				indirectDrawBuffer->Generate(NULL, idsManager.CountIds());
+			uint32_t i = indirectDrawBuffer->GetVertexCount();
+			while(i < idsManager.CountIds()) {
+				i = (i*3)/2 + 100;
 			}
-			if(frustumCulledIdsBuffer->GetVertexCount() < idsManager.CountIds()) {
-				frustumCulledIdsBuffer->Generate(NULL, idsManager.CountIds());
-			}
+			indirectDrawBuffer->Generate(NULL, i);
+			frustumCulledIdsBuffer->Generate(NULL, i);
+			
 			frustumCulledEntitiesCount = 0;
 			frustumCulledIdsCountAtomicCounter
 				->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
@@ -106,6 +107,8 @@ namespace qgl {
 		{
 		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
 			frustumCullingShader->GetUniformLocation("entitiesCount");
+		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
+			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
@@ -113,6 +116,9 @@ namespace qgl {
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
 							idsManager.CountIds());
+				frustumCullingShader
+					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
+							camera->GetViewMatrix());
 
 				// bind buffers
 				frustumCulledIdsBuffer
@@ -189,7 +195,8 @@ layout (packed, std430, binding=10) readonly buffer fff {
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-layout (location=1) uniform uint entitiesCount;
+uniform uint entitiesCount;
+uniform mat4 cameraInverseTransform;
 
 shared uint localAtomicCounter;
 shared uint commonStartingLocation;
@@ -203,8 +210,10 @@ void main() {
 	
 	{
 		if(gl_GlobalInvocationID.x < entitiesCount) {
-			vec3 pos = (entitesTransformations[gl_GlobalInvocationID.x] *
-				vec4(meshInfo[gl_GlobalInvocationID.x].xyz, 1)).xyz;
+			vec3 pos = (
+				cameraInverseTransform *
+				entitesTransformations[gl_GlobalInvocationID.x] *
+					vec4(meshInfo[gl_GlobalInvocationID.x].xyz, 1)).xyz;
 			int i=0;
 			for(; i<5; ++i) {
 				float d = dot(clippingPlanes[i].xyz, pos);

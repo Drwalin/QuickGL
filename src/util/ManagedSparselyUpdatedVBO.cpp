@@ -78,7 +78,6 @@ void main() {
 		return;
 	uint id = deltaData[self].id;
 	data[id] = deltaData[self].data;
-// 	data[0].data[0] = updateElements;
 })";
 			if(shader->Compile(shaderSource))
 				exit(31);
@@ -111,7 +110,7 @@ void main() {
 		switch(stageId) {
 		case 0: {
 			if(vbo->GetVertexCount() <= maxId) {
-				vbo->Resize(maxId + 100);
+				vbo->Resize((maxId*3)/2+100);
 			}
 			deltaData.swap(deltaDataGPU);
 			deltaData.clear();

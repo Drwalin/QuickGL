@@ -92,4 +92,3 @@ namespace qgl {
 
 #endif
 
-
