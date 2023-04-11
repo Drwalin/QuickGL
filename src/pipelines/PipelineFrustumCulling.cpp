@@ -136,7 +136,7 @@ namespace qgl {
 
 				// perform frustum culling
 				frustumCullingShader
-					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
+					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
 			});
 		}
 
@@ -201,28 +201,35 @@ uniform mat4 cameraInverseTransform;
 shared uint localAtomicCounter;
 shared uint commonStartingLocation;
 
+uint IsInView(uint id) {
+	if(id < entitiesCount) {
+		vec3 pos = (
+			cameraInverseTransform *
+			entitesTransformations[id] *
+				vec4(meshInfo[id].xyz, 1)).xyz;
+		for(uint i=0; i<5; ++i) {
+			float d = dot(clippingPlanes[i].xyz, pos);
+			if(d+meshInfo[id].w < clippingPlanes[i].w)
+				return 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 void main() {
 	if(gl_LocalInvocationID.x == 0)
 		localAtomicCounter = 0;
 	barrier();
 
 	uint inViewCount = 0;
-	
-	{
-		if(gl_GlobalInvocationID.x < entitiesCount) {
-			vec3 pos = (
-				cameraInverseTransform *
-				entitesTransformations[gl_GlobalInvocationID.x] *
-					vec4(meshInfo[gl_GlobalInvocationID.x].xyz, 1)).xyz;
-			int i=0;
-			for(; i<5; ++i) {
-				float d = dot(clippingPlanes[i].xyz, pos);
-				if(d+meshInfo[gl_GlobalInvocationID.x].w < clippingPlanes[i].w)
-					break;
-			}
-			if(i >= 5)
-				inViewCount = 1;
-		}
+	uint inViewIds[4];
+
+	for(uint i=0; i<4; ++i) {
+		uint invocationId = gl_GlobalInvocationID.x*4 + i;
+		uint isIn = IsInView(invocationId);
+		inViewIds[inViewCount] = allEntitiesIds[invocationId];
+		inViewCount += isIn;
 	}
 
 	uint localStartingLocation = 0;
@@ -237,9 +244,8 @@ void main() {
 	barrier();
 	
 	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
-	if(inViewCount > 0) {
-		frustumCulledEntitiesIds[globalStartingLocation] =
-			allEntitiesIds[gl_GlobalInvocationID.x];
+	for(uint i=0; i<inViewCount; ++i) {
+		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
 	}
 }
 )";

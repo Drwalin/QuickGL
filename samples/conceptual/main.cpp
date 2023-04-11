@@ -126,8 +126,17 @@ int main() {
 			}
 		}
 		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
+			for(int i=0; i<1000*1000*10; ++i) {
+				uint32_t standId = pipelineStatic->CreateEntity();
+				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				++I;
+			}
+		}
+		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
-			for(int i=0; i<1000000; ++i) {
+			for(int i=0; i<1000*1000; ++i) {
 				uint32_t standId = pipelineStatic->CreateEntity();
 				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
 				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
