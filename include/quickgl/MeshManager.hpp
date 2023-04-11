@@ -33,6 +33,7 @@ namespace gl {
 	class VBO;
 	namespace BasicMeshLoader {
 		class Mesh;
+		class AssimpLoader;
 	}
 }
 
@@ -58,7 +59,7 @@ namespace qgl {
 					uint32_t bufferByteOffset,
 					gl::BasicMeshLoader::Mesh* mesh
 				));
-		~MeshManager();
+		virtual ~MeshManager();
 		
 		bool LoadModels(const std::string& fileName);
 		
@@ -82,6 +83,8 @@ namespace qgl {
 	protected:
 		
 		void FreeMesh(uint32_t id);
+		virtual bool LoadModels(
+				std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader);
 		
 	protected:
 		
