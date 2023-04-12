@@ -4,6 +4,7 @@
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
+#include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
@@ -50,6 +51,11 @@ int main() {
 		= std::make_shared<qgl::PipelineStatic>();
 	GL_CHECK_PUSH_ERROR;
 	engine->AddPipeline(pipelineStatic);
+	
+// 	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
+// 		= std::make_shared<qgl::PipelineAnimated>();
+// 	GL_CHECK_PUSH_ERROR;
+// 	engine->AddPipeline(pipelineAnimated);
 	
 	// load models
 	auto meshManagerStatic = pipelineStatic->GetMeshManager();

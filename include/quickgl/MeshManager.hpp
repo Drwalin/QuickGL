@@ -69,7 +69,7 @@ namespace qgl {
 		uint32_t CreateMeshFrom(std::shared_ptr<MeshManager> otherMeshManager,
 				const std::vector<uint32_t>& sourceMeshesIds);
 		
-		void ReleaseMeshReference(uint32_t id);
+		virtual void ReleaseMeshReference(uint32_t id);
 		
 		void GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
 				uint32_t& indexCount);
@@ -82,7 +82,7 @@ namespace qgl {
 		
 	protected:
 		
-		void FreeMesh(uint32_t id);
+		virtual void FreeMesh(uint32_t id);
 		virtual bool LoadModels(
 				std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader);
 		
