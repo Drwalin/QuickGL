@@ -55,7 +55,7 @@ namespace qgl {
 	
 	bool MeshManager::LoadModels(std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
 		std::vector<uint8_t> vboSrc, eboSrc;
-		for(auto mesh : loader->meshes) {
+		for(auto& mesh : loader->meshes) {
 			MeshInfo info;
 			
 			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
@@ -112,6 +112,14 @@ namespace qgl {
 		MeshInfo info = GetMeshInfoById(meshId);
 		memcpy(offset, info.boundingSphereCenterOffset, sizeof(float)*3);
 		radius = info.boundingSphereRadius;
+	}
+	
+	void MeshManager::FreeMesh(uint32_t id) {
+		throw "Meshmanager::FreeMesh is not implemented.";
+	}
+	
+	void MeshManager::ReleaseMeshReference(uint32_t id) {
+		throw "Meshmanager::ReleaseMeshReference is not implemented.";
 	}
 }
 

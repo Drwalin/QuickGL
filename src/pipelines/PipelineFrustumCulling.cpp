@@ -141,10 +141,19 @@ namespace qgl {
 		}
 
 		{
+		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+				// fetch number of entities to render after culling
+				frustumCulledIdsCountAtomicCounter
+					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+			});
+		}
+
+		{
 
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// set visible entities count
 				indirectDrawBufferShader->Use();
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 			
 				// bind buffers
 				indirectDrawBuffer
@@ -155,18 +164,8 @@ namespace qgl {
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
 				
 				// generate indirect draw command
-				indirectDrawBufferShader->DispatchBuffer(
-					*frustumCulledIdsCountAtomicCounter, 0);
-// 				indirectDrawBufferShader->DispatchRoundGroupNumbers(
-// 						frustumCulledEntitiesCount, 1, 1);
-			});
-		}
-
-		{
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
-				// fetch number of entities to render after culling
-				frustumCulledIdsCountAtomicCounter
-					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+				indirectDrawBufferShader->DispatchRoundGroupNumbers(
+						frustumCulledEntitiesCount, 1, 1);
 			});
 		}
 	}

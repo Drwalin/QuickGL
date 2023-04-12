@@ -29,6 +29,8 @@
 
 namespace gl {
 	class Texture;
+	class Shader;
+	class VBO;
 }
 
 namespace qgl {
@@ -46,7 +48,11 @@ namespace qgl {
 		gl::Texture& GetAnimationsMetadataTexture() { return *metaInfo; }
 		gl::Texture& GetKeyframesTexture() { return *matrices; }
 		
+		virtual void ReleaseMeshReference(uint32_t id) override;
+		
 	protected:
+		
+		virtual void FreeMesh(uint32_t id) override;
 		
 		virtual bool LoadModels(
 				std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader)
@@ -54,7 +60,18 @@ namespace qgl {
 		
 	protected:
 		
+		struct AnimationInfo {
+			uint32_t firstMatrixId;
+			uint32_t bonesCount;
+			uint32_t framesCount;
+			uint32_t fps;
+		};
+		
 		std::map<std::string, uint32_t> mapAnimationNameToId;
+		std::vector<AnimationInfo> animationsInfo;
+		
+		
+		std::vector<glm::mat4> matricesHost;
 		
 		// TEXTURE_1D 16384 animations max
 		std::shared_ptr<gl::Texture> metaInfo; // RGBA32UI, single texel:
@@ -63,7 +80,8 @@ namespace qgl {
 											   // B - number of key frames
 											   // A - number of FPS
 		
-		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones per one X coordinate
+		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in one
+		//                                     row coordinate
 		std::shared_ptr<gl::Texture> matrices; // RGBA32F, 4 consecutive
 											   // vertical texels make up a
 											   // single matrix.
@@ -74,5 +92,4 @@ namespace qgl {
 }
 
 #endif
-
 
