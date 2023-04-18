@@ -29,13 +29,12 @@
 
 #include "../../include/quickgl/AnimatedMeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
+#include "../../include/quickgl/Engine.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
 
 namespace qgl {
 	PipelineAnimated::PipelineAnimated() {
-		deltaTime = 0;
-		timepoint = 0;
 	}
 	
 	PipelineAnimated::~PipelineAnimated() {
@@ -48,13 +47,14 @@ namespace qgl {
 				animationId,
 				animationIdAfter,
 				(loop?1u:0u) << 0 | (enableUpdateTime?1u:0u) << 1,
-				timeOffset
+				
+				0,
+				0,
+				0,
+				
+				engine->GetInputManager().GetTime(),
+				engine->GetInputManager().GetTime()
 			}, entityId);
-	}
-	
-	void PipelineAnimated::UpdateDeltaTime(float deltaTime) {
-		this->deltaTime = deltaTime;
-		timepoint += deltaTime;
 	}
 	
 	void PipelineAnimated::Initialize() {
@@ -100,6 +100,34 @@ namespace qgl {
 		PipelineFrustumCulling::AppendRenderStages(stages);
 		
 		{
+		const int32_t ENTITIES_COUNT_LOCATION =
+			updateAnimationShader->GetUniformLocation("entitiesCount");
+		const int32_t DELTA_TIME_LOCATION =
+			updateAnimationShader->GetUniformLocation("deltaTime");
+		const int32_t TIME_STAMP_LOCATION =
+			updateAnimationShader->GetUniformLocation("deltaTime");
+		const int32_t ANIMATION_INFO_LOCATION =
+			updateAnimationShader->GetUniformLocation("animationInfo");
+		
+		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+				updateAnimationShader->Use();
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				
+				updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
+						GetEntitiesCount());
+				updateAnimationShader->SetUInt(DELTA_TIME_LOCATION,
+						engine->GetInputManager().GetDeltaTime());
+				updateAnimationShader->SetUInt(TIME_STAMP_LOCATION,
+						engine->GetInputManager().GetTime());
+				updateAnimationShader->SetTexture(ANIMATION_INFO_LOCATION,
+						animatedMeshManager->metaInfo.get(), 0);
+				
+				updateAnimationShader->DispatchRoundGroupNumbers(
+						GetEntitiesCount(), 1, 1);
+			});
+		}
+		
+		{
 		// get shader uniform locations
 		const int32_t PROJECTION_VIEW_LOCATION =
 			renderShader->GetUniformLocation("projectionView");
@@ -115,15 +143,6 @@ namespace qgl {
 						frustumCulledEntitiesCount);
 			});
 		}
-		
-		{
-		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
-			updateAnimationShader->GetUniformLocation("entitiesCount");
-		
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
-				updateAnimationShader->Use();
-			});
-		}
 	}
 	
 	std::shared_ptr<MeshManager> PipelineAnimated::CreateMeshManager() {
@@ -134,7 +153,7 @@ namespace qgl {
 			+ 8*sizeof(uint8_t) // bones and weights
 			;
 		
-		return std::make_shared<AnimatedMeshManager>(stride,
+		animatedMeshManager = std::make_shared<AnimatedMeshManager>(stride,
 			[](std::vector<uint8_t>& buffer, uint32_t offset,
 					gl::BasicMeshLoader::Mesh* mesh){
 				
@@ -154,6 +173,7 @@ namespace qgl {
 						gl::BasicMeshLoader::ConverterIntPlainClampScale
 							<uint8_t, 255, 0, 255, 1>, 4);
 			});
+		return animatedMeshManager;
 	}
 	
 	const char* PipelineAnimated::VERTEX_SHADER_SOURCE = R"(
@@ -203,9 +223,95 @@ void main() {
 	const char* PipelineAnimated::UPDATE_ANIMATION_SHADER_SOURCE = R"(
 #version 450 core
 
+struct AnimatedState {
+	uint animationId;
+	uint animationIdAfter;
+	uint flags; // 1 - continueNextAnimation, 2 - updateTime
+	
+	uint firstMatrixFrameCurrent;
+	uint firstMatrixFrameNext;
+	float interpolationFactor;
+	
+	float timeOffset;
+	float lastAccessTimeStamp;
+};
+
+struct AnimationInfo {
+	uint firstMatrixId;
+	uint bonesCount;
+	uint framesCount;
+	uint fps;
+};
+
+uniform float deltaTime;
+uniform float timeStamp;
+uniform uint entitiesCount;
+
+layout (packed, std430, binding=1) buffer aaa {
+	AnimatedState animatedState[];
+};
+
+layout (binding = 0, rgba32ui) readonly uniform image2D animationInfo;
+
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
+AnimationInfo GetAnimationInfo(uint animId) {
+	uvec4 v = imageLoad(animationInfo, animId);
+	return {v.x, v.y, v.z, v.w};
+}
+
 void main() {
+	uint id = gl_GlobalInvocationID.x;
+	if(id >= entitiesCount)
+		return;
+	AnimatedState s = animatedState[id];
+
+	if(s.flags & 2) {
+		s.timeOffset += deltaTime;
+	}
+	
+	s.lastAccessTimeStamp = timeStamp;
+
+	AnimationInfo a = GetAnimationInfo(s.animationId);
+	AnimationInfo a2 = GetAnimationInfo(s.animationIdAfter);
+
+	float frame = s.timeOffset * (float)a.firstMatrixFramesCount;
+	if(s.flags & 1) { // continue next animation
+		frame = mod(frame, (float)a.framesCount);
+		float nextFrame = mod(frame+1.0, (float)a.framesCount);
+		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
+		s.firstMatrixFrameNext = floor(nextFrame)*a.bonesCount + a.firstMatrixId;
+		s.timeOffset = frame / (float)a.fps;
+	} else { // stop at last frame of current animation
+	}
+
+// 	if(frame >= a.firstMatrixFramesCount+1) {
+// 		if(s.flags & 1) {
+// 			s.timeOffset -= (float)a.framesCount / (float)a.fps;
+// 			s.firstMatrixFrameCurrent = a.framesCount*a.bonesCount
+// 				+ a.firstMatrixId;
+// 			s.firstMatrixFrameNext = = a.framesCount*a.bonesCount
+// 				+ a.firstMatrixId;
+// 		} else {
+// 			s.firstMatrixFrameCurrent = a.framesCount*a.bonesCount
+// 				+ a.firstMatrixId;
+// 			s.firstMatrixFrameNext = = a.framesCount*a.bonesCount
+// 				+ a.firstMatrixId;
+// 		}
+// 	} else if(frame == a.firstMatrixFramesCount) {
+// 		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
+// 		s.firstMatrixFrameNext = a2.firstMatrixId;
+// 	} else {
+// 		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
+// 		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent + a.bonesCount;
+// 	}
+	
+	s.interpolationFactor = fract(frame);
+
+	
+	
+
+	animatedState[id] = s;
 }
 )";
 }

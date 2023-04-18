@@ -50,5 +50,9 @@ namespace qgl {
 				this->FlushDataToGPU(1);
 			});
 	}
+	
+	void Pipeline::SetEngine(std::shared_ptr<Engine> engine) {
+		this->engine = engine;
+	}
 }
 
