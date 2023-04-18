@@ -50,6 +50,8 @@ namespace qgl {
 		
 		virtual void ReleaseMeshReference(uint32_t id) override;
 		
+		friend class PipelineAnimated;
+		
 	protected:
 		
 		virtual void FreeMesh(uint32_t id) override;
@@ -58,7 +60,7 @@ namespace qgl {
 				std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader)
 			override;
 		
-	protected:
+	private:
 		
 		struct AnimationInfo {
 			uint32_t firstMatrixId;
@@ -80,8 +82,8 @@ namespace qgl {
 											   // B - number of key frames
 											   // A - number of FPS
 		
-		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in one
-		//                                     row coordinate
+		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in
+		//                                     single row
 		std::shared_ptr<gl::Texture> matrices; // RGBA32F, 4 consecutive
 											   // vertical texels make up a
 											   // single matrix.

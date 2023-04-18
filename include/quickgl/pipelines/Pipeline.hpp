@@ -41,6 +41,7 @@ namespace qgl {
 	
 	class MeshManager;
 	class Camera;
+	class Engine;
 	
 	class Pipeline {
 	public:
@@ -67,6 +68,8 @@ namespace qgl {
 		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		
+		void SetEngine(std::shared_ptr<Engine> engine);
+		
 	public:
 		
 		using StageFunction = std::function<void(std::shared_ptr<Camera>)>;
@@ -82,6 +85,8 @@ namespace qgl {
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
 		std::shared_ptr<MeshManager> meshManager;
+		
+		std::shared_ptr<Engine> engine;
 	};
 }
 

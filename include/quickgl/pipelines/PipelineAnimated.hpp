@@ -29,6 +29,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "../util/BufferedVBO.hpp"
+#include "../AnimatedMeshManager.hpp"
 
 #include "PipelineFrustumCuling.hpp"
 
@@ -50,8 +51,6 @@ namespace qgl {
 				float timeOffset, bool enableUpdateTime,
 				uint32_t animationIdAfter, bool loop);
 		
-		void UpdateDeltaTime(float deltaTime);
-		
 	protected:
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
@@ -59,13 +58,17 @@ namespace qgl {
 		
 	private:
 		
-		float deltaTime, timepoint;
-		
 		struct AnimatedState {
 			uint32_t animationId;
 			uint32_t animationIdAfter;
-			uint32_t flags; // 1 - loop, 2 - updateTime
+			uint32_t flags; // 1 - continueNextAnimation, 2 - updateTime
+			
+			uint32_t firstMatrixFrameCurrent;
+			uint32_t firstMatrixFrameNext;
+			float interpolationFactor;
+			
 			float timeOffset;
+			float lastAccessTimeStamp;
 		};
 		
 		ManagedSparselyUpdatedVBO<AnimatedState> perEntityAnimationState;
@@ -73,6 +76,8 @@ namespace qgl {
 		std::unique_ptr<gl::VAO> vao;
 		std::unique_ptr<gl::Shader> renderShader;
 		std::unique_ptr<gl::Shader> updateAnimationShader;
+		
+		std::shared_ptr<AnimatedMeshManager> animatedMeshManager;
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;

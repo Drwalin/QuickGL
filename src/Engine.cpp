@@ -49,6 +49,8 @@ namespace qgl {
 		for(auto& p : pipelines) {
 			p = NULL;
 		}
+		pipelines.clear();
+		
 		mainCamera = NULL;
 		
 		Gui::DeinitIMGUI();
