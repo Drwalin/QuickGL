@@ -28,6 +28,7 @@
 
 namespace qgl {
 	Engine::Engine() {
+		initialized = false;
 	}
 	
 	Engine::~Engine() {
@@ -44,28 +45,28 @@ namespace qgl {
 		inputManager.Init();
 	GL_CHECK_PUSH_ERROR;
 		Gui::InitIMGUI();
+		initialized = true;
 	}
 	
 	void Engine::Destroy() {
-		renderStageComposer.Clear();
-		
-		if(pipelines.size() > 0) {
+		if(initialized) {
 			gl::Finish();
+			
+			renderStageComposer.Clear();
+
 			for(auto& p : pipelines) {
 				gl::Finish();
 				p = nullptr;
 			}
 			pipelines.clear();
-		}
-		
-		if(mainCamera) {
-			gl::Finish();
+
 			mainCamera = nullptr;
+
+			Gui::DeinitIMGUI();
+			gl::openGL.Destroy();
+			glfwTerminate();
+			initialized = false;
 		}
-		
-		Gui::DeinitIMGUI();
-		gl::openGL.Destroy();
-		glfwTerminate();
 	}
 	
 	

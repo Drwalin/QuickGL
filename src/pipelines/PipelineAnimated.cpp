@@ -158,7 +158,6 @@ namespace qgl {
 						as->interpolationFactor,
 						as->timeOffset,
 						as->lastAccessTimeStamp);
-				
 			});
 		}
 		
@@ -169,6 +168,7 @@ namespace qgl {
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
@@ -243,10 +243,6 @@ void main() {
 	pos = model * poseMat * vec4(in_pos, 1);
 	gl_Position = projectionView * pos;
 	normal = normalize((model * poseMat * vec4(in_normal, 0)).xyz);
-	
-	float factorA = uintBitsToFloat(in_animationState.z);
-	factorA = float(in_animationState.y) / 350.0;
-	
 	color = in_color;
 }
 
@@ -274,10 +270,10 @@ mat4 GetFrameMatrix(uint frameStart) {
 }
 
 mat4 GetPoseBoneMatrix() {
-	return mat4(texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(0,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(1,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(2,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(3,0,0), 0));
+	return mat4(texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(0,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(1,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(2,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(3,0,0), 0));
 	
 	mat4 poseA = GetFrameMatrix(in_animationState.x); 
 	return poseA;
@@ -337,7 +333,7 @@ layout (packed, std430, binding=1) buffer aaa {
 	AnimatedState animatedState[];
 };
 
-layout (packed, std430, binding=2) buffer bbb {
+layout (packed, std430, binding=2) readonly buffer bbb {
 	AnimationMetadata animationMetadata[];
 };
 
@@ -360,7 +356,7 @@ void main() {
 	currentFrame = int(floor(frameOffset));
 	nextFrame = currentFrame + 1;
 	
-	if(nextFrame < a.framesCount) {
+	if(nextFrame < a.framesCount) { // continue current animation
 		s.firstMatrixFrameCurrent =
 				currentFrame * a.bonesCount + a.firstMatrixId;
 		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent + a.bonesCount;
