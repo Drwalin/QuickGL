@@ -24,6 +24,7 @@
 
 #include "InputManager.hpp"
 #include "util/RenderStageComposer.hpp"
+#include "AnimationManager.hpp"
 
 #include "MeshManager.hpp"
 
@@ -45,12 +46,12 @@ namespace qgl {
 				));
 		virtual ~AnimatedMeshManager();
 		
-		gl::Texture& GetAnimationsMetadataTexture() { return *metaInfo; }
-		gl::Texture& GetKeyframesTexture() { return *matrices; }
-		
 		virtual void ReleaseMeshReference(uint32_t id) override;
 		
+		AnimationManager& GetAnimationManager() { return animationManager; }
+		
 		friend class PipelineAnimated;
+		friend class AnimationManager;
 		
 	protected:
 		
@@ -62,34 +63,7 @@ namespace qgl {
 		
 	private:
 		
-		struct AnimationInfo {
-			uint32_t firstMatrixId;
-			uint32_t bonesCount;
-			uint32_t framesCount;
-			uint32_t fps;
-		};
-		
-		std::map<std::string, uint32_t> mapAnimationNameToId;
-		std::vector<AnimationInfo> animationsInfo;
-		
-		
-		std::vector<glm::mat4> matricesHost;
-		
-		// TEXTURE_1D 16384 animations max
-		std::shared_ptr<gl::Texture> metaInfo; // RGBA32UI, single texel:
-											   // R - id of first matrix
-											   // G - number of bones
-											   // B - number of key frames
-											   // A - number of FPS
-		
-		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in
-		//                                     single row
-		std::shared_ptr<gl::Texture> matrices; // RGBA32F, 4 consecutive
-											   // vertical texels make up a
-											   // single matrix.
-											   // Bones ids are going:
-											   //  1. from top to down
-											   //  2. from left to right
+		AnimationManager animationManager;
 	};
 }
 

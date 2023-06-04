@@ -29,7 +29,7 @@ namespace qgl {
 	class Pipeline;
 	class Camera;
 	
-	class Engine {
+	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
 		
 		Engine();

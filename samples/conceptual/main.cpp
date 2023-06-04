@@ -9,6 +9,7 @@
 #include "../../include/quickgl/Gui.hpp"
 
 
+#include <ctime>
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/vector_relational.hpp>
@@ -45,17 +46,27 @@ int main() {
 // 	PRINT_PARAMETER(GL_SAMPLE_BUFFERS);
 // 	PRINT_PARAMETER(GL_MAX_ARRAY_TEXTURE_LAYERS);
 	
-	// create pipeline
-	GL_CHECK_PUSH_ERROR;
+	// create animated pipeline
+	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
+		= std::make_shared<qgl::PipelineAnimated>();
+	engine->AddPipeline(pipelineAnimated);
+	
+	// create static pipeline
 	std::shared_ptr<qgl::PipelineStatic> pipelineStatic
 		= std::make_shared<qgl::PipelineStatic>();
-	GL_CHECK_PUSH_ERROR;
 	engine->AddPipeline(pipelineStatic);
 	
-// 	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
-// 		= std::make_shared<qgl::PipelineAnimated>();
-// 	GL_CHECK_PUSH_ERROR;
-// 	engine->AddPipeline(pipelineAnimated);
+	// load animated models
+	auto meshManagerAnimated = pipelineAnimated->GetMeshManager();
+	meshManagerAnimated->LoadModels("../OpenGLWrapper/samples/WobblyThing.fbx");
+	
+	// add animated object
+	if(1){
+		uint32_t entity = pipelineAnimated->CreateEntity();
+		pipelineAnimated->SetEntityMesh(entity, 0);
+		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-1});
+		pipelineAnimated->SetAnimationState(entity, 0, 0, true, 0, true);
+	}
 	
 	// load models
 	auto meshManagerStatic = pipelineStatic->GetMeshManager();
@@ -73,21 +84,21 @@ int main() {
 	if(1){
 	uint32_t terrainId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
-	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,0,0});
+	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,1,0});
 	}
 	
 	// add box object
 	if(1){
 	uint32_t chestId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(chestId, "temple");
-	pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,0,0});
+	pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,-10,0});
 	}
 	
 	// add fire stand object
 	{
 	uint32_t standId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
-	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{10,0,0});
+	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{-20,0,0});
 	}
 	
 	// add 2. fire stand object
@@ -133,7 +144,7 @@ int main() {
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
-			for(int i=0; i<1000*1000*10; ++i) {
+			for(int i=0; i<1000*1000; ++i) {
 				uint32_t standId = pipelineStatic->CreateEntity();
 				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
 				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
@@ -142,7 +153,7 @@ int main() {
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
-			for(int i=0; i<1000*1000; ++i) {
+			for(int i=0; i<1000*100; ++i) {
 				uint32_t standId = pipelineStatic->CreateEntity();
 				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
 				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});

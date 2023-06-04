@@ -76,7 +76,6 @@ namespace qgl {
 		void GetMeshBoundingSphere(uint32_t meshId, float* offset,
 				float& radius);
 		
-
 		gl::VBO& GetVBO() { return vbo; }
 		gl::VBO& GetEBO() { return ebo; }
 		
