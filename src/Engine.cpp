@@ -77,6 +77,7 @@ namespace qgl {
 	int32_t Engine::AddPipeline(std::shared_ptr<Pipeline> pipeline) {
 		int32_t id = pipelines.size();
 		pipelines.emplace_back(pipeline);
+		pipeline->SetEngine(this->shared_from_this());
 		pipeline->Initialize();
 		renderStageComposer.AddPipelineStages(pipeline);
 		return id;

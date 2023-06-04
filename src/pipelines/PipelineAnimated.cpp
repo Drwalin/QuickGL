@@ -40,25 +40,33 @@ namespace qgl {
 	PipelineAnimated::~PipelineAnimated() {
 	}
 	
+	uint32_t PipelineAnimated::CreateEntity() {
+		uint32_t entity = PipelineFrustumCulling::CreateEntity();
+		SetAnimationState(entity, 0, 0, false, 0, false);
+		return entity;
+	}
+	
 	void PipelineAnimated::SetAnimationState(uint32_t entityId,
 			uint32_t animationId, float timeOffset, bool enableUpdateTime,
-			uint32_t animationIdAfter, bool loop) {
+			uint32_t animationIdAfter, bool continueNextAnimation) {
 		perEntityAnimationState.SetValue({
 				animationId,
 				animationIdAfter,
-				(loop?1u:0u) << 0 | (enableUpdateTime?1u:0u) << 1,
-				
+				(continueNextAnimation?1u:0u) | (enableUpdateTime?2u:0u),
 				0,
 				0,
-				0,
-				
-				engine->GetInputManager().GetTime(),
+				0.0f,
+				timeOffset,
 				engine->GetInputManager().GetTime()
 			}, entityId);
+		FlushDataToGPU(0);
+		FlushDataToGPU(1);
 	}
 	
 	void PipelineAnimated::Initialize() {
 		PipelineFrustumCulling::Initialize();
+		
+		perEntityAnimationState.Init();
 		
 		// init shaders
 		renderShader = std::make_unique<gl::Shader>();
@@ -81,7 +89,15 @@ namespace qgl {
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, false, 20, 0);
 		
 		// init animation state vertex attribute
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_animationState"), 4, gl::UNSIGNED_INT, false, 16, 1);
+		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
+				renderShader->GetAttributeLocation("in_animationState"),
+				3, gl::UNSIGNED_INT, false, 12, 1);
+		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
+				renderShader->GetAttributeLocation("in_animationState1"),
+				4, gl::UNSIGNED_INT, false, 0, 1);
+		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
+				renderShader->GetAttributeLocation("in_animationState2"),
+				4, gl::UNSIGNED_INT, false, 16, 1);
 		
 		// init model matrix
 		gl::VBO& modelVbo = transformMatrices.Vbo();
@@ -93,7 +109,9 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineAnimated::FlushDataToGPU(uint32_t stageId) {
-		return perEntityAnimationState.UpdateVBO(stageId);
+		uint32_t ret = PipelineFrustumCulling::FlushDataToGPU(stageId);
+		ret = std::max(ret, perEntityAnimationState.UpdateVBO(stageId));
+		return ret;
 	}
 	
 	void PipelineAnimated::AppendRenderStages(std::vector<StageFunction>& stages) {
@@ -105,9 +123,7 @@ namespace qgl {
 		const int32_t DELTA_TIME_LOCATION =
 			updateAnimationShader->GetUniformLocation("deltaTime");
 		const int32_t TIME_STAMP_LOCATION =
-			updateAnimationShader->GetUniformLocation("deltaTime");
-		const int32_t ANIMATION_INFO_LOCATION =
-			updateAnimationShader->GetUniformLocation("animationInfo");
+			updateAnimationShader->GetUniformLocation("timeStamp");
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				updateAnimationShader->Use();
@@ -115,15 +131,36 @@ namespace qgl {
 				
 				updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
 						GetEntitiesCount());
-				updateAnimationShader->SetUInt(DELTA_TIME_LOCATION,
+				updateAnimationShader->SetFloat(DELTA_TIME_LOCATION,
 						engine->GetInputManager().GetDeltaTime());
-				updateAnimationShader->SetUInt(TIME_STAMP_LOCATION,
+				updateAnimationShader->SetFloat(TIME_STAMP_LOCATION,
 						engine->GetInputManager().GetTime());
-				updateAnimationShader->SetTexture(ANIMATION_INFO_LOCATION,
-						animatedMeshManager->metaInfo.get(), 0);
+				
+				animatedMeshManager->GetAnimationManager()
+					.GetAnimationsMetadata().Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+				
+				perEntityAnimationState.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
 				
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
+				
+				gl::Finish();
+				std::vector<uint8_t> data;
+				perEntityAnimationState.Vbo().FetchAll(data);
+				gl::Finish();
+				AnimatedState* as = (AnimatedState*)(data.data());
+				printf("Animated state: %i %i %i    %i %i  %f    %f %f\n",
+						as->animationId,
+						as->animationIdAfter,
+						as->flags,
+						as->firstMatrixFrameCurrent,
+						as->firstMatrixFrameNext,
+						as->interpolationFactor,
+						as->timeOffset,
+						as->lastAccessTimeStamp);
+				
 			});
 		}
 		
@@ -185,7 +222,10 @@ in vec3 in_normal;
 in uvec4 in_bones;
 in vec4 in_weight;
 
-in uvec4 in_animationState;
+in uvec3 in_animationState; // {firstAnimationMatrixId, secondAnimationMatrixId,
+                            // interpolactionFactor}
+in ivec4 in_animationState1;
+in ivec4 in_animationState2;
 in mat4 model;
 
 uniform mat4 projectionView;
@@ -195,10 +235,65 @@ out vec4 color;
 out vec3 normal;
 out vec4 pos;
 
+const uint BONE_FRAMES_W = 64;
+const uint BONE_FRAMES_H = 16384;
+
+mat4 GetPoseBoneMatrix();
+
 void main() {
-	gl_Position = pos = projectionView * model * vec4(in_pos, 1);
-	normal = normalize((model * vec4(in_normal, 0)).xyz);
+	mat4 poseMat =
+//		mat4(1);
+		GetPoseBoneMatrix();
+	pos = model * poseMat * vec4(in_pos, 1);
+	gl_Position = projectionView * pos;
+	normal = normalize((model * poseMat * vec4(in_normal, 0)).xyz);
+	
+	float factorA = uintBitsToFloat(in_animationState.z);
+	factorA = float(in_animationState.y) / 350.0;
+	
 	color = in_color;
+// 		vec4(
+// 			factorA,
+// 			factorA,
+// 			factorA,
+// 			1);
+}
+
+mat4 GetBonePose(uint frameStart, uint bone) {
+	uint id = (frameStart+bone)*4;
+	ivec3 p;
+	p.x = int(id % BONE_FRAMES_W);
+	id = id / BONE_FRAMES_W;
+	p.y = int(id % BONE_FRAMES_H);
+	id = id / BONE_FRAMES_H;
+	p.z = int(id);
+	return mat4(texelFetch(bones, p+ivec3(0,0,0), 0),
+				texelFetch(bones, p+ivec3(1,0,0), 0),
+				texelFetch(bones, p+ivec3(2,0,0), 0),
+				texelFetch(bones, p+ivec3(3,0,0), 0));
+}
+
+mat4 GetFrameMatrix(uint frameStart) {
+	return
+		(GetBonePose(frameStart, in_bones[0])) // * in_weight[0]);
+// 		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
+// 		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
+// 		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3]);
+	;
+}
+
+mat4 GetPoseBoneMatrix() {
+	return mat4(texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(0,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(1,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(2,0,0), 0),
+				texelFetch(bones, ivec3(in_bones[0],0,0)*4+ivec3(3,0,0), 0));
+	
+	mat4 poseA = GetFrameMatrix(in_animationState.x); 
+	return poseA;
+	mat4 poseB = GetFrameMatrix(in_animationState.y); 
+	float factorA = uintBitsToFloat(in_animationState.z);
+	float factorB = 1.0 - factorA;
+	return (poseA * factorA) + (poseB * factorB);
 }
 )";
 	
@@ -236,7 +331,7 @@ struct AnimatedState {
 	float lastAccessTimeStamp;
 };
 
-struct AnimationInfo {
+struct AnimationMetadata {
 	uint firstMatrixId;
 	uint bonesCount;
 	uint framesCount;
@@ -251,14 +346,11 @@ layout (packed, std430, binding=1) buffer aaa {
 	AnimatedState animatedState[];
 };
 
-layout (binding = 0, rgba32ui) readonly uniform image2D animationInfo;
+layout (packed, std430, binding=2) buffer bbb {
+	AnimationMetadata animationMetadata[];
+};
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-AnimationInfo GetAnimationInfo(uint animId) {
-	uvec4 v = imageLoad(animationInfo, animId);
-	return {v.x, v.y, v.z, v.w};
-}
 
 void main() {
 	uint id = gl_GlobalInvocationID.x;
@@ -266,51 +358,49 @@ void main() {
 		return;
 	AnimatedState s = animatedState[id];
 
-	if(s.flags & 2) {
+	if((s.flags & 2) == 2) {
 		s.timeOffset += deltaTime;
 	}
 	
 	s.lastAccessTimeStamp = timeStamp;
-
-	AnimationInfo a = GetAnimationInfo(s.animationId);
-	AnimationInfo a2 = GetAnimationInfo(s.animationIdAfter);
-
-	float frame = s.timeOffset * (float)a.firstMatrixFramesCount;
-	if(s.flags & 1) { // continue next animation
-		frame = mod(frame, (float)a.framesCount);
-		float nextFrame = mod(frame+1.0, (float)a.framesCount);
-		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
-		s.firstMatrixFrameNext = floor(nextFrame)*a.bonesCount + a.firstMatrixId;
-		s.timeOffset = frame / (float)a.fps;
-	} else { // stop at last frame of current animation
+	AnimationMetadata a = animationMetadata[s.animationId];
+	uint currentFrame, nextFrame;
+	float frameOffset = s.timeOffset * a.fps;
+	currentFrame = int(floor(frameOffset));
+	nextFrame = currentFrame + 1;
+	
+	if(nextFrame < a.framesCount) {
+		s.firstMatrixFrameCurrent =
+				currentFrame * a.bonesCount + a.firstMatrixId;
+		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent + a.bonesCount;
+		s.interpolationFactor = fract(frameOffset);
+	} else if((s.flags & 1) == 1) { // continue next animation
+		if(nextFrame > a.framesCount) { // next animation is already in play
+				AnimationMetadata a2 = animationMetadata[s.animationIdAfter];
+				s.animationId = s.animationIdAfter;
+				frameOffset -= a.framesCount;
+				currentFrame -= a.framesCount;
+				uint c = ((currentFrame/a2.framesCount)*a2.framesCount);
+				currentFrame -= c;
+				frameOffset -= c;
+				nextFrame = (currentFrame + 1) % a2.framesCount;
+				s.timeOffset = frameOffset/a2.fps;
+				s.interpolationFactor = fract(frameOffset);
+				s.firstMatrixFrameCurrent = currentFrame * a2.bonesCount + a2.firstMatrixId;
+				s.firstMatrixFrameNext = nextFrame * a2.bonesCount + a2.firstMatrixId;
+		} else { // transitioning animations
+			AnimationMetadata a2 = animationMetadata[s.animationIdAfter];
+			s.firstMatrixFrameCurrent = (a.framesCount-1) * a.bonesCount + a.firstMatrixId;
+			s.firstMatrixFrameNext = a2.firstMatrixId;
+			s.interpolationFactor = fract(frameOffset);
+		}
+	} else { // stop at last frame of animation
+		s.firstMatrixFrameCurrent =
+				(a.framesCount-1) * a.bonesCount + a.firstMatrixId;
+		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent;
+		s.interpolationFactor = 0;
 	}
-
-// 	if(frame >= a.firstMatrixFramesCount+1) {
-// 		if(s.flags & 1) {
-// 			s.timeOffset -= (float)a.framesCount / (float)a.fps;
-// 			s.firstMatrixFrameCurrent = a.framesCount*a.bonesCount
-// 				+ a.firstMatrixId;
-// 			s.firstMatrixFrameNext = = a.framesCount*a.bonesCount
-// 				+ a.firstMatrixId;
-// 		} else {
-// 			s.firstMatrixFrameCurrent = a.framesCount*a.bonesCount
-// 				+ a.firstMatrixId;
-// 			s.firstMatrixFrameNext = = a.framesCount*a.bonesCount
-// 				+ a.firstMatrixId;
-// 		}
-// 	} else if(frame == a.firstMatrixFramesCount) {
-// 		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
-// 		s.firstMatrixFrameNext = a2.firstMatrixId;
-// 	} else {
-// 		s.firstMatrixFrameCurrent = floor(frame)*a.bonesCount + a.firstMatrixId;
-// 		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent + a.bonesCount;
-// 	}
 	
-	s.interpolationFactor = fract(frame);
-
-	
-	
-
 	animatedState[id] = s;
 }
 )";

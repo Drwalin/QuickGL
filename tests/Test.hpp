@@ -3,8 +3,9 @@
 #define QUICKGL_TEST_HPP
 
 #include <cstdio>
-#include <iostream>
+#include <cinttypes>
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <string>

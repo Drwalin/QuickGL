@@ -43,13 +43,15 @@ namespace qgl {
 		
 		virtual void Initialize() override;
 		
+		virtual uint32_t CreateEntity() override;
+		
 	public:
 		
 		virtual void AppendRenderStages(std::vector<StageFunction>& stages) override;
 		
 		void SetAnimationState(uint32_t entityId, uint32_t animationId,
 				float timeOffset, bool enableUpdateTime,
-				uint32_t animationIdAfter, bool loop);
+				uint32_t animationIdAfter, bool continueNextAnimation);
 		
 	protected:
 		

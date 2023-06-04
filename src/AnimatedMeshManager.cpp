@@ -30,19 +30,10 @@ namespace qgl {
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh)) :
 	MeshManager(vertexSize, meshAppenderVertices) {
-		metaInfo = std::make_shared<gl::Texture>();
-		metaInfo->Generate1(gl::TextureTarget::TEXTURE_1D, 4096,
-				gl::TextureSizedInternalFormat::RGBA32UI,
-				gl::TextureDataFormat::RGBA_INTEGER, gl::DataType::UNSIGNED_INT);
-		matrices = std::make_shared<gl::Texture>();
-		matrices->Generate3(gl::TextureTarget::TEXTURE_2D_ARRAY, 64, 16384, 1,
-				gl::TextureSizedInternalFormat::RGBA32F,
-				gl::TextureDataFormat::RGBA, gl::DataType::FLOAT);
 	}
 	
 	AnimatedMeshManager::~AnimatedMeshManager() {
 	}
-	
 	
 	void AnimatedMeshManager::ReleaseMeshReference(uint32_t id) {
 		MeshManager::ReleaseMeshReference(id);
@@ -54,48 +45,13 @@ namespace qgl {
 		throw "AnimatedMeshManager::FreeMesh is not implemented.";
 	}
 	
-	
 	bool AnimatedMeshManager::LoadModels(
 			std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
 		bool ret = MeshManager::LoadModels(loader);
-		struct FullAnimationMetaData {
-			uint32_t frames;
-			uint32_t bones;
-			uint32_t animationId;
-			uint32_t fps;
-			std::string name;
-			uint32_t firstBoneInBuffer;
-		};
-		
-		for(auto& anim : loader->animations) {
-			uint32_t animationId = animationsInfo.size();
-			mapAnimationNameToId[anim->name] = animationId;
-			AnimationInfo info;
-			info.firstMatrixId = matricesHost.size();
-			info.fps = 24;
-			info.bonesCount = anim->CountBones();
-			info.framesCount = anim->duration * anim->framesPerSecond;
-			
-			for(uint32_t i=0; i<info.framesCount; ++i) {
-				matricesHost.resize(matricesHost.size()
-						+info.bonesCount);
-				anim->GetModelBoneMatrices(&(matricesHost[
-							matricesHost.size()-info.bonesCount]),
-						i/(float)info.fps, false);
-			}
-			animationsInfo.emplace_back(info);
+		if(ret) {
+			animationManager.LoadAnimations(loader);
 		}
-		matricesHost.reserve(matricesHost.size() + 1024*128);
-		matrices->Update3(&matricesHost.front(),
-				0, 0, 0,
-				64, (matricesHost.size()*4+63)/64, (matricesHost.size()*4+64*16384-1)/(64*16384),
-				0,
-				gl::TextureDataFormat::RGBA, gl::DataType::FLOAT);
-		metaInfo->Update1(&matricesHost.front(), 0,
-				matricesHost.size()*4, 0,
-				gl::TextureDataFormat::RGBA, gl::DataType::UNSIGNED_INT);
-		
-		return ret | (loader->animations.size() != 0);
+		return ret;
 	}
 }
 
