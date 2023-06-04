@@ -69,7 +69,6 @@ namespace qgl {
 		
 		std::unordered_map<std::string, uint32_t> mapAnimationNameToId;
 		
-		
 		std::vector<glm::mat4> matricesHost;
 		
 		// TEXTURE_1D 16384 animations max
@@ -77,12 +76,7 @@ namespace qgl {
 		
 		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in
 		//                                     single row
-		std::shared_ptr<gl::Texture> matrices; // RGBA32F, 4 consecutive
-											   // vertical texels make up a
-											   // single matrix.
-											   // Bones ids are going:
-											   //  1. from top to down
-											   //  2. from left to right
+		std::shared_ptr<gl::Texture> matrices;
 	};
 }
 

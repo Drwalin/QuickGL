@@ -8,7 +8,6 @@
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
-
 #include <ctime>
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
@@ -19,7 +18,6 @@
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
-
 #include <chrono>
 #include <cstdio>
 
@@ -27,6 +25,7 @@ int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
 	engine->InitGL("Simple conceptual example");
+	{
 	
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_INDICES);
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_VERTICES);
@@ -74,12 +73,6 @@ int main() {
 	meshManagerStatic->LoadModels("../samples/chest.fbx");
 	meshManagerStatic->LoadModels("../samples/temple.fbx");
 	
-	// create and init camera
-	std::shared_ptr<qgl::FreeFlyCamera> camera
-		= std::make_shared<qgl::FreeFlyCamera>();
-	engine->SetMainCamera(camera);
-	camera->SetFov(75);
-	
 	// add terrain object
 	if(1){
 	uint32_t terrainId = pipelineStatic->CreateEntity();
@@ -110,12 +103,29 @@ int main() {
 	
 	int I=0;
 	const uint32_t fireStandIdMesh = pipelineStatic->GetMeshManager()->GetMeshIdByName("fireStand");
+	
+	
 	bool mouseLocked = true, fullscreen = false;
 	engine->GetInputManager().LockMouse();
 	engine->SetFullscreen(fullscreen);
 	
+	
+	// create and init camera
+	std::shared_ptr<qgl::FreeFlyCamera> camera
+		= std::make_shared<qgl::FreeFlyCamera>();
+	engine->SetMainCamera(camera);
+	camera->SetFov(75);
+	
+	int COUNT_FRAMES = 0;
+	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
+		
+		++COUNT_FRAMES;
+		
+		if(COUNT_FRAMES == 10) {
+			pipelineAnimated->SetAnimationState(0, 0, 0, true, 0, true);
+		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
 			mouseLocked = !mouseLocked;
@@ -161,8 +171,6 @@ int main() {
 			}
 		}
 		
-		
-		
 		// begin new frame
 		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
 		engine->BeginNewFrame();
@@ -176,13 +184,11 @@ int main() {
 		gl::Finish();
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
-			
 
 		// render gui
 		ImGui::SetNextWindowBgAlpha(0.5);
 			ImGui::Begin("Frames per second", NULL,
 					ImGuiWindowFlags_NoTitleBar |
-	// 				ImGuiWindowFlags_NoBackground |
 					ImGuiWindowFlags_NoFocusOnAppearing |
 					ImGuiWindowFlags_AlwaysAutoResize);
 			ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
@@ -195,7 +201,6 @@ int main() {
 		ImGui::SetNextWindowBgAlpha(0.0);
 		ImGui::Begin("Timings", NULL,
 				ImGuiWindowFlags_NoTitleBar |
-// 				ImGuiWindowFlags_NoBackground |
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
@@ -208,9 +213,7 @@ int main() {
 					renderTime/1000000, renderTime%1000000);
 		ImGui::End();
 		
-		
 		// swap buffers
-		
 		engine->SwapBuffers();
 		engine->PrintErrors();
 		
@@ -218,6 +221,7 @@ int main() {
 		gl::Finish();
 	}
 	
+	}
 	engine->Destroy();	
 	return 0;
 }

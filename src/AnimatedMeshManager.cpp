@@ -29,10 +29,15 @@ namespace qgl {
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh)) :
-	MeshManager(vertexSize, meshAppenderVertices) {
+			MeshManager(vertexSize, meshAppenderVertices) {
+		animationManager = new AnimationManager();
 	}
 	
 	AnimatedMeshManager::~AnimatedMeshManager() {
+		if(animationManager) {
+			delete animationManager;
+		}
+		animationManager = nullptr;
 	}
 	
 	void AnimatedMeshManager::ReleaseMeshReference(uint32_t id) {
@@ -48,9 +53,7 @@ namespace qgl {
 	bool AnimatedMeshManager::LoadModels(
 			std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
 		bool ret = MeshManager::LoadModels(loader);
-		if(ret) {
-			animationManager.LoadAnimations(loader);
-		}
+		animationManager->LoadAnimations(loader);
 		return ret;
 	}
 }

@@ -19,10 +19,10 @@
 #ifndef QUICKGL_RENDER_STAGE_COMPOSER_HPP
 #define QUICKGL_RENDER_STAGE_COMPOSER_HPP
 
-#include "../pipelines/Pipeline.hpp"
-
 #include <list>
 #include <thread>
+
+#include "../pipelines/Pipeline.hpp"
 
 namespace qgl {
 	
@@ -42,6 +42,8 @@ namespace qgl {
 		uint32_t NextStage(std::shared_ptr<Camera> camera);
 		
 		const std::vector<Timings>& GetTimings() const { return timings; }
+		
+		void Clear();
 		
 	private:
 		
