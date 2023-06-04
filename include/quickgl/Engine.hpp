@@ -61,6 +61,8 @@ namespace qgl {
 		
 	protected:
 		
+		bool initialized;
+		
 		InputManager inputManager;
 		RenderStageComposer renderStageComposer;
 		

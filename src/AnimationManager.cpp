@@ -22,6 +22,7 @@
 #include "../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/AssimpLoader.hpp"
 
 #include "../include/quickgl/AnimationManager.hpp"
+#include <thread>
 
 namespace qgl {
 	AnimationManager::AnimationManager() {
@@ -34,28 +35,33 @@ namespace qgl {
 	AnimationManager::~AnimationManager() {
 		matrices->Destroy();
 		matrices = nullptr;
-		metaInfo.Destroy();
+		metaData.Destroy();
 	}
 	
 	void AnimationManager::LoadAnimations(
 			std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
-		uint32_t firstToUpdate = metaInfo.Count();
-		metaInfo.Resize(firstToUpdate + loader->animations.size());
+		const uint32_t firstToUpdate = metaData.Count();
+		uint32_t animationId = metaData.Count();
+		metaData.Resize(firstToUpdate + loader->animations.size());
 		for(auto& anim : loader->animations) {
-			uint32_t animationId = metaInfo.Count();
 			mapAnimationNameToId[anim->name] = animationId;
 			AnimationInfo info;
 			info.firstMatrixId = matricesHost.size();
 			info.fps = 24;
 			info.bonesCount = anim->CountBones();
 			info.framesCount = anim->duration * anim->framesPerSecond;
-			metaInfo[animationId] = info;
+			metaData[animationId] = info;
 			for(uint32_t i=0; i<info.framesCount; ++i) {
 				uint32_t offset = matricesHost.size();
 				matricesHost.resize(offset + info.bonesCount);
 				anim->GetModelBoneMatrices(&(matricesHost[offset]),
 						i/(float)info.fps, false);
 			}
+			++animationId;
+		}
+		
+		if(firstToUpdate == metaData.Count()) {
+			return;
 		}
 		
 		matricesHost.reserve(matricesHost.size() + 16384*4*64);
@@ -64,13 +70,12 @@ namespace qgl {
 		w = 64;
 		h = (matricesHost.size()*4+64-1)/64;
 		d = (((matricesHost.size()*4+64-1)/64)+16384-1)/(16384);
-		printf(" whd: %u %u %u\n", w, h, d);
 		matrices->Update3(matricesHost.data(),
 				0, 0, 0,
 				w, h, d,
 				0,
 				gl::TextureDataFormat::RGBA, gl::DataType::FLOAT);
-		metaInfo.UpdateVertices(firstToUpdate, loader->animations.size());
+		metaData.UpdateVertices(firstToUpdate, loader->animations.size());
 	}
 }
 

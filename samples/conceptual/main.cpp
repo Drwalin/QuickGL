@@ -45,15 +45,11 @@ int main() {
 // 	PRINT_PARAMETER(GL_SAMPLE_BUFFERS);
 // 	PRINT_PARAMETER(GL_MAX_ARRAY_TEXTURE_LAYERS);
 	
+		
 	// create animated pipeline
 	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
 		= std::make_shared<qgl::PipelineAnimated>();
 	engine->AddPipeline(pipelineAnimated);
-	
-	// create static pipeline
-	std::shared_ptr<qgl::PipelineStatic> pipelineStatic
-		= std::make_shared<qgl::PipelineStatic>();
-	engine->AddPipeline(pipelineStatic);
 	
 	// load animated models
 	auto meshManagerAnimated = pipelineAnimated->GetMeshManager();
@@ -66,6 +62,12 @@ int main() {
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-1});
 		pipelineAnimated->SetAnimationState(entity, 0, 0, true, 0, true);
 	}
+	
+	
+	// create static pipeline
+	std::shared_ptr<qgl::PipelineStatic> pipelineStatic
+		= std::make_shared<qgl::PipelineStatic>();
+	engine->AddPipeline(pipelineStatic);
 	
 	// load models
 	auto meshManagerStatic = pipelineStatic->GetMeshManager();

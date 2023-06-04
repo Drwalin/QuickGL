@@ -41,21 +41,19 @@ namespace qgl {
 		void Resize(uint32_t vertices);
 		
 		template<typename T>
-		inline T* Elements() { return (T*)&(buffer->front()); }
+		inline T* Elements() { return (T*)(buffer.data()); }
 		
 		inline uint32_t Count() { return vertices; }
 		
 		void UpdateVertices(uint32_t vertexStart, uint32_t vertexCount);
 		
-	private:
+	protected:
 		
-		std::vector<uint8_t>* buffer;
+		std::vector<uint8_t> buffer;
 		gl::VBO* vbo;
 		const uint32_t vertexSize;
 		uint32_t vertices;
 	};
-	
-	
 	
 	template<typename T>
 	class TypedVBO : public BufferedVBO {
@@ -65,7 +63,12 @@ namespace qgl {
 		~TypedVBO() {}
 		
 		inline T* Elements() { return BufferedVBO::Elements<T>(); }
-		inline T& operator[](uint32_t id) { return Elements()[id]; }
+		inline T& operator[](uint32_t id) {
+			if(id >= vertices) {
+				Resize(id+1);
+			}
+			return Elements()[id];
+		}
 	};
 }
 

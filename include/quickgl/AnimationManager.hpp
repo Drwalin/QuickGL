@@ -51,7 +51,7 @@ namespace qgl {
 		AnimationManager();
 		~AnimationManager();
 		
-		inline TypedVBO<AnimationInfo>& GetAnimationsMetadata() { return metaInfo; }
+		inline TypedVBO<AnimationInfo>& GetAnimationsMetadata() { return metaData; }
 		inline gl::Texture& GetKeyframesTexture() { return *matrices; }
 		
 		uint32_t GetAnimationId(const std::string& animationName);
@@ -72,7 +72,7 @@ namespace qgl {
 		std::vector<glm::mat4> matricesHost;
 		
 		// TEXTURE_1D 16384 animations max
-		TypedVBO<AnimationInfo> metaInfo;
+		TypedVBO<AnimationInfo> metaData;
 		
 		// TEXTURE_2D_ARRAY 16384*64 x LAYERS; 16 bones of single frame in
 		//                                     single row
