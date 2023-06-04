@@ -79,17 +79,19 @@ namespace qgl {
 		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
 		vao->Init();
 		gl::VBO& vbo = meshManager->GetVBO();
+		
+		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_weights"), 4, gl::UNSIGNED_BYTE, true, 20, 0);
+		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, false, 24, 0);
+		
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_pos"), 3, gl::FLOAT, false, 0, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_color"), 4, gl::UNSIGNED_BYTE, true, 12, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_normal"), 4, gl::BYTE, true, 16, 0);
 		
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_weights"), 4, gl::UNSIGNED_BYTE, true, 24, 0);
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, false, 20, 0);
-		
 		// init animation state vertex attribute
 		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
 				renderShader->GetAttributeLocation("in_animationState"),
-				3, gl::UNSIGNED_INT, false, 12, 1);
+				4, gl::UNSIGNED_INT, false, 12, 1);
+		
 		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
 				renderShader->GetAttributeLocation("in_animationState1"),
 				4, gl::UNSIGNED_INT, false, 0, 1);
@@ -204,7 +206,7 @@ namespace qgl {
 							<uint8_t, 127, 3>);
 				
 				mesh->ExtractWeightsWithBones<uint8_t, uint8_t>(offset, buffer,
-						24, 20, stride,
+						20, 24, stride,
 						gl::BasicMeshLoader::ConverterIntPlainClampScale
 							<uint8_t, 255, 0, 255, 1>, 4);
 			});
@@ -220,7 +222,7 @@ in vec3 in_normal;
 in uvec4 in_bones;
 in vec4 in_weight;
 
-in uvec3 in_animationState; // {firstAnimationMatrixId, secondAnimationMatrixId,
+in uvec4 in_animationState; // {firstAnimationMatrixId, secondAnimationMatrixId,
                             // interpolactionFactor}
 in ivec4 in_animationState1;
 in ivec4 in_animationState2;
@@ -239,11 +241,30 @@ const uint BONE_FRAMES_H = 16384;
 mat4 GetPoseBoneMatrix();
 
 void main() {
-	mat4 poseMat = GetPoseBoneMatrix();
+	mat4 poseMat =
+// 			GetPoseBoneMatrix();
+		   mat4(texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(0,0,0), 0),
+				texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(1,0,0), 0),
+				texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(2,0,0), 0),
+				texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(3,0,0), 0));
+// 		   mat4(texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(0,0,0), 0),
+// 				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(1,0,0), 0),
+// 				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(2,0,0), 0),
+// 				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(3,0,0), 0));
+	
 	pos = model * poseMat * vec4(in_pos, 1);
 	gl_Position = projectionView * pos;
 	normal = normalize((model * poseMat * vec4(in_normal, 0)).xyz);
 	color = in_color;
+
+	color.y = color.z = color.x = in_bones[0]/6.0f;
+
+// 	color.x = in_weight[0];
+// 	color.y = in_weight[1];
+// 	color.z = in_weight[2];
+
+// 	color.y = color.z = color.x
+// 		= uintBitsToFloat(in_animationState.x)/350;///3000000050.0;
 }
 
 mat4 GetBonePose(uint frameStart, uint bone) {
@@ -262,7 +283,8 @@ mat4 GetBonePose(uint frameStart, uint bone) {
 
 mat4 GetFrameMatrix(uint frameStart) {
 	return
-		(GetBonePose(frameStart, in_bones[0])) // * in_weight[0]);
+		(GetBonePose(frameStart+1, int(floor(in_pos.z)))) // * in_weight[0]);
+// 		(GetBonePose(frameStart, in_bones[0])) // * in_weight[0]);
 // 		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
 // 		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
 // 		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3]);
@@ -270,13 +292,7 @@ mat4 GetFrameMatrix(uint frameStart) {
 }
 
 mat4 GetPoseBoneMatrix() {
-	return mat4(texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(0,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(1,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(2,0,0), 0),
-				texelFetch(bones, ivec3(in_bones[0]*4,0,0)+ivec3(3,0,0), 0));
-	
 	mat4 poseA = GetFrameMatrix(in_animationState.x); 
-	return poseA;
 	mat4 poseB = GetFrameMatrix(in_animationState.y); 
 	float factorA = uintBitsToFloat(in_animationState.z);
 	float factorB = 1.0 - factorA;

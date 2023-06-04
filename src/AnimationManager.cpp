@@ -40,10 +40,10 @@ namespace qgl {
 	
 	void AnimationManager::LoadAnimations(
 			std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
-		const uint32_t firstToUpdate = metaData.Count();
-		uint32_t animationId = metaData.Count();
+		const uint32_t firstToUpdate = mapAnimationNameToId.size();
 		metaData.Resize(firstToUpdate + loader->animations.size());
 		for(auto& anim : loader->animations) {
+			uint32_t animationId = mapAnimationNameToId.size();
 			mapAnimationNameToId[anim->name] = animationId;
 			AnimationInfo info;
 			info.firstMatrixId = matricesHost.size();
@@ -57,7 +57,6 @@ namespace qgl {
 				anim->GetModelBoneMatrices(&(matricesHost[offset]),
 						i/(float)info.fps, false);
 			}
-			++animationId;
 		}
 		
 		if(firstToUpdate == metaData.Count()) {
