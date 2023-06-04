@@ -55,12 +55,10 @@ namespace qgl {
 				(continueNextAnimation?1u:0u) | (enableUpdateTime?2u:0u),
 				0,
 				0,
-				0.0f,
+				0,
 				timeOffset,
 				engine->GetInputManager().GetTime()
 			}, entityId);
-		FlushDataToGPU(0);
-		FlushDataToGPU(1);
 	}
 	
 	void PipelineAnimated::Initialize() {
@@ -241,9 +239,7 @@ const uint BONE_FRAMES_H = 16384;
 mat4 GetPoseBoneMatrix();
 
 void main() {
-	mat4 poseMat =
-//		mat4(1);
-		GetPoseBoneMatrix();
+	mat4 poseMat = GetPoseBoneMatrix();
 	pos = model * poseMat * vec4(in_pos, 1);
 	gl_Position = projectionView * pos;
 	normal = normalize((model * poseMat * vec4(in_normal, 0)).xyz);
@@ -252,11 +248,6 @@ void main() {
 	factorA = float(in_animationState.y) / 350.0;
 	
 	color = in_color;
-// 		vec4(
-// 			factorA,
-// 			factorA,
-// 			factorA,
-// 			1);
 }
 
 mat4 GetBonePose(uint frameStart, uint bone) {

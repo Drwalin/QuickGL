@@ -16,10 +16,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
-#include "../../include/quickgl/util/RenderStageComposer.hpp"
-
 #include <chrono>
+
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+
+#include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 namespace qgl {
 	
@@ -38,6 +39,12 @@ namespace qgl {
 		}
 		timings.clear();
 		return max;
+	}
+	
+	void RenderStageComposer::Clear() {
+		timings.clear();
+		currentStagingFunctions.clear();
+		stagingFunctions.clear();
 	}
 	
 	uint32_t RenderStageComposer::NextStage(std::shared_ptr<Camera> camera) {

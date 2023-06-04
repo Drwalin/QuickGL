@@ -16,19 +16,36 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../include/quickgl/util/BufferedVBO.hpp"
+#include <cstdio>
 
+#include "../../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+
+#include "../../include/quickgl/util/BufferedVBO.hpp"
 
 namespace qgl {
 	
 	BufferedVBO::BufferedVBO(uint32_t vertexSize) : vertexSize(vertexSize) {
 		vbo = new gl::VBO(vertexSize, gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
+		buffer = new std::vector<uint8_t>();
 		vertices = 0;
 	}
 	
 	BufferedVBO::~BufferedVBO() {
-		delete vbo;
+		Destroy();
+	}
+	
+	void BufferedVBO::Destroy() {
+		if(vbo) {
+			printf("BufferedVBO::Destroy(%p, %p)\n", vbo, buffer);
+			fflush(stdout);
+			glFinish();
+			vbo->Destroy();
+			delete vbo;
+			vbo = nullptr;
+			delete buffer;
+			buffer = nullptr;
+		}
 	}
 	
 	void BufferedVBO::Resize(uint32_t vertices) {
@@ -39,7 +56,7 @@ namespace qgl {
 	GL_CHECK_PUSH_ERROR;
 		this->vertices = vertices;
 	GL_CHECK_PUSH_ERROR;
-		buffer.resize(vertices*vertexSize);
+		buffer->resize(vertices*vertexSize);
 	GL_CHECK_PUSH_ERROR;
 		vbo->Resize(vertices);
 	GL_CHECK_PUSH_ERROR;
@@ -47,7 +64,7 @@ namespace qgl {
 	
 	void BufferedVBO::UpdateVertices(uint32_t vertexStart,
 			uint32_t vertexCount) {
-		vbo->Update(&buffer.front(), vertexStart*vertexSize,
+		vbo->Update(buffer->data(), vertexStart*vertexSize,
 				vertexCount*vertexSize);
 	}
 }

@@ -34,12 +34,14 @@ namespace qgl {
 		BufferedVBO(uint32_t vertexSize);
 		~BufferedVBO();
 		
+		void Destroy();
+		
 		inline gl::VBO& Vbo() { return *vbo; }
 		
 		void Resize(uint32_t vertices);
 		
 		template<typename T>
-		inline T* Elements() { return (T*)&buffer.front(); }
+		inline T* Elements() { return (T*)&(buffer->front()); }
 		
 		inline uint32_t Count() { return vertices; }
 		
@@ -47,7 +49,7 @@ namespace qgl {
 		
 	private:
 		
-		std::vector<uint8_t> buffer;
+		std::vector<uint8_t>* buffer;
 		gl::VBO* vbo;
 		const uint32_t vertexSize;
 		uint32_t vertices;

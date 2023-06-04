@@ -48,7 +48,7 @@ namespace qgl {
 		
 		virtual void ReleaseMeshReference(uint32_t id) override;
 		
-		AnimationManager& GetAnimationManager() { return animationManager; }
+		AnimationManager& GetAnimationManager() { return *animationManager; }
 		
 		friend class PipelineAnimated;
 		friend class AnimationManager;
@@ -63,7 +63,7 @@ namespace qgl {
 		
 	private:
 		
-		AnimationManager animationManager;
+		AnimationManager* animationManager;
 	};
 }
 

@@ -32,6 +32,9 @@ namespace qgl {
 	}
 	
 	AnimationManager::~AnimationManager() {
+		matrices->Destroy();
+		matrices = nullptr;
+		metaInfo.Destroy();
 	}
 	
 	void AnimationManager::LoadAnimations(
@@ -54,11 +57,9 @@ namespace qgl {
 						i/(float)info.fps, false);
 			}
 		}
-		printf(" matrices size: %llu\n", matricesHost.size());
+		
 		matricesHost.reserve(matricesHost.size() + 16384*4*64);
-		for(int i=0; i<matricesHost.size(); ++i) {
-// 			matricesHost[i] = glm::mat4(1);
-		}
+		
 		uint32_t w, h, d;
 		w = 64;
 		h = (matricesHost.size()*4+64-1)/64;
@@ -70,18 +71,6 @@ namespace qgl {
 				0,
 				gl::TextureDataFormat::RGBA, gl::DataType::FLOAT);
 		metaInfo.UpdateVertices(firstToUpdate, loader->animations.size());
-		std::vector<glm::mat4> mats;
-		mats.resize(w*h*d);
-		matrices->Fetch3(mats.data(), 0, 0, 0, w, h, d, 0, gl::TextureDataFormat::RGBA, gl::DataType::FLOAT, w*h*d*64);
-		
-		
-// 		float *a = (float*)matricesHost.data();
-// 		float *b = (float*)mats.data();
-// 		for(int i = 0; i<16*10; ++i) {
-// 			printf(" bone %i : %f == %f\n", i/16, a[i], b[i]);
-// 			if(i%16 == 15)
-// 				printf("\n");
-// 		}
 	}
 }
 

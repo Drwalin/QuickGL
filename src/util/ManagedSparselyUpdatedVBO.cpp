@@ -81,7 +81,8 @@ void main() {
 })";
 			if(shader->Compile(shaderSource))
 				exit(31);
-			shaderDeltaCommandsLocation = shader->GetUniformLocation("updateElements");
+			shaderDeltaCommandsLocation =
+				shader->GetUniformLocation("updateElements");
 		}
 		deltaData.clear();
 	}
@@ -115,8 +116,8 @@ void main() {
 			deltaData.swap(deltaDataGPU);
 			deltaData.clear();
 			if(deltaDataGPU.size() != 0) {
-				deltaVbo->Update(&deltaDataGPU.front(), 0,
-						deltaDataGPU.size());
+				deltaVbo->Update(&deltaDataGPU.front(), 0, deltaDataGPU.size());
+				whereSomethingWasUpdated.clear();
 			} else {
 				return 0;
 			}
@@ -132,7 +133,6 @@ void main() {
 				deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 				vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
 				shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
-				whereSomethingWasUpdated.clear();
 			}
 			return 0;
 		default:
@@ -140,7 +140,8 @@ void main() {
 		}
 	}
 	
-	void UntypedManagedSparselyUpdatedVBO::SetValue(const void* value, uint32_t id) {
+	void UntypedManagedSparselyUpdatedVBO::SetValue(const void* value,
+			uint32_t id) {
 		auto it = whereSomethingWasUpdated.find(id);
 		uint32_t p = deltaData.size();
 		if(it != whereSomethingWasUpdated.end()) {

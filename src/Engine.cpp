@@ -31,6 +31,7 @@ namespace qgl {
 	}
 	
 	Engine::~Engine() {
+		Destroy();
 	}
 	
 	
@@ -46,12 +47,21 @@ namespace qgl {
 	}
 	
 	void Engine::Destroy() {
-		for(auto& p : pipelines) {
-			p = NULL;
-		}
-		pipelines.clear();
+		renderStageComposer.Clear();
 		
-		mainCamera = NULL;
+		if(pipelines.size() > 0) {
+			gl::Finish();
+			for(auto& p : pipelines) {
+				gl::Finish();
+				p = nullptr;
+			}
+			pipelines.clear();
+		}
+		
+		if(mainCamera) {
+			gl::Finish();
+			mainCamera = nullptr;
+		}
 		
 		Gui::DeinitIMGUI();
 		gl::openGL.Destroy();
