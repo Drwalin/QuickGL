@@ -32,7 +32,8 @@ namespace qgl {
 	
 	void InputManager::NewFrame() {
 		gl::openGL.SwapInput();
-		glfwPollEvents();
+		for(int i=0; i<32; ++i)
+			glfwPollEvents();
 		
 		float t2 = glfwGetTime();
 		deltaTime = t2 - time;
