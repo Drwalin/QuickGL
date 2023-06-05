@@ -26,11 +26,6 @@
 
 #include "../include/quickgl/Engine.hpp"
 
-#define DEBUG { \
-	if(false)printf("debug %s : %i\n", __FILE__, __LINE__); \
-	fflush(stdout); \
-}
-
 namespace qgl {
 	Engine::Engine() {
 		initialized = false;
@@ -39,7 +34,6 @@ namespace qgl {
 	Engine::~Engine() {
 		Destroy();
 	}
-	
 	
 	void Engine::InitGL(std::string windowTitle) {
 	GL_CHECK_PUSH_ERROR;
@@ -74,21 +68,17 @@ namespace qgl {
 		}
 	}
 	
-	
 	void Engine::SetFullscreen(bool fullscreen) {
 		gl::openGL.SetFullscreen(fullscreen);
 	}
-	
 	
 	void Engine::SetWindowTitle(std::string title) {
 		glfwSetWindowTitle(gl::openGL.window, title.c_str());
 	}
 	
-	
 	bool Engine::IsQuitRequested() {
 		return glfwWindowShouldClose(gl::openGL.window);
 	}
-	
 	
 	int32_t Engine::AddPipeline(std::shared_ptr<Pipeline> pipeline) {
 		int32_t id = pipelines.size();
@@ -105,7 +95,6 @@ namespace qgl {
 		return pipelines[id];
 	}
 	
-	
 	void Engine::BeginNewFrame() {
 		gl::openGL.InitFrame();
 		inputManager.NewFrame();
@@ -113,20 +102,14 @@ namespace qgl {
 	}
 	
 	void Engine::Render() {
-		DEBUG;
 		mainCamera->PrepareDataForNewFrame();
-		DEBUG;
 		
 		renderStageComposer.RestartStages();
-		DEBUG;
 		bool end = false;
-		DEBUG;
 		do {
-		DEBUG;
 			end = renderStageComposer.NextStage(mainCamera) > 0 ? false : true;
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		} while(!end);
-		DEBUG;
 	}
 	
 	void Engine::SwapBuffers() {

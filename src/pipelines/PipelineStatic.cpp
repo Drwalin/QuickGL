@@ -32,11 +32,6 @@
 
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 
-#define DEBUG { \
-	if(false)printf("debug %s : %i\n", __FILE__, __LINE__); \
-	fflush(stdout); \
-}
-
 namespace qgl {
 	PipelineStatic::PipelineStatic() {
 	}
@@ -78,7 +73,6 @@ namespace qgl {
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
-				DEBUG;
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
@@ -86,9 +80,6 @@ namespace qgl {
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
-				DEBUG;
-				gl::Finish();
-				DEBUG;
 			});
 	}
 	
