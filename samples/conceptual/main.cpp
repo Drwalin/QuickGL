@@ -18,6 +18,11 @@
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
+#define DEBUG { \
+	if(false)printf("debug %s : %i\n", __FILE__, __LINE__); \
+	fflush(stdout); \
+}
+
 #include <chrono>
 #include <cstdio>
 
@@ -120,20 +125,27 @@ int main() {
 	
 	int COUNT_FRAMES = 0;
 	
+	DEBUG;
 	while(!engine->IsQuitRequested()) {
 		// process inputs
 		
+		DEBUG;
 		++COUNT_FRAMES;
 		
-		if(COUNT_FRAMES == 10) {
-			pipelineAnimated->SetAnimationState(0, 0, 0, true, 0, true);
-		}
+		DEBUG;
+// 		if(COUNT_FRAMES == 10) {
+// 		DEBUG;
+// 			pipelineAnimated->SetAnimationState(0, 0, 0, true, 0, true);
+// 		DEBUG;
+// 		}
+// 		DEBUG;
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
 			mouseLocked = !mouseLocked;
 			engine->SetFullscreen(fullscreen);
 		}
 		
+		DEBUG;
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
 			mouseLocked = !mouseLocked;
 			if(mouseLocked)
@@ -141,10 +153,12 @@ int main() {
 			else
 				engine->GetInputManager().UnlockMouse();
 		}
+		DEBUG;
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
 			break;
 		}
+		DEBUG;
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
 			for(int i=0; i<500; ++i) {
@@ -154,6 +168,7 @@ int main() {
 				++I;
 			}
 		}
+		DEBUG;
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
 			for(int i=0; i<1000*1000; ++i) {
@@ -163,6 +178,7 @@ int main() {
 				++I;
 			}
 		}
+		DEBUG;
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
 			for(int i=0; i<1000*100; ++i) {
@@ -172,20 +188,27 @@ int main() {
 				++I;
 			}
 		}
+		DEBUG;
 		
 		// begin new frame
 		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
+		DEBUG;
 		engine->BeginNewFrame();
+		DEBUG;
 		if(mouseLocked)
 			camera->ProcessDefaultInput(engine);
+		DEBUG;
 		
 		// render
 		auto s = std::chrono::steady_clock::now();
+		DEBUG;
 		engine->Render();
+		DEBUG;
 		// optionally sync CPU with all GPU draw calls
 		gl::Finish();
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
+		DEBUG;
 
 		// render gui
 		ImGui::SetNextWindowBgAlpha(0.5);
@@ -199,6 +222,7 @@ int main() {
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
 		ImGui::End();
+		DEBUG;
 		
 		ImGui::SetNextWindowBgAlpha(0.0);
 		ImGui::Begin("Timings", NULL,
@@ -214,13 +238,17 @@ int main() {
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);
 		ImGui::End();
+		DEBUG;
 		
 		// swap buffers
 		engine->SwapBuffers();
+		DEBUG;
 		engine->PrintErrors();
+		DEBUG;
 		
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
 		gl::Finish();
+		DEBUG;
 	}
 	
 	}

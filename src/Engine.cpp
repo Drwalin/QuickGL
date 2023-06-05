@@ -26,6 +26,11 @@
 
 #include "../include/quickgl/Engine.hpp"
 
+#define DEBUG { \
+	if(false)printf("debug %s : %i\n", __FILE__, __LINE__); \
+	fflush(stdout); \
+}
+
 namespace qgl {
 	Engine::Engine() {
 		initialized = false;
@@ -108,14 +113,20 @@ namespace qgl {
 	}
 	
 	void Engine::Render() {
+		DEBUG;
 		mainCamera->PrepareDataForNewFrame();
+		DEBUG;
 		
 		renderStageComposer.RestartStages();
+		DEBUG;
 		bool end = false;
+		DEBUG;
 		do {
+		DEBUG;
 			end = renderStageComposer.NextStage(mainCamera) > 0 ? false : true;
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		} while(!end);
+		DEBUG;
 	}
 	
 	void Engine::SwapBuffers() {
