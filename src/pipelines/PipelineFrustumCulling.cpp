@@ -83,8 +83,10 @@ namespace qgl {
 			while(i < idsManager.CountIds()) {
 				i = (i*3)/2 + 100;
 			}
-			indirectDrawBuffer->Generate(NULL, i);
-			frustumCulledIdsBuffer->Generate(NULL, i);
+			if(i != indirectDrawBuffer->GetVertexCount()) {
+				indirectDrawBuffer->Generate(NULL, i);
+				frustumCulledIdsBuffer->Generate(NULL, i);
+			}
 			
 			frustumCulledEntitiesCount = 0;
 			frustumCulledIdsCountAtomicCounter
