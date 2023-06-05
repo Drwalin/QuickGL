@@ -33,6 +33,11 @@
 
 #include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
 
+#define DEBUG { \
+	if(false)printf("debug %s : %i\n", __FILE__, __LINE__); \
+	fflush(stdout); \
+}
+
 namespace qgl {
 	PipelineAnimated::PipelineAnimated() {
 	}
@@ -80,25 +85,25 @@ namespace qgl {
 		vao->Init();
 		gl::VBO& vbo = meshManager->GetVBO();
 		
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_weights"), 4, gl::UNSIGNED_BYTE, true, 20, 0);
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, false, 24, 0);
-		
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_pos"), 3, gl::FLOAT, false, 0, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_color"), 4, gl::UNSIGNED_BYTE, true, 12, 0);
 		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_normal"), 4, gl::BYTE, true, 16, 0);
 		
-		// init animation state vertex attribute
-		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
-				renderShader->GetAttributeLocation("in_animationState"),
-				4, gl::UNSIGNED_INT, false, 12, 1);
+		vao->SetAttribPointer(     vbo, renderShader->GetAttributeLocation("in_weight"), 4, gl::UNSIGNED_BYTE, true, 20, 0);
+		vao->SetIntegerAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, 24, 0);
 		
-		glBindVertexArray(vao->vaoID);
-		glBindBuffer(GL_ARRAY_BUFFER, perEntityAnimationState.Vbo().GetIdGL());
-// 		glEnableVertexAttribArray(renderShader->GetAttributeLocation("in_animationState"));
-		GL_CHECK_PUSH_ERROR;
-		glVertexAttribIPointer(renderShader->GetAttributeLocation("in_animationState"), 4, gl::UNSIGNED_INT, 32,
-				(void*)(size_t)12);
-		GL_CHECK_PUSH_ERROR;
+		// init animation state vertex attribute
+		vao->SetIntegerAttribPointer(perEntityAnimationState.Vbo(),
+				renderShader->GetAttributeLocation("in_animationState"),
+				4, gl::UNSIGNED_INT, 12, 1);
+		
+// 		glBindVertexArray(vao->vaoID);
+// 		glBindBuffer(GL_ARRAY_BUFFER, perEntityAnimationState.Vbo().GetIdGL());
+// // 		glEnableVertexAttribArray(renderShader->GetAttributeLocation("in_animationState"));
+// 		GL_CHECK_PUSH_ERROR;
+// 		glVertexAttribIPointer(renderShader->GetAttributeLocation("in_animationState"), 4, gl::UNSIGNED_INT, 32,
+// 				(void*)(size_t)12);
+// 		GL_CHECK_PUSH_ERROR;
 		
 		vao->SetAttribPointer(perEntityAnimationState.Vbo(),
 				renderShader->GetAttributeLocation("in_animationState1"),
@@ -134,31 +139,45 @@ namespace qgl {
 			updateAnimationShader->GetUniformLocation("timeStamp");
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		DEBUG;
 				updateAnimationShader->Use();
+		DEBUG;
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		DEBUG;
 				
 				updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
 						GetEntitiesCount());
+		DEBUG;
 				updateAnimationShader->SetFloat(DELTA_TIME_LOCATION,
 						engine->GetInputManager().GetDeltaTime());
+		DEBUG;
 				updateAnimationShader->SetFloat(TIME_STAMP_LOCATION,
 						engine->GetInputManager().GetTime());
+		DEBUG;
 				
 				animatedMeshManager->GetAnimationManager()
 					.GetAnimationsMetadata().Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+		DEBUG;
 				
 				perEntityAnimationState.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+		DEBUG;
 				
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
+		DEBUG;
 				
 				gl::Finish();
+		DEBUG;
 				std::vector<uint8_t> data;
+		DEBUG;
 				perEntityAnimationState.Vbo().FetchAll(data);
+		DEBUG;
 				gl::Finish();
+		DEBUG;
 				AnimatedState* as = (AnimatedState*)(data.data());
+		DEBUG;
 				printf("Animated state: %i %i %i    %i %i  %f    %f %f\n",
 						as->animationId,
 						as->animationIdAfter,
@@ -168,6 +187,7 @@ namespace qgl {
 						as->interpolationFactor,
 						as->timeOffset,
 						as->lastAccessTimeStamp);
+		DEBUG;
 			});
 		}
 		
@@ -180,18 +200,30 @@ namespace qgl {
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
+		DEBUG;
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		DEBUG;
+				gl::Finish();
+		DEBUG;
 				renderShader->Use();
+		DEBUG;
 				
 				renderShader->SetFloat(TIME_STAMP_LOCATION,
 						engine->GetInputManager().GetTime());
+		DEBUG;
 				
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
+		DEBUG;
 				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
+		DEBUG;
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
+		DEBUG;
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
+		DEBUG;
+				gl::Finish();
+		DEBUG;
 			});
 		}
 	}
@@ -260,8 +292,8 @@ mat4 GetPoseBoneMatrix();
 
 void main() {
 	mat4 poseMat =
-// 			GetFrameMatrix((int(floor(timeStamp*24.0))%(348/6))*6) * (1.0-fract(timeStamp*24.0)) +
-// 			GetFrameMatrix((int(floor(timeStamp*24.0+1.0f))%(348/6))*6) * fract(timeStamp*24.0);
+// 			GetFrameMatrix((int(floor(timeStamp*124.0))%(348/6))*6) * (1.0-fract(timeStamp*124.0)) +
+// 			GetFrameMatrix((int(floor(timeStamp*124.0+1.0f))%(348/6))*6) * fract(timeStamp*124.0);
 			GetPoseBoneMatrix();
 // 		   mat4(texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(0,0,0), 0),
 // 				texelFetch(bones, ivec3(floor(in_pos.z)*4,0,0)+ivec3(1,0,0), 0),
@@ -283,8 +315,12 @@ void main() {
 // 	color.y = in_weight[1];
 // 	color.z = in_weight[2];
 
-	color.y = color.z = color.x
-		= uintBitsToFloat(in_animationState.x)/348.0;///3000000050.0;
+// 	color.y = color.z = color.x
+// 		= in_animationState.x/348.0;///3000000050.0;
+
+// 	color.x = in_weight[0];
+// 	color.y = in_weight[1];
+// 	color.z = in_weight[2];
 }
 
 mat4 GetBonePose(uint frameStart, uint bone) {
@@ -303,11 +339,12 @@ mat4 GetBonePose(uint frameStart, uint bone) {
 
 mat4 GetFrameMatrix(uint frameStart) {
 	return
-		(GetBonePose(frameStart, int(floor(in_pos.z)))) // * in_weight[0]);
-// 		(GetBonePose(frameStart, in_bones[0])) // * in_weight[0]);
-// 		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
-// 		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
-// 		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3]);
+// 		(GetBonePose(frameStart, int(floor(in_pos.z)))) // * in_weight[1]);
+// 		(GetBonePose(frameStart, in_bones[0])) // * in_weight[0]
+		(GetBonePose(frameStart, in_bones[0])) * in_weight[0]
+		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
+		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
+		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3])
 	;
 }
 
@@ -384,6 +421,7 @@ void main() {
 		return;
 	AnimatedState s = animatedState[id];
 
+	s.flags = 3;
 	if((s.flags & 2) == 2) {
 		s.timeOffset += deltaTime;
 	}
