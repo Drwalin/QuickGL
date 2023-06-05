@@ -33,11 +33,6 @@
 
 #include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
 
-#define DEBUG { \
-	printf("debug %s : %i\n", __FILE__, __LINE__); \
-	fflush(stdout); \
-}
-
 namespace qgl {
 	PipelineAnimated::PipelineAnimated() {
 	}
@@ -155,35 +150,18 @@ namespace qgl {
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				renderShader->Use();
 				
 				renderShader->SetFloat(TIME_STAMP_LOCATION,
 						engine->GetInputManager().GetTime());
 				
-				DEBUG;
-				gl::Finish();
-				DEBUG;
-				
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
 				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
-				DEBUG;
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
 				
-				int x[5];
-				indirectDrawBuffer->Fetch(x, 0, 20);
-				printf("%i %i %i %i %i\n", x[0], x[1], x[2], x[3], x[4]);
-				
-				DEBUG;
-				gl::Finish();
-				DEBUG;
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
-				DEBUG;
-				
-				gl::Finish();
-				DEBUG;
 			});
 		}
 	}

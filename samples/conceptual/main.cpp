@@ -118,6 +118,7 @@ int main() {
 		= std::make_shared<qgl::FreeFlyCamera>();
 	engine->SetMainCamera(camera);
 	camera->SetFov(75);
+	camera->SetPosition({0,-2,5});
 	
 	int COUNT_FRAMES = 0;
 	
@@ -126,8 +127,7 @@ int main() {
 		
 		++COUNT_FRAMES;
 		
-		if(COUNT_FRAMES == 200) {
-			printf(" setting anim in loop\n");
+		if(COUNT_FRAMES == 20) {
 			pipelineAnimated->SetAnimationState(0, 0, 0, true, 0, true);
 		}
 		
