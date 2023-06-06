@@ -228,6 +228,7 @@ int main() {
 			ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
 			ImGui::Text("Entities count: %i", pipelineStatic->GetEntitiesCount());
 			ImGui::Text("Rendering entities: %i", pipelineStatic->GetEntitiesToRender());
+			ImGui::Text("Rendering animated entities: %i", pipelineAnimated->GetEntitiesToRender());
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
 		ImGui::End();
