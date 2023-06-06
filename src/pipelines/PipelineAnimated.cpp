@@ -59,6 +59,8 @@ namespace qgl {
 				timeOffset,
 				engine->GetInputManager().GetTime()
 			}, entityId);
+		FlushDataToGPU(0);
+		FlushDataToGPU(1);
 	}
 	
 	void PipelineAnimated::Initialize() {
@@ -145,15 +147,10 @@ namespace qgl {
 		// get shader uniform locations
 		const int32_t PROJECTION_VIEW_LOCATION =
 			renderShader->GetUniformLocation("projectionView");
-		const int32_t TIME_STAMP_LOCATION =
-			renderShader->GetUniformLocation("timeStamp");
 		
 		stages.emplace_back([=](std::shared_ptr<Camera> camera){
 				// draw with indirect draw buffer
 				renderShader->Use();
-				
-				renderShader->SetFloat(TIME_STAMP_LOCATION,
-						engine->GetInputManager().GetTime());
 				
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
@@ -217,8 +214,6 @@ out vec4 color;
 out vec3 normal;
 out vec4 pos;
 
-uniform float timeStamp;
-
 const uint BONE_FRAMES_W = 64;
 const uint BONE_FRAMES_H = 16384;
 
@@ -234,6 +229,23 @@ void main() {
 	color = in_color;
 }
 
+mat4 GetPoseBoneMatrix() {
+	mat4 poseA = GetFrameMatrix(in_animationState.x); 
+	mat4 poseB = GetFrameMatrix(in_animationState.y); 
+	float factorA = uintBitsToFloat(in_animationState.z);
+	float factorB = 1.0 - factorA;
+	return (poseA * factorB) + (poseB * factorA);
+}
+
+mat4 GetFrameMatrix(uint frameStart) {
+	return
+		(GetBonePose(frameStart, in_bones[0])) * in_weight[0]
+		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
+		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
+		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3])
+	;
+}
+
 mat4 GetBonePose(uint frameStart, uint bone) {
 	uint id = (frameStart+bone)*4;
 	ivec3 p;
@@ -246,23 +258,6 @@ mat4 GetBonePose(uint frameStart, uint bone) {
 				texelFetch(bones, p+ivec3(1,0,0), 0),
 				texelFetch(bones, p+ivec3(2,0,0), 0),
 				texelFetch(bones, p+ivec3(3,0,0), 0));
-}
-
-mat4 GetFrameMatrix(uint frameStart) {
-	return
-		(GetBonePose(frameStart, in_bones[0])) * in_weight[0]
-		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
-		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
-		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3])
-	;
-}
-
-mat4 GetPoseBoneMatrix() {
-	mat4 poseA = GetFrameMatrix(in_animationState.x); 
-	mat4 poseB = GetFrameMatrix(in_animationState.y); 
-	float factorA = uintBitsToFloat(in_animationState.z);
-	float factorB = 1.0 - factorA;
-	return (poseA * factorB) + (poseB * factorA);
 }
 )";
 	
@@ -327,7 +322,6 @@ void main() {
 		return;
 	AnimatedState s = animatedState[id];
 
-// 	s.flags = 3;
 	if((s.flags & 2) == 2) {
 		s.timeOffset += deltaTime;
 	}
@@ -345,25 +339,23 @@ void main() {
 		s.firstMatrixFrameNext = s.firstMatrixFrameCurrent + a.bonesCount;
 		s.interpolationFactor = fract(frameOffset);
 	} else if((s.flags & 1) == 1) { // continue next animation
+		AnimationMetadata a2 = animationMetadata[s.animationIdAfter];
 		if(nextFrame > a.framesCount) { // next animation is already in play
-				AnimationMetadata a2 = animationMetadata[s.animationIdAfter];
-				s.animationId = s.animationIdAfter;
-				frameOffset -= a.framesCount;
-				currentFrame -= a.framesCount;
-				uint c = ((currentFrame/a2.framesCount)*a2.framesCount);
-				currentFrame -= c;
-				frameOffset -= c;
-				nextFrame = (currentFrame + 1) % a2.framesCount;
-				s.timeOffset = frameOffset/a2.fps;
-				s.interpolationFactor = fract(frameOffset);
-				s.firstMatrixFrameCurrent = currentFrame * a2.bonesCount + a2.firstMatrixId;
-				s.firstMatrixFrameNext = nextFrame * a2.bonesCount + a2.firstMatrixId;
+			s.animationId = s.animationIdAfter;
+			frameOffset -= a.framesCount;
+			currentFrame -= a.framesCount;
+			uint c = ((currentFrame/a2.framesCount)*a2.framesCount);
+			currentFrame -= c;
+			frameOffset -= c;
+			nextFrame = (currentFrame + 1) % a2.framesCount;
+			s.timeOffset = frameOffset/a2.fps;
+			s.firstMatrixFrameCurrent = currentFrame * a2.bonesCount + a2.firstMatrixId;
+			s.firstMatrixFrameNext = nextFrame * a2.bonesCount + a2.firstMatrixId;
 		} else { // transitioning animations
-			AnimationMetadata a2 = animationMetadata[s.animationIdAfter];
 			s.firstMatrixFrameCurrent = (a.framesCount-1) * a.bonesCount + a.firstMatrixId;
 			s.firstMatrixFrameNext = a2.firstMatrixId;
-			s.interpolationFactor = fract(frameOffset);
 		}
+		s.interpolationFactor = fract(frameOffset);
 	} else { // stop at last frame of animation
 		s.firstMatrixFrameCurrent =
 				(a.framesCount-1) * a.bonesCount + a.firstMatrixId;
