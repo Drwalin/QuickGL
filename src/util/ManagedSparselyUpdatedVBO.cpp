@@ -145,9 +145,10 @@ void main() {
 		auto it = whereSomethingWasUpdated.find(id);
 		uint32_t p = deltaData.size();
 		if(it != whereSomethingWasUpdated.end()) {
-			p = it->second*UPDATE_STRUCUTRE_SIZE;
+			p = it->second;
 		} else {
 			deltaData.resize(p+UPDATE_STRUCUTRE_SIZE);
+			whereSomethingWasUpdated[id] = p;
 		}
 		memcpy(&(deltaData[p]), value, ELEMENT_SIZE);
 		*(uint32_t*)&(deltaData[p+ELEMENT_SIZE]) = id;

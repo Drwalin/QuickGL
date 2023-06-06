@@ -22,6 +22,7 @@
 #include <cstdio>
 
 int main() {
+	srand(time(NULL));
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
 	engine->InitGL("Simple conceptual example");
@@ -62,14 +63,14 @@ int main() {
 		uint32_t entity = pipelineAnimated->CreateEntity();
 		pipelineAnimated->SetEntityMesh(entity, 0);
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-1});
-		pipelineAnimated->SetAnimationState(entity, 3, 3, true, 0, true);
+		pipelineAnimated->SetAnimationState(entity, 0, rand()/30.0f, true, 0, true);
 		printf("entity = %i\n", entity);
 	}
 	if(1){
 		uint32_t entity = pipelineAnimated->CreateEntity();
 		pipelineAnimated->SetEntityMesh(entity, 1);
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-10});
-		pipelineAnimated->SetAnimationState(entity, 1, 2, true, 0, true);
+		pipelineAnimated->SetAnimationState(entity, 0, rand()/30.0f, true, 0, true);
 		printf("entity = %i\n", entity);
 	}
 	
@@ -129,17 +130,8 @@ int main() {
 	camera->SetFov(75);
 	camera->SetPosition({0,-2,5});
 	
-	int COUNT_FRAMES = 0;
-	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
-		
-		++COUNT_FRAMES;
-		
-		if(COUNT_FRAMES == 20) {
-			pipelineAnimated->SetAnimationState(0, 0, 0, true, 0, true);
-		}
-		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
 			mouseLocked = !mouseLocked;
 			engine->SetFullscreen(fullscreen);
