@@ -59,8 +59,6 @@ namespace qgl {
 				timeOffset,
 				engine->GetInputManager().GetTime()
 			}, entityId);
-// 		FlushDataToGPU(0);
-// 		FlushDataToGPU(1);
 	}
 	
 	void PipelineAnimated::Initialize() {
