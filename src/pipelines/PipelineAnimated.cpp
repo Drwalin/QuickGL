@@ -59,8 +59,8 @@ namespace qgl {
 				timeOffset,
 				engine->GetInputManager().GetTime()
 			}, entityId);
-		FlushDataToGPU(0);
-		FlushDataToGPU(1);
+// 		FlushDataToGPU(0);
+// 		FlushDataToGPU(1);
 	}
 	
 	void PipelineAnimated::Initialize() {
@@ -104,8 +104,8 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineAnimated::FlushDataToGPU(uint32_t stageId) {
-		uint32_t ret = PipelineFrustumCulling::FlushDataToGPU(stageId);
-		ret = std::max(ret, perEntityAnimationState.UpdateVBO(stageId));
+		uint32_t ret = perEntityAnimationState.UpdateVBO(stageId);
+		ret = std::max(ret, PipelineFrustumCulling::FlushDataToGPU(stageId));
 		return ret;
 	}
 	
