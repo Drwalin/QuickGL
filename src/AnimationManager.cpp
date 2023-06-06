@@ -42,14 +42,17 @@ namespace qgl {
 			std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
 		const uint32_t firstToUpdate = mapAnimationNameToId.size();
 		metaData.Resize(firstToUpdate + loader->animations.size());
+		uint32_t animationId = firstToUpdate;
 		for(auto& anim : loader->animations) {
-			uint32_t animationId = mapAnimationNameToId.size();
 			mapAnimationNameToId[anim->name] = animationId;
+			printf("Animation: '%s' -> %i\n", anim->name.c_str(), animationId);
 			AnimationInfo info;
 			info.firstMatrixId = matricesHost.size();
 			info.fps = 24;
 			info.bonesCount = anim->CountBones();
 			info.framesCount = anim->duration * anim->framesPerSecond;
+			printf("Animation frames: %i, bones: %i\n", info.framesCount, info.bonesCount);
+			printf(" first matrix = %i\n", info.firstMatrixId);
 			metaData[animationId] = info;
 			for(uint32_t i=0; i<info.framesCount; ++i) {
 				uint32_t offset = matricesHost.size();
@@ -57,6 +60,7 @@ namespace qgl {
 				anim->GetModelBoneMatrices(&(matricesHost[offset]),
 						i/(float)info.fps, false);
 			}
+			++animationId;
 		}
 		
 		if(firstToUpdate == metaData.Count()) {
@@ -75,6 +79,8 @@ namespace qgl {
 				0,
 				gl::TextureDataFormat::RGBA, gl::DataType::FLOAT);
 		metaData.UpdateVertices(firstToUpdate, loader->animations.size());
+		metaData.UpdateVertices(0, metaData.Count());
+		printf(" meta data count = %i\n", metaData.Count());
 	}
 }
 

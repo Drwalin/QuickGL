@@ -53,14 +53,23 @@ int main() {
 	
 	// load animated models
 	auto meshManagerAnimated = pipelineAnimated->GetMeshManager();
-	meshManagerAnimated->LoadModels("../OpenGLWrapper/samples/WobblyThing.fbx");
+	meshManagerAnimated->LoadModels("../samples/WobblyThing1.fbx");
+	meshManagerAnimated->LoadModels("../samples/WobblyThing2.fbx");
+	meshManagerAnimated->LoadModels("../samples/WobblyThingAnimations3.fbx");
 	
 	// add animated object
 	if(1){
 		uint32_t entity = pipelineAnimated->CreateEntity();
 		pipelineAnimated->SetEntityMesh(entity, 0);
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-1});
-		pipelineAnimated->SetAnimationState(entity, 0, 0, true, 0, true);
+		pipelineAnimated->SetAnimationState(entity, 3, 3, true, 0, true);
+		printf("entity = %i\n", entity);
+	}
+	if(1){
+		uint32_t entity = pipelineAnimated->CreateEntity();
+		pipelineAnimated->SetEntityMesh(entity, 1);
+		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-10});
+		pipelineAnimated->SetAnimationState(entity, 1, 2, true, 0, true);
 		printf("entity = %i\n", entity);
 	}
 	
@@ -80,7 +89,7 @@ int main() {
 	if(1){
 	uint32_t terrainId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
-	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,1,0});
+	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,30,0});
 	}
 	
 	// add box object
@@ -173,6 +182,27 @@ int main() {
 				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
 				++I;
 			}
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_1)) {
+			for(int i=0; i<2; ++i)
+				pipelineAnimated->SetAnimationState(i, 0, 0, true, 0, true);
+		}
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_2)) {
+			for(int i=0; i<2; ++i)
+				pipelineAnimated->SetAnimationState(i, 1, 0, true, 1, true);
+		}
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_3)) {
+			for(int i=0; i<2; ++i)
+				pipelineAnimated->SetAnimationState(i, 2, 0, true, 0, true);
+		}
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_4)) {
+			for(int i=0; i<2; ++i)
+				pipelineAnimated->SetAnimationState(i, 2, 0, true, 2, true);
+		}
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_5)) {
+			for(int i=0; i<2; ++i)
+				pipelineAnimated->SetAnimationState(i, 3, 0, true, 3, false);
 		}
 		
 		// begin new frame
