@@ -19,18 +19,40 @@
 #ifndef QUICKGL_RENDER_STAGE_COMPOSER_HPP
 #define QUICKGL_RENDER_STAGE_COMPOSER_HPP
 
-#include <list>
-#include <thread>
+#include <unordered_map>
+#include <string>
+#include <vector>
 
 #include "../pipelines/Pipeline.hpp"
 
 namespace qgl {
 	
 	struct Timings {
-		uint32_t stage;
-		uint32_t pipeline;
-		uint64_t seconds_queue;
-		std::string name;
+		std::shared_ptr<Pipeline> pipeline;
+		std::shared_ptr<struct Stage> stage;
+		std::shared_ptr<Camera> camera;
+		uint64_t measuredTimeNanoseconds;
+	};
+	
+	enum StageType {
+		// any next stage cannot have lower stage type then current
+		STAGE_GLOBAL = 1,
+		STAGE_PER_CAMERA = 2,
+		STAGE_PER_CAMERA_FBO = 3,
+	};
+	
+	struct Stage {
+		std::string stageName;
+		StageType stageType;
+		Pipeline::StageFunction renderFunction;
+		std::function<bool(std::shared_ptr<Camera>)> canBeContinued;
+		std::shared_ptr<Stage> nextStage;
+		std::shared_ptr<Pipeline> pipeline;
+	};
+	
+	struct StageCameraPair {
+		std::shared_ptr<Stage> stage;
+		std::shared_ptr<Camera> camera;
 	};
 	
 	class RenderStageComposer final {
@@ -38,21 +60,35 @@ namespace qgl {
 		
 		void AddPipelineStages(std::shared_ptr<Pipeline> pipeline);
 		
-		uint32_t RestartStages();
-		uint32_t NextStage(std::shared_ptr<Camera> camera);
+		void RestartStages(std::vector<std::shared_ptr<Camera>> cameras);
+		
+		void RestartStages();
+		void ContinueStages();
+		bool HasAnyStagesLeft();
 		
 		const std::vector<Timings>& GetTimings() const { return timings; }
 		
-		void Clear();
+	private:
+		
+		void ContinueStagesGlobal();
+		void ContinueStagesPerCamera();
+		void ContinueStagesPerFbo();
 		
 	private:
 		
 		std::vector<Timings> timings;
 		
-		std::list<std::vector<Pipeline::StageFunction>> currentStagingFunctions;
-		uint32_t currentStage;
+		std::unordered_map<std::shared_ptr<Camera>,
+			std::shared_ptr<Camera>> camerasRenderingOrder;
 		
-		std::vector<std::vector<Pipeline::StageFunction>> stagingFunctions;
+		std::vector<std::shared_ptr<Stage>> currentStagesGlobal;
+		std::vector<StageCameraPair> currentStagesPerCamera;
+		std::vector<StageCameraPair> currentStagesPerFbo;
+		
+		std::unordered_map<std::shared_ptr<Pipeline>,
+			std::shared_ptr<Stage>> firstStageForCameraPerPipeline;
+		
+		std::vector<std::shared_ptr<Stage>> stagingPipelineTemplate;
 	};
 }
 

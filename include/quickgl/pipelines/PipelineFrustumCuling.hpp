@@ -29,6 +29,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "../util/BufferedVBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Sync.hpp"
 
 #include "PipelineIdsManagedBase.hpp"
 
@@ -46,7 +47,7 @@ namespace qgl {
 		
 	public:
 		
-		virtual void AppendRenderStages(std::vector<StageFunction>& stages) override;
+		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
 		
 	protected:
 		
@@ -69,6 +70,8 @@ namespace qgl {
 		
 		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
 		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
+		
+		gl::Sync syncFrustumCulledEntitiesCountReadyToFetch;
 	};
 }
 

@@ -19,6 +19,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 #include "../../include/quickgl/pipelines/Pipeline.hpp"
 
@@ -41,14 +42,24 @@ namespace qgl {
 		SetEntityTransformsQuat(entityId, pos, glm::quat(eulerRot), scale);
 	}
 	
-	void Pipeline::AppendRenderStages(std::vector<StageFunction>& stages) {
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
-				this->FlushDataToGPU(0);
-				gl::Flush();
-			});
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
-				this->FlushDataToGPU(1);
-			});
+	void Pipeline::GenerateRenderStages(std::vector<struct Stage>& stages) {
+		stages.emplace_back(
+				"Flush data to GPU 0",
+				STAGE_GLOBAL,
+				[this](std::shared_ptr<Camera> camera) {
+					this->FlushDataToGPU(0);
+					gl::Flush();
+				}
+			);
+		
+		stages.emplace_back(
+				"Flush data to GPU 1",
+				STAGE_GLOBAL,
+				[this](std::shared_ptr<Camera> camera) {
+					this->FlushDataToGPU(1);
+					gl::Flush();
+				}
+			);
 	}
 	
 	void Pipeline::SetEngine(std::shared_ptr<Engine> engine) {

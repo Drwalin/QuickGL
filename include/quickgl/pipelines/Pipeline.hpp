@@ -39,17 +39,21 @@ namespace gl {
 
 namespace qgl {
 	
+	struct Stage;
+	
 	class MeshManager;
 	class Camera;
 	class Engine;
 	
-	class Pipeline {
+	class Pipeline : public std::enable_shared_from_this<Pipeline> {
 	public:
 		
 		Pipeline();
 		virtual ~Pipeline();
 		
 		virtual void Initialize();
+		
+		virtual std::string GetPipelineName() const = 0;
 		
 		virtual uint32_t CreateEntity() = 0;
 		virtual void DeleteEntity(uint32_t entityId) = 0;
@@ -61,8 +65,9 @@ namespace qgl {
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
 		void SetEntityMeshByName(uint32_t entityId, const char* meshName);
-		virtual void SetEntityTransformsQuat(uint32_t entityId, glm::vec3 pos={0,0,0},
-				glm::quat rot={0,0,0,1}, glm::vec3 scale={1,1,1}) = 0;
+		virtual void SetEntityTransformsQuat(uint32_t entityId,
+				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
+				glm::vec3 scale={1,1,1}) = 0;
 		void SetEntityTransformsEuler(uint32_t entityId, glm::vec3 pos={0,0,0},
 				glm::vec3 eulerRot={0,0,0}, glm::vec3 scale={1,1,1});
 		
@@ -74,7 +79,7 @@ namespace qgl {
 		
 		using StageFunction = std::function<void(std::shared_ptr<Camera>)>;
 		
-		virtual void AppendRenderStages(std::vector<StageFunction>& stages);
+		virtual void GenerateRenderStages(std::vector<Stage>& stages);
 		
 	protected:
 		

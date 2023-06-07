@@ -30,6 +30,7 @@
 
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
+#include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineFrustumCuling.hpp"
 
@@ -95,15 +96,19 @@ namespace qgl {
 		return ret;
 	}
 	
-	void PipelineFrustumCulling::AppendRenderStages(
-			std::vector<StageFunction>& stages) {
-		PipelineIdsManagedBase::AppendRenderStages(stages);
+	void PipelineFrustumCulling::GenerateRenderStages(
+			std::vector<Stage>& stages) {
+		PipelineIdsManagedBase::GenerateRenderStages(stages);
 		
 		{
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Updating clipping planes of camera to GPU",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-			});
+			}
+		);
 		}
 
 		{
@@ -112,7 +117,10 @@ namespace qgl {
 		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
 			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Performing frustum culling",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
 				frustumCullingShader->Use();
 				frustumCullingShader
@@ -139,20 +147,38 @@ namespace qgl {
 				// perform frustum culling
 				frustumCullingShader
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
+				
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				syncFrustumCulledEntitiesCountReadyToFetch = gl::Sync::Fence();
 			});
 		}
 
 		{
-		stages.emplace_back([this](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Fetching count of entities in frustum view to CPU",
+			STAGE_PER_CAMERA,
+			[this](std::shared_ptr<Camera> camera) {
+				// wait for fence
+				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
+					gl::Finish();
+				}
+				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
+			
 				// fetch number of entities to render after culling
 				frustumCulledIdsCountAtomicCounter
 					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+			},
+			[=](std::shared_ptr<Camera> camera) {
+				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
 		}
 
 		{
 
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Generating indirect draw buffer",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
 				indirectDrawBufferShader->Use();
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);

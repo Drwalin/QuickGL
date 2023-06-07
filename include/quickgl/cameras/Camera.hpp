@@ -31,6 +31,8 @@ namespace qgl {
 		
 		virtual void PrepareDataForNewFrame() = 0;
 		
+		virtual void UseFbo() = 0;
+		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) = 0;
 		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) = 0;
 		virtual void SetFov(float fov) = 0;
