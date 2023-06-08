@@ -63,10 +63,10 @@ namespace qgl {
 		for(auto camera : cameras) {
 			currentStagesPerCamera.clear();
 			currentStagesPerFbo.clear();
-			currentStagesGlobal = stagingPipelineTemplate;
 			camerasRenderingOrder[cam] = camera;
 			cam = camera;
 		}
+		currentStagesGlobal = stagingPipelineTemplate;
 		camerasRenderingOrder[cam] = nullptr;
 		timings.clear();
 	}
@@ -130,27 +130,29 @@ namespace qgl {
 						stages.emplace_back(next, p.camera);
 						break;
 					case STAGE_PER_CAMERA_FBO:
-						currentStagesPerCamera.emplace_back(next, p.camera);
+						stages.emplace_back(next, p.camera);
 						break;
 					}
 				} else {
-					stages.emplace_back(
-							firstStageForCameraPerPipeline[p.stage->pipeline],
-							camerasRenderingOrder[p.camera]);
+// 					stages.emplace_back(
+// 							firstStageForCameraPerPipeline[p.stage->pipeline],
+// 							camerasRenderingOrder[p.camera]);
 					
 					auto c = camerasRenderingOrder[p.camera];
-					if(c) {
+					if(c != nullptr) {
 						auto s = firstStageForCameraPerPipeline[p.stage->pipeline];
-						switch(s->stageType) {
-							case STAGE_GLOBAL:
-								throw std::string("qgl::RenderStageComposer: Cannot run STAGE_GLOBAL for new camera");
-								break;
-							case STAGE_PER_CAMERA:
-								currentStagesPerCamera.emplace_back(s, c);
-								break;
-							case STAGE_PER_CAMERA_FBO:
-								throw std::string("qgl::RenderStageComposer: Cannot run STAGE_PER_CAMERA_FBO for new camera when last stage was STAGE_PER_CAMERA");
-								break;
+						if(s != nullptr) {
+							switch(s->stageType) {
+								case STAGE_GLOBAL:
+									throw std::string("qgl::RenderStageComposer: Cannot run STAGE_GLOBAL for new camera");
+									break;
+								case STAGE_PER_CAMERA:
+									stages.emplace_back(s, c);
+									break;
+								case STAGE_PER_CAMERA_FBO:
+									throw std::string("qgl::RenderStageComposer: Cannot run STAGE_PER_CAMERA_FBO for new camera when last stage was STAGE_PER_CAMERA");
+									break;
+							}
 						}
 					}
 				}
@@ -201,16 +203,18 @@ namespace qgl {
 					auto c = camerasRenderingOrder[camera];
 					if(c) {
 						auto s = firstStageForCameraPerPipeline[stage->pipeline];
-						switch(s->stageType) {
-							case STAGE_GLOBAL:
-								throw std::string("qgl::RenderStageComposer: Cannot run STAGE_GLOBAL for new camera");
-								break;
-							case STAGE_PER_CAMERA:
-								currentStagesPerCamera.emplace_back(s, c);
-								break;
-							case STAGE_PER_CAMERA_FBO:
-								currentStagesPerFbo.emplace_back(s, c);
-								break;
+						if(s != nullptr) {
+							switch(s->stageType) {
+								case STAGE_GLOBAL:
+									throw std::string("qgl::RenderStageComposer: Cannot run STAGE_GLOBAL for new camera");
+									break;
+								case STAGE_PER_CAMERA:
+									currentStagesPerCamera.emplace_back(s, c);
+									break;
+								case STAGE_PER_CAMERA_FBO:
+									currentStagesPerFbo.emplace_back(s, c);
+									break;
+							}
 						}
 					}
 				}
@@ -224,6 +228,46 @@ namespace qgl {
 	bool RenderStageComposer::HasAnyStagesLeft() {
 		return currentStagesGlobal.size() || currentStagesPerCamera.size() ||
 			currentStagesPerFbo.size();
+	}
+	
+	void RenderStageComposer::Clear() {
+		timings.clear();
+		
+		camerasRenderingOrder.clear();
+		
+		currentStagesGlobal.clear();
+		currentStagesPerCamera.clear();
+		currentStagesPerFbo.clear();
+		
+		firstStageForCameraPerPipeline.clear();
+		
+		stagingPipelineTemplate.clear();
+	}
+	
+	void RenderStageComposer::PrintStagesStructure() {
+		printf("currentStagesGlobal:\n");
+		for(auto e : currentStagesGlobal) {
+			printf("    %i  <>  %s : %s\n",
+					e->stageType,
+					e->pipeline->GetPipelineName().c_str(),
+					e->stageName.c_str());
+		}
+		printf("currentStagesPerCamera:\n");
+		for(auto e : currentStagesPerCamera) {
+			printf("    %p   %i  <>  %s : %s\n",
+					(void*)e.camera.get(),
+					e.stage->stageType,
+					e.stage->pipeline->GetPipelineName().c_str(),
+					e.stage->stageName.c_str());
+		}
+		printf("currentStagesPerFbo:\n");
+		for(auto e : currentStagesPerFbo) {
+			printf("    %p   %i  <>  %s : %s\n",
+					(void*)e.camera.get(),
+					e.stage->stageType,
+					e.stage->pipeline->GetPipelineName().c_str(),
+					e.stage->stageName.c_str());
+		}
 	}
 }
 

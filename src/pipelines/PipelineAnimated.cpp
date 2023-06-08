@@ -17,6 +17,7 @@
  */
 
 #include <memory>
+#include <algorithm>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
@@ -38,6 +39,10 @@ namespace qgl {
 	}
 	
 	PipelineAnimated::~PipelineAnimated() {
+	}
+	
+	std::string PipelineAnimated::GetPipelineName() const {
+		return "PipelineAnimated";
 	}
 	
 	uint32_t PipelineAnimated::CreateEntity() {
@@ -107,8 +112,8 @@ namespace qgl {
 		return ret;
 	}
 	
-	void PipelineAnimated::AppendRenderStages(std::vector<StageFunction>& stages) {
-		PipelineFrustumCulling::AppendRenderStages(stages);
+	void PipelineAnimated::GenerateRenderStages(std::vector<Stage>& stages) {
+		PipelineFrustumCulling::GenerateRenderStages(stages);
 		
 		{
 		const int32_t ENTITIES_COUNT_LOCATION =
@@ -118,7 +123,21 @@ namespace qgl {
 		const int32_t TIME_STAMP_LOCATION =
 			updateAnimationShader->GetUniformLocation("timeStamp");
 		
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		int loc = -1;
+		{
+			for(int i=0; i<stages.size(); ++i) {
+				if(stages[i].stageType != STAGE_GLOBAL) {
+					loc = i;
+					break;
+				}
+			}
+			if(loc < 0)
+				loc = stages.size();
+		}
+		stages.insert(stages.begin()+loc, std::move(Stage(
+			"Update animation info",
+			STAGE_GLOBAL,
+			[=](std::shared_ptr<Camera> camera) {
 				updateAnimationShader->Use();
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
@@ -138,7 +157,7 @@ namespace qgl {
 				
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
-			});
+			})));
 		}
 		
 		{
@@ -146,7 +165,10 @@ namespace qgl {
 		const int32_t PROJECTION_VIEW_LOCATION =
 			renderShader->GetUniformLocation("projectionView");
 		
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Render bone animated entities",
+			STAGE_PER_CAMERA_FBO,
+			[=](std::shared_ptr<Camera> camera) {
 				// draw with indirect draw buffer
 				renderShader->Use();
 				

@@ -29,6 +29,7 @@
 
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
+#include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 
@@ -37,6 +38,10 @@ namespace qgl {
 	}
 	
 	PipelineStatic::~PipelineStatic() {
+	}
+	
+	std::string PipelineStatic::GetPipelineName() const {
+		return "PipelineStatic";
 	}
 	
 	void PipelineStatic::Initialize() {
@@ -64,14 +69,17 @@ namespace qgl {
 		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
 	}
 	
-	void PipelineStatic::AppendRenderStages(std::vector<StageFunction>& stages) {
-		PipelineFrustumCulling::AppendRenderStages(stages);
+	void PipelineStatic::GenerateRenderStages(std::vector<Stage>& stages) {
+		PipelineFrustumCulling::GenerateRenderStages(stages);
 		
 		// get shader uniform locations
 		const int32_t PROJECTION_VIEW_LOCATION =
 			renderShader->GetUniformLocation("projectionView");
 		
-		stages.emplace_back([=](std::shared_ptr<Camera> camera){
+		stages.emplace_back(
+			"Render static entities",
+			STAGE_PER_CAMERA_FBO,
+			[=](std::shared_ptr<Camera> camera) {
 				// draw with indirect draw buffer
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
@@ -80,7 +88,7 @@ namespace qgl {
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
-			});
+		});
 	}
 	
 	std::shared_ptr<MeshManager> PipelineStatic::CreateMeshManager() {

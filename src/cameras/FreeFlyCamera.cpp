@@ -41,6 +41,9 @@ namespace qgl {
 	FreeFlyCamera::~FreeFlyCamera() {
 	}
 	
+	void FreeFlyCamera::UseFbo() {
+	}
+	
 	
 	void FreeFlyCamera::PrepareDataForNewFrame() {
 		glm::mat4 rot = glm::mat4_cast(rotation);

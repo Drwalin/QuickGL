@@ -52,7 +52,6 @@ namespace qgl {
 		virtual ~Pipeline();
 		
 		virtual void Initialize();
-		
 		virtual std::string GetPipelineName() const = 0;
 		
 		virtual uint32_t CreateEntity() = 0;
