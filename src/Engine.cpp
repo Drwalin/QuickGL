@@ -107,17 +107,7 @@ namespace qgl {
 		renderStageComposer.RestartStages({mainCamera});
 		while(renderStageComposer.HasAnyStagesLeft()) {
 			renderStageComposer.ContinueStages();
-			glMemoryBarrier(GL_ALL_BARRIER_BITS);
-			printf("\n\n\n");
-			renderStageComposer.PrintStagesStructure();
-			
-// 			for(auto t : GetTimings()) {
-// 				printf("Stage: %6.lu.%3.3lu ms \t  %s | %s\n",
-// 						t.measuredTimeNanoseconds/1000000lu,
-// 						(t.measuredTimeNanoseconds/1000lu) % 1000lu,
-// 						t.stage->stageName.c_str(),
-// 						t.pipeline->GetPipelineName().c_str());
-// 			}
+			// do some CPU work between render stages here
 		}
 	}
 	

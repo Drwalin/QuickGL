@@ -92,7 +92,9 @@ namespace qgl {
 		
 		void Clear();
 		
-		const std::vector<Timings>& GetTimings() const { return timings; }
+		inline const std::vector<Timings>& GetTimings() const { return timings; }
+		inline uint64_t CountNanosecondsOnCpu() const { return sumTimeCount; }
+		inline uint64_t CountTotalNanosecondsOnCpu() const { return totalTimeCountNs; }
 		void PrintStagesStructure();
 		
 	private:
@@ -103,6 +105,8 @@ namespace qgl {
 		
 	private:
 		
+		uint64_t sumTimeCount;
+		uint64_t totalTimeCountNs;
 		std::vector<Timings> timings;
 		
 		std::unordered_map<std::shared_ptr<Camera>,
@@ -120,5 +124,4 @@ namespace qgl {
 }
 
 #endif
-
 

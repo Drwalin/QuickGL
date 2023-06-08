@@ -231,14 +231,20 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage: %6.lu.%3.3lu ms \t  %s | %s",
-						t.measuredTimeNanoseconds/1000000lu,
-						(t.measuredTimeNanoseconds/1000lu) % 1000lu,
-						t.stage->stageName.c_str(),
-						t.pipeline->GetPipelineName().c_str());
+				ImGui::Text("Stage: %6.lu.%3.3lu us \t  %16s | %s",
+						t.measuredTimeNanoseconds / 1000lu,
+						t.measuredTimeNanoseconds % 1000lu,
+						t.pipeline->GetPipelineName().c_str(),
+						t.stage->stageName.c_str());
 			}
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);
+			ImGui::Text("Cpu time spent on each task separately sum: %6.lu.%6.6lu ms",
+					engine->CountNanosecondsOnCpu()/1000000,
+					engine->CountNanosecondsOnCpu()%1000000);
+			ImGui::Text("Cpu total time spent in RenderStageComposer::ContinueStages(): %6.lu.%6.6lu ms",
+					engine->CountTotalNanosecondsOnCpu()/1000000,
+					engine->CountTotalNanosecondsOnCpu()%1000000);
 		ImGui::End();
 		
 		// swap buffers
