@@ -59,6 +59,8 @@ namespace qgl {
 	
 	void RenderStageComposer::RestartStages(
 			std::vector<std::shared_ptr<Camera>> cameras) {
+		sumTimeCount = 0;
+		totalTimeCountNs = 0;
 		std::shared_ptr<Camera> cam = nullptr;
 		for(auto camera : cameras) {
 			currentStagesPerCamera.clear();
@@ -72,14 +74,20 @@ namespace qgl {
 	}
 	
 	void RenderStageComposer::ContinueStages() {
+		auto t1 = std::chrono::steady_clock::now();
+		
 		ContinueStagesGlobal();
 		gl::Flush();
 		ContinueStagesPerCamera();
 		gl::Flush();
 		ContinueStagesPerFbo();
 		gl::Flush();
+		
+		auto t2 = std::chrono::steady_clock::now();
+		
+		totalTimeCountNs += (t2-t1).count();
 	}       
-	        
+	
 	void RenderStageComposer::ContinueStagesGlobal() {
 		std::vector<std::shared_ptr<Stage>> stages;
 		stages.reserve(currentStagesGlobal.size());
@@ -105,6 +113,7 @@ namespace qgl {
 				}
 				auto end = std::chrono::steady_clock::now();
 				uint64_t t = (end-begin).count();
+				sumTimeCount += t;
 				timings.push_back({s->pipeline, s, nullptr, t});
 			} else {
 				stages.emplace_back(s);
@@ -134,10 +143,6 @@ namespace qgl {
 						break;
 					}
 				} else {
-// 					stages.emplace_back(
-// 							firstStageForCameraPerPipeline[p.stage->pipeline],
-// 							camerasRenderingOrder[p.camera]);
-					
 					auto c = camerasRenderingOrder[p.camera];
 					if(c != nullptr) {
 						auto s = firstStageForCameraPerPipeline[p.stage->pipeline];
@@ -158,6 +163,7 @@ namespace qgl {
 				}
 				auto end = std::chrono::steady_clock::now();
 				uint64_t t = (end-begin).count();
+				sumTimeCount += t;
 				timings.push_back({p.stage->pipeline, p.stage, p.camera, t});
 			} else {
 				stages.emplace_back(p);
@@ -220,6 +226,7 @@ namespace qgl {
 				}
 				auto end = std::chrono::steady_clock::now();
 				uint64_t t = (end-begin).count();
+				sumTimeCount += t;
 				timings.push_back({stage->pipeline, stage, camera, t});
 			}
 		}
