@@ -35,6 +35,7 @@ namespace qgl {
 		
 		FreeFlyCamera();
 		virtual ~FreeFlyCamera();
+		virtual void UseFbo() override;
 		
 		virtual void PrepareDataForNewFrame() override;
 		

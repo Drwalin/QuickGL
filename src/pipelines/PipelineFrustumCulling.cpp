@@ -16,13 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "openglwrapper/OpenGL.hpp"
 #include <memory>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
@@ -149,7 +149,7 @@ namespace qgl {
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
 				
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				syncFrustumCulledEntitiesCountReadyToFetch = gl::Sync::Fence();
+				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
 		}
 
@@ -168,7 +168,8 @@ namespace qgl {
 				frustumCulledIdsCountAtomicCounter
 					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 			},
-			[=](std::shared_ptr<Camera> camera) {
+			[=](std::shared_ptr<Camera> camera) -> bool {
+			
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
 		}

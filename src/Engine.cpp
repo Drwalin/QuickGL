@@ -104,12 +104,21 @@ namespace qgl {
 	void Engine::Render() {
 		mainCamera->PrepareDataForNewFrame();
 		
-		renderStageComposer.RestartStages();
-		bool end = false;
-		do {
-			end = renderStageComposer.NextStage(mainCamera) > 0 ? false : true;
+		renderStageComposer.RestartStages({mainCamera});
+		while(renderStageComposer.HasAnyStagesLeft()) {
+			renderStageComposer.ContinueStages();
 			glMemoryBarrier(GL_ALL_BARRIER_BITS);
-		} while(!end);
+			printf("\n\n\n");
+			renderStageComposer.PrintStagesStructure();
+			
+// 			for(auto t : GetTimings()) {
+// 				printf("Stage: %6.lu.%3.3lu ms \t  %s | %s\n",
+// 						t.measuredTimeNanoseconds/1000000lu,
+// 						(t.measuredTimeNanoseconds/1000lu) % 1000lu,
+// 						t.stage->stageName.c_str(),
+// 						t.pipeline->GetPipelineName().c_str());
+// 			}
+		}
 	}
 	
 	void Engine::SwapBuffers() {

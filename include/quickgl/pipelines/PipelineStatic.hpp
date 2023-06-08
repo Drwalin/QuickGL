@@ -41,10 +41,11 @@ namespace qgl {
 		virtual ~PipelineStatic();
 		
 		virtual void Initialize() override;
+		virtual std::string GetPipelineName() const override;
 		
 	public:
 		
-		virtual void AppendRenderStages(std::vector<StageFunction>& stages) override;
+		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
 		
 	protected:
 		

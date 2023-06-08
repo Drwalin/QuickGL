@@ -9,11 +9,11 @@
 #include "../../include/quickgl/Gui.hpp"
 
 #include <ctime>
+
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/vector_relational.hpp>
 #include <glm/gtc/quaternion.hpp>
-
 #include <GL/glext.h>
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
@@ -231,10 +231,11 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage %u of %u: %6.lu.%3.3lu \t  %s",
-						t.stage, t.pipeline,
-						t.seconds_queue /1000, t.seconds_queue %1000,
-						t.name.c_str());
+				ImGui::Text("Stage: %6.lu.%3.3lu ms \t  %s | %s",
+						t.measuredTimeNanoseconds/1000000lu,
+						(t.measuredTimeNanoseconds/1000lu) % 1000lu,
+						t.stage->stageName.c_str(),
+						t.pipeline->GetPipelineName().c_str());
 			}
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);

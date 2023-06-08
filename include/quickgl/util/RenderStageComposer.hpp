@@ -42,6 +42,20 @@ namespace qgl {
 	};
 	
 	struct Stage {
+		Stage() = default;
+		Stage(Stage&&) = default;
+		Stage(Stage&) = default;
+		Stage(const Stage&) = default;
+		Stage& operator=(Stage&&) = default;
+		Stage& operator=(Stage&) = default;
+		Stage& operator=(const Stage&) = default;
+		Stage(std::string name, StageType t,
+				Pipeline::StageFunction renderFunction,
+				std::function<bool(std::shared_ptr<Camera>)> canBeContinued=nullptr) :
+				stageName(name), stageType(t), renderFunction(renderFunction),
+				canBeContinued(canBeContinued) {
+		}
+		
 		std::string stageName;
 		StageType stageType;
 		Pipeline::StageFunction renderFunction;
@@ -51,6 +65,17 @@ namespace qgl {
 	};
 	
 	struct StageCameraPair {
+		StageCameraPair() = default;
+		StageCameraPair(StageCameraPair&&) = default;
+		StageCameraPair(StageCameraPair&) = default;
+		StageCameraPair(const StageCameraPair&) = default;
+		StageCameraPair& operator=(StageCameraPair&&) = default;
+		StageCameraPair& operator=(StageCameraPair&) = default;
+		StageCameraPair& operator=(const StageCameraPair&) = default;
+		StageCameraPair(std::shared_ptr<Stage> stage,
+				std::shared_ptr<Camera> camera) :
+				stage(stage), camera(camera) {
+		}
 		std::shared_ptr<Stage> stage;
 		std::shared_ptr<Camera> camera;
 	};
@@ -62,11 +87,13 @@ namespace qgl {
 		
 		void RestartStages(std::vector<std::shared_ptr<Camera>> cameras);
 		
-		void RestartStages();
 		void ContinueStages();
 		bool HasAnyStagesLeft();
 		
+		void Clear();
+		
 		const std::vector<Timings>& GetTimings() const { return timings; }
+		void PrintStagesStructure();
 		
 	private:
 		

@@ -42,12 +42,13 @@ namespace qgl {
 		virtual ~PipelineAnimated();
 		
 		virtual void Initialize() override;
+		virtual std::string GetPipelineName() const override;
 		
 		virtual uint32_t CreateEntity() override;
 		
 	public:
 		
-		virtual void AppendRenderStages(std::vector<StageFunction>& stages) override;
+		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
 		
 		void SetAnimationState(uint32_t entityId, uint32_t animationId,
 				float timeOffset, bool enableUpdateTime,
