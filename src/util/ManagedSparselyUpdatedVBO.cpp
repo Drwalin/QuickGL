@@ -19,14 +19,16 @@
 #include <cstring>
 
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 
 #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace qgl {
 	UntypedManagedSparselyUpdatedVBO::UntypedManagedSparselyUpdatedVBO(
-			uint32_t elementSize) : ELEMENT_SIZE(elementSize),
-   			UPDATE_STRUCUTRE_SIZE(ELEMENT_SIZE+sizeof(uint32_t))	{
+			uint32_t elementSize) :
+			ELEMENT_SIZE((elementSize+3)-((elementSize+3)&3)),
+   			UPDATE_STRUCUTRE_SIZE(ELEMENT_SIZE+sizeof(uint32_t)) {
 		vbo = nullptr;
 		deltaVbo = nullptr;
 		shader = nullptr;
@@ -88,17 +90,20 @@ void main() {
 	}
 	
 	void UntypedManagedSparselyUpdatedVBO::Destroy() {
+		if(shader) {
+			gl::Finish();
+			delete shader;
+			shader = nullptr;
+		}
 		if(vbo) {
+			gl::Finish();
 			delete vbo;
 			vbo = nullptr;
 		}
 		if(deltaVbo) {
+			gl::Finish();
 			delete deltaVbo;
 			deltaVbo = nullptr;
-		}
-		if(shader) {
-			delete shader;
-			shader = nullptr;
 		}
 		deltaData.clear();
 	}
@@ -108,36 +113,29 @@ void main() {
 	}
 	
 	uint32_t UntypedManagedSparselyUpdatedVBO::UpdateVBO(uint32_t stageId) {
-		switch(stageId) {
-		case 0: {
-			if(vbo->GetVertexCount() <= maxId) {
-				vbo->Resize((maxId*3)/2+100);
-			}
-			deltaData.swap(deltaDataGPU);
-			deltaData.clear();
-			if(deltaDataGPU.size() != 0) {
-				deltaVbo->Update(&deltaDataGPU.front(), 0, deltaDataGPU.size());
-				whereSomethingWasUpdated.clear();
-			} else {
-				return 0;
-			}
-			} return 1;
-		case 1:
-			if(deltaDataGPU.size() != 0) {
-				const uint32_t elementsToUpdate =
-					deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				shader->Use();
-				shader->SetUInt(shaderDeltaCommandsLocation,
-						elementsToUpdate);
-				deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-				vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
-			}
+		if(stageId != 0)
 			return 0;
-		default:
+		if(deltaData.size() == 0)
 			return 0;
+		if(vbo->GetVertexCount() <= maxId) {
+			vbo->Resize((maxId*3)/2+100);
 		}
+		std::swap(deltaData, deltaDataGPU);
+		deltaData.clear();
+		whereSomethingWasUpdated.clear();
+		deltaVbo->Update(&deltaDataGPU.front(), 0, deltaDataGPU.size());
+		
+		const uint32_t elementsToUpdate =
+			deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		shader->Use();
+		shader->SetUInt(shaderDeltaCommandsLocation,
+				elementsToUpdate);
+		deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
+		vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+		shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
+		gl::Shader::Unuse();
+		return 0;
 	}
 	
 	void UntypedManagedSparselyUpdatedVBO::SetValue(const void* value,

@@ -90,7 +90,7 @@ int main() {
 	if(1){
 	uint32_t terrainId = pipelineStatic->CreateEntity();
 	pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
-	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,30,0});
+	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,-30,0});
 	}
 	
 	// add box object
@@ -151,27 +151,64 @@ int main() {
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
 			for(int i=0; i<500; ++i) {
-				uint32_t standId = pipelineStatic->CreateEntity();
-				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				if(rand()%2) {
+					uint32_t standId = pipelineStatic->CreateEntity();
+					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				} else {
+					uint32_t entity = pipelineAnimated->CreateEntity();
+					pipelineAnimated->SetEntityMesh(entity, rand()%2);
+					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+				}
 				++I;
 			}
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
 			for(int i=0; i<1000*1000; ++i) {
-				uint32_t standId = pipelineStatic->CreateEntity();
-				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				if(rand()%2) {
+					uint32_t standId = pipelineStatic->CreateEntity();
+					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				} else {
+					uint32_t entity = pipelineAnimated->CreateEntity();
+					pipelineAnimated->SetEntityMesh(entity, rand()%2);
+					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+				}
 				++I;
 			}
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
 			for(int i=0; i<1000*100; ++i) {
-				uint32_t standId = pipelineStatic->CreateEntity();
-				pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-				pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				if(rand()%2) {
+					uint32_t standId = pipelineStatic->CreateEntity();
+					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				} else {
+					uint32_t entity = pipelineAnimated->CreateEntity();
+					pipelineAnimated->SetEntityMesh(entity, rand()%2);
+					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+				}
+				++I;
+			}
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_8)) {
+			for(int i=0; i<1000*10; ++i) {
+				if(rand()%2) {
+					uint32_t standId = pipelineStatic->CreateEntity();
+					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+				} else {
+					uint32_t entity = pipelineAnimated->CreateEntity();
+					pipelineAnimated->SetEntityMesh(entity, rand()%2);
+					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+				}
 				++I;
 			}
 		}
