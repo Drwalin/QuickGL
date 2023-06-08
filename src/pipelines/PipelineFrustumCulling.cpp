@@ -78,7 +78,9 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
+		gl::Finish();
 		uint32_t ret = PipelineIdsManagedBase::FlushDataToGPU(stageId);
+		gl::Finish();
 		if(stageId==0) {
 			uint32_t i = indirectDrawBuffer->GetVertexCount();
 			while(i < idsManager.CountIds()) {
@@ -89,10 +91,11 @@ namespace qgl {
 				frustumCulledIdsBuffer->Generate(NULL, i);
 			}
 			
-			frustumCulledEntitiesCount = 0;
-			frustumCulledIdsCountAtomicCounter
-				->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 		}
+		frustumCulledEntitiesCount = 0;
+		frustumCulledIdsCountAtomicCounter
+			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+		gl::Finish();
 		return ret;
 	}
 	
@@ -105,8 +108,14 @@ namespace qgl {
 			"Updating clipping planes of camera to GPU",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
+				gl::Finish();
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				gl::Finish();
 			}
 		);
 		}
@@ -121,6 +130,10 @@ namespace qgl {
 			"Performing frustum culling",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
+				gl::Finish();
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+			
 				// set visible entities count
 				frustumCullingShader->Use();
 				frustumCullingShader
@@ -132,23 +145,26 @@ namespace qgl {
 
 				// bind buffers
 				frustumCulledIdsBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
 				idsManager.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 				transformMatrices.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
 				frustumCulledIdsCountAtomicCounter
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 8);
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 				clippingPlanes
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 9);
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
 				perEntityMeshInfoBoundingSphere.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 10);
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 
 				// perform frustum culling
 				frustumCullingShader
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
+				gl::Shader::Unuse();
 				
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				gl::Finish();
 				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
 		}
@@ -158,6 +174,10 @@ namespace qgl {
 			"Fetching count of entities in frustum view to CPU",
 			STAGE_PER_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
+				gl::Finish();
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				
 				// wait for fence
 				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
 					gl::Finish();
@@ -167,21 +187,27 @@ namespace qgl {
 				// fetch number of entities to render after culling
 				frustumCulledIdsCountAtomicCounter
 					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+				
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				gl::Finish();
 			},
-			[=](std::shared_ptr<Camera> camera) -> bool {
-			
+			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
 		}
 
 		{
-
 		stages.emplace_back(
 			"Generating indirect draw buffer",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
+				gl::Finish();
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				// set visible entities count
 				indirectDrawBufferShader->Use();
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 			
 				// bind buffers
@@ -195,6 +221,11 @@ namespace qgl {
 				// generate indirect draw command
 				indirectDrawBufferShader->DispatchRoundGroupNumbers(
 						frustumCulledEntitiesCount, 1, 1);
+				gl::Shader::Unuse();
+				
+				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+				gl::Finish();
 			});
 		}
 	}
@@ -202,22 +233,22 @@ namespace qgl {
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
 #version 450 core
 
-layout (packed, std430, binding=5) writeonly buffer aaa {
+layout (packed, std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
 };
-layout (packed, std430, binding=6) readonly buffer bbb {
+layout (packed, std430, binding=2) readonly buffer bbb {
 	uint allEntitiesIds[];
 };
-layout (packed, std430, binding=7) readonly buffer ccc {
+layout (packed, std430, binding=3) readonly buffer ccc {
 	mat4 entitesTransformations[];
 };
-layout (packed, std430, binding=8) buffer ddd {
+layout (packed, std430, binding=4) buffer ddd {
 	uint globalAtomicCounter;
 };
-layout (packed, std430, binding=9) readonly buffer eee {
+layout (packed, std430, binding=5) readonly buffer eee {
 	vec4 clippingPlanes[];
 };
-layout (packed, std430, binding=10) readonly buffer fff {
+layout (packed, std430, binding=6) readonly buffer fff {
 	vec4 meshInfo[];
 };
 
@@ -237,29 +268,32 @@ uint IsInView(uint id) {
 				vec4(meshInfo[id].xyz, 1)).xyz;
 		for(uint i=0; i<5; ++i) {
 			float d = dot(clippingPlanes[i].xyz, pos);
-			if(d+meshInfo[id].w < clippingPlanes[i].w)
+			if(d+meshInfo[id].w < clippingPlanes[i].w) {
 				return 0;
+			}
 		}
 		return 1;
 	}
 	return 0;
 }
 
+const uint OBJECTS_PER_INVOCATION = 16;
+
 void main() {
 	if(gl_LocalInvocationID.x == 0)
 		localAtomicCounter = 0;
 	barrier();
-
+	
 	uint inViewCount = 0;
-	uint inViewIds[4];
+	uint inViewIds[OBJECTS_PER_INVOCATION];
 
-	for(uint i=0; i<4; ++i) {
-		uint invocationId = gl_GlobalInvocationID.x*4 + i;
+	for(uint i=0; i<OBJECTS_PER_INVOCATION; ++i) {
+		uint invocationId = gl_GlobalInvocationID.x*OBJECTS_PER_INVOCATION + i;
 		uint isIn = IsInView(invocationId);
 		inViewIds[inViewCount] = allEntitiesIds[invocationId];
 		inViewCount += isIn;
 	}
-
+	
 	uint localStartingLocation = 0;
 	if(gl_GlobalInvocationID.x < entitiesCount) // @TODO: this condition can be removed
 	                                            // and code still will work:

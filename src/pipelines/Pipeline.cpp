@@ -44,20 +44,14 @@ namespace qgl {
 	
 	void Pipeline::GenerateRenderStages(std::vector<struct Stage>& stages) {
 		stages.emplace_back(
-			"Flush data to GPU 0",
+			"Flush data to GPU",
 			STAGE_GLOBAL,
 			[this](std::shared_ptr<Camera> camera) {
 				this->FlushDataToGPU(0);
 				gl::Flush();
-			}
-		);
-		
-		stages.emplace_back(
-			"Flush data to GPU 1",
-			STAGE_GLOBAL,
-			[this](std::shared_ptr<Camera> camera) {
 				this->FlushDataToGPU(1);
 				gl::Flush();
+				gl::Finish();
 			}
 		);
 	}
