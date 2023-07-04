@@ -26,6 +26,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "util/Log.hpp"
 #include "util/BufferedVBO.hpp"
 
 namespace gl {

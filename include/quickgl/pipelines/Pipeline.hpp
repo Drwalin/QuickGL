@@ -31,6 +31,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "../util/Log.hpp"
+
 namespace gl {
 	class VBO;
 	class VAO;

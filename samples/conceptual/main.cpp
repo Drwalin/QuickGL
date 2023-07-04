@@ -8,6 +8,8 @@
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
+#include "../../include/quickgl/util/Log.hpp"
+
 #include <ctime>
 
 #include <glm/fwd.hpp>
@@ -145,10 +147,18 @@ int main() {
 	};
 	
 	while(!engine->IsQuitRequested()) {
+		qgl::Log::sync = false;
+		qgl::Log::EmptyLine(10);
+		QUICKGL_LOG("start new frame");
+		auto frame_start_timepoint = std::chrono::steady_clock::now();
+		
+		bool pressedSomething = false;
+		
 		// process inputs
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
 			mouseLocked = !mouseLocked;
 			engine->SetFullscreen(fullscreen);
+			pressedSomething = true;
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
@@ -157,6 +167,7 @@ int main() {
 				engine->GetInputManager().LockMouse();
 			else
 				engine->GetInputManager().UnlockMouse();
+			pressedSomething = true;
 		}
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_ESCAPE)) {
@@ -167,40 +178,49 @@ int main() {
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
 			for(int i=0; i<500; ++i)
 				AddRandomEntity();
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
 			for(int i=0; i<1000*1000; ++i)
 				AddRandomEntity();
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
 			for(int i=0; i<1000*100; ++i)
 				AddRandomEntity();
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_8)) {
 			for(int i=0; i<1000*10; ++i)
 				AddRandomEntity();
+			pressedSomething = true;
 		}
 		
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_1)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 0, 0, true, 0, true);
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_2)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 1, 0, true, 1, true);
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_3)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 0, true);
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_4)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 2, true);
+			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_5)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 3, 0, true, 3, false);
+			pressedSomething = true;
 		}
 		
 		
@@ -217,6 +237,14 @@ int main() {
 		gl::Finish();
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
+		double time_from_frame_begin = 
+				std::chrono::duration_cast<
+					std::chrono::duration<double>>(
+							e1 - frame_start_timepoint).count();
+		qgl::Log::sync = true;
+		QUICKGL_LOG("end frame duration: %.3f ms", time_from_frame_begin*1000.0f);
+		if(pressedSomething)
+			QUICKGL_LOG("finished frame had something pressed");
 
 		// render gui
 		ImGui::SetNextWindowBgAlpha(0.5);

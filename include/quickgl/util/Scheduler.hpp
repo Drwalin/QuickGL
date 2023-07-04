@@ -21,6 +21,7 @@
 
 #include "EventQueue.hpp"
 #include "DelayedEvents.hpp"
+#include "Log.hpp"
 
 namespace qgl {
 	class Scheduler {

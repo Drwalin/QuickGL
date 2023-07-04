@@ -24,6 +24,7 @@
 
 #include "InputManager.hpp"
 #include "util/RenderStageComposer.hpp"
+#include "util/Log.hpp"
 
 namespace qgl {
 	class Pipeline;
