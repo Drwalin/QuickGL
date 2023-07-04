@@ -22,6 +22,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../util/Log.hpp"
+
 namespace qgl {
 	class Camera {
 	public:

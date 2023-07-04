@@ -25,6 +25,7 @@
 #include "InputManager.hpp"
 #include "util/RenderStageComposer.hpp"
 #include "AnimationManager.hpp"
+#include "util/Log.hpp"
 
 #include "MeshManager.hpp"
 

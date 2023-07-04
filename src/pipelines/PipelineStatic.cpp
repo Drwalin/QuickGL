@@ -82,13 +82,25 @@ namespace qgl {
 			[=](std::shared_ptr<Camera> camera) {
 				// draw with indirect draw buffer
 				renderShader->Use();
+				gl::Finish();
+				QUICKGL_LOG("after shader use");
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
+				gl::Finish();
+				QUICKGL_LOG("after calc projection view matrix");
 				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
+				gl::Finish();
+				QUICKGL_LOG("after seting projection view matrix");
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
+				gl::Finish();
+				QUICKGL_LOG("after bind indirect buffer");
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
+				gl::Finish();
+				QUICKGL_LOG("after draw muli elements");
 				vao->Unbind();
+				gl::Finish();
+				QUICKGL_LOG("after unbind");
 		});
 	}
 	

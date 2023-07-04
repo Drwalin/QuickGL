@@ -16,30 +16,39 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_GUI_HPP
-#define QUICKGL_GUI_HPP
+#ifndef QUICKGL_LOG_HPP
+#define QUICKGL_LOG_HPP
 
-#include "../../thirdparty/imgui/imgui.h"
-
-#include "util/Log.hpp"
+#define QUICKGL_ENABLE_LOG
 
 namespace qgl {
-	class Engine;
-	
-	class Gui {
+	class Log final {
 	public:
 		
-		Gui();
-		virtual ~Gui();
+		Log(int line, const char* fileName, const char* fmt, ...);
 		
-		virtual void RenderGui(qgl::Engine* engine) = 0;
+		static void EmptyLine(int emptyLines);
 		
-		static void InitIMGUI();
-		static void DeinitIMGUI();
-		static void BeginNewFrame();
-		static void EndFrame();
+		static bool sync;
+		
+	private:
+		
+		inline const static char* LOG_FILE = "quickgl.log";
+		
+		static void LockStart();
+		static void LockEnd();
+		
+		static void* GetFile();
+		static double GetSecFromStart();
+		static double GetSecFromLast();
 	};
 }
+
+#ifdef QUICKGL_ENABLE_LOG
+#define QUICKGL_LOG(...) {qgl::Log __lg(__LINE__, __FILE__, __VA_ARGS__);}
+#else
+#define QUICKGL_LOG(...) {}
+#endif
 
 #endif
 

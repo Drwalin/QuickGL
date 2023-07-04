@@ -28,6 +28,7 @@
 #include "util/AllocatorVBO.hpp"
 #include "util/BufferedVBO.hpp"
 #include "util/IdsManager.hpp"
+#include "util/Log.hpp"
 
 namespace gl {
 	class VBO;

@@ -24,6 +24,8 @@
 
 #include <glm/glm.hpp>
 
+#include "util/Log.hpp"
+
 class GLFWwindow;
 
 namespace qgl {
