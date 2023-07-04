@@ -78,9 +78,7 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
-		gl::Finish();
 		uint32_t ret = PipelineIdsManagedBase::FlushDataToGPU(stageId);
-		gl::Finish();
 		if(stageId==0) {
 			uint32_t i = indirectDrawBuffer->GetVertexCount();
 			while(i < idsManager.CountIds()) {
@@ -95,7 +93,6 @@ namespace qgl {
 		frustumCulledEntitiesCount = 0;
 		frustumCulledIdsCountAtomicCounter
 			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-		gl::Finish();
 		return ret;
 	}
 	
@@ -108,14 +105,10 @@ namespace qgl {
 			"Updating clipping planes of camera to GPU",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				gl::Finish();
+// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			}
 		);
 		}
@@ -130,9 +123,7 @@ namespace qgl {
 			"Performing frustum culling",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 			
 				// set visible entities count
 				frustumCullingShader->Use();
@@ -160,11 +151,10 @@ namespace qgl {
 				// perform frustum culling
 				frustumCullingShader
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
-				gl::Shader::Unuse();
-				
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				gl::Shader::Unuse();
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				gl::Finish();
+				
 				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
 		}
@@ -174,9 +164,7 @@ namespace qgl {
 			"Fetching count of entities in frustum view to CPU",
 			STAGE_PER_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
 				// wait for fence
 				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
@@ -188,9 +176,7 @@ namespace qgl {
 				frustumCulledIdsCountAtomicCounter
 					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 				
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				gl::Finish();
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
@@ -202,13 +188,10 @@ namespace qgl {
 			"Generating indirect draw buffer",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				// set visible entities count
 				indirectDrawBufferShader->Use();
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
+// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			
 				// bind buffers
 				indirectDrawBuffer
@@ -224,8 +207,6 @@ namespace qgl {
 				gl::Shader::Unuse();
 				
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				gl::Finish();
 			});
 		}
 	}

@@ -63,10 +63,10 @@ struct DeltaData {
 	uint id;
 };
 
-layout (packed, std430, binding=4) readonly buffer updateData {
+layout (packed, std430, binding=1) readonly buffer updateData {
 	DeltaData deltaData[];
 };
-layout (packed, std430, binding=5) writeonly buffer dataBuffer {
+layout (packed, std430, binding=2) writeonly buffer dataBuffer {
 	Data data[];
 };
 
@@ -131,8 +131,8 @@ void main() {
 		shader->Use();
 		shader->SetUInt(shaderDeltaCommandsLocation,
 				elementsToUpdate);
-		deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-		vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+		deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+		vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 		shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
 		gl::Shader::Unuse();
 		return 0;

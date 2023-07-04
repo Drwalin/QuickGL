@@ -109,7 +109,6 @@ namespace qgl {
 	uint32_t PipelineAnimated::FlushDataToGPU(uint32_t stageId) {
 		uint32_t ret = perEntityAnimationState.UpdateVBO(stageId);
 		ret = std::max(ret, PipelineFrustumCulling::FlushDataToGPU(stageId));
-		gl::Finish();
 		return ret;
 	}
 	
@@ -140,9 +139,7 @@ namespace qgl {
 			"Update animation info",
 			STAGE_GLOBAL,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				updateAnimationShader->Use();
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
 				updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
 						GetEntitiesCount());
@@ -161,7 +158,6 @@ namespace qgl {
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
 				gl::Shader::Unuse();
-				gl::Finish();
 			});
 		}
 		
@@ -174,7 +170,6 @@ namespace qgl {
 			"Render bone animated entities",
 			STAGE_PER_CAMERA_FBO,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				// draw with indirect draw buffer
 				renderShader->Use();
 				
@@ -186,7 +181,6 @@ namespace qgl {
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
 				vao->Unbind();
-				gl::Finish();
 			});
 		}
 	}

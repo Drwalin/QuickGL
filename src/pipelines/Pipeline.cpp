@@ -51,7 +51,6 @@ namespace qgl {
 				gl::Flush();
 				this->FlushDataToGPU(1);
 				gl::Flush();
-				gl::Finish();
 			}
 		);
 	}

@@ -80,7 +80,6 @@ namespace qgl {
 			"Render static entities",
 			STAGE_PER_CAMERA_FBO,
 			[=](std::shared_ptr<Camera> camera) {
-				gl::Finish();
 				// draw with indirect draw buffer
 				renderShader->Use();
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
@@ -90,7 +89,6 @@ namespace qgl {
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
 				vao->Unbind();
-				gl::Finish();
 		});
 	}
 	

@@ -130,6 +130,20 @@ int main() {
 	camera->SetFov(75);
 	camera->SetPosition({0,-2,5});
 	
+	auto AddRandomEntity = [&]() {
+		if(rand()%2) {
+			uint32_t standId = pipelineStatic->CreateEntity();
+			pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
+			pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+		} else {
+			uint32_t entity = pipelineAnimated->CreateEntity();
+			pipelineAnimated->SetEntityMesh(entity, rand()%2);
+			pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+			pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+		}
+		++I;
+	};
+	
 	while(!engine->IsQuitRequested()) {
 		// process inputs
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_F11)) {
@@ -149,71 +163,26 @@ int main() {
 			break;
 		}
 		
+		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
-			for(int i=0; i<500; ++i) {
-				if(rand()%2) {
-					uint32_t standId = pipelineStatic->CreateEntity();
-					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-				} else {
-					uint32_t entity = pipelineAnimated->CreateEntity();
-					pipelineAnimated->SetEntityMesh(entity, rand()%2);
-					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
-				}
-				++I;
-			}
+			for(int i=0; i<500; ++i)
+				AddRandomEntity();
 		}
-		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
-			for(int i=0; i<1000*1000; ++i) {
-				if(rand()%2) {
-					uint32_t standId = pipelineStatic->CreateEntity();
-					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-				} else {
-					uint32_t entity = pipelineAnimated->CreateEntity();
-					pipelineAnimated->SetEntityMesh(entity, rand()%2);
-					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
-				}
-				++I;
-			}
+			for(int i=0; i<1000*1000; ++i)
+				AddRandomEntity();
 		}
-		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_9)) {
-			for(int i=0; i<1000*100; ++i) {
-				if(rand()%2) {
-					uint32_t standId = pipelineStatic->CreateEntity();
-					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-				} else {
-					uint32_t entity = pipelineAnimated->CreateEntity();
-					pipelineAnimated->SetEntityMesh(entity, rand()%2);
-					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
-				}
-				++I;
-			}
+			for(int i=0; i<1000*100; ++i)
+				AddRandomEntity();
 		}
-		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_8)) {
-			for(int i=0; i<1000*10; ++i) {
-				if(rand()%2) {
-					uint32_t standId = pipelineStatic->CreateEntity();
-					pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-					pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-				} else {
-					uint32_t entity = pipelineAnimated->CreateEntity();
-					pipelineAnimated->SetEntityMesh(entity, rand()%2);
-					pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
-					pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
-				}
-				++I;
-			}
+			for(int i=0; i<1000*10; ++i)
+				AddRandomEntity();
 		}
 		
-		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_1)) {
+		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_1)) {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 0, 0, true, 0, true);
 		}
@@ -233,6 +202,7 @@ int main() {
 			for(int i=0; i<2; ++i)
 				pipelineAnimated->SetAnimationState(i, 3, 0, true, 3, false);
 		}
+		
 		
 		// begin new frame
 		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
