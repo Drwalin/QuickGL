@@ -76,7 +76,6 @@ namespace qgl {
 		ret = std::max(ret, perEntityMeshInfoBoundingSphere.UpdateVBO(stageId));
 		ret = std::max(ret, idsManager.UpdateVBO(stageId));
 		ret = std::max(ret, transformMatrices.UpdateVBO(stageId));
-		gl::Finish();
 		return ret;
 	}
 }
