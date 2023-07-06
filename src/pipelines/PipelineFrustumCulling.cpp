@@ -123,10 +123,8 @@ namespace qgl {
 			"Updating clipping planes of camera to GPU",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			}
 		);
 		}
@@ -141,8 +139,6 @@ namespace qgl {
 			"Performing frustum culling",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-			
 				// set visible entities count
 				frustumCullingShader->Use();
 				frustumCullingShader
@@ -169,9 +165,7 @@ namespace qgl {
 				// perform frustum culling
 				frustumCullingShader
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				gl::Shader::Unuse();
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
 	GL_CHECK_PUSH_ERROR;
 				frustumCulledIdsCountAtomicCounterAsyncFetch->
@@ -191,8 +185,6 @@ namespace qgl {
 			"Fetching count of entities in frustum view to CPU",
 			STAGE_PER_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-				
 				// wait for fence
 				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
 					gl::Finish();
@@ -201,8 +193,6 @@ namespace qgl {
 			
 				// fetch number of entities to render after culling
 				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
-				
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
