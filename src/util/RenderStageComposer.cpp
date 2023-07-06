@@ -81,26 +81,31 @@ namespace qgl {
 		timings.clear();
 	}
 	
-	void RenderStageComposer::ContinueStages() {
+	bool RenderStageComposer::ContinueStages() {
 		auto t1 = std::chrono::steady_clock::now();
 		
-		ContinueStagesGlobal();
+		bool ret = false;
+		ret |= ContinueStagesGlobal();
 		gl::Flush();
-		ContinueStagesPerCamera();
+		ret |= ContinueStagesPerCamera();
 		gl::Flush();
-		ContinueStagesPerFbo();
+		ret |= ContinueStagesPerFbo();
 		gl::Flush();
 		
 		auto t2 = std::chrono::steady_clock::now();
 		
 		totalTimeCountNs += (t2-t1).count();
+		
+		return ret;
 	}       
 	
-	void RenderStageComposer::ContinueStagesGlobal() {
+	bool RenderStageComposer::ContinueStagesGlobal() {
+		bool ret = false;
 		std::vector<std::shared_ptr<Stage>> stages;
 		stages.reserve(currentStagesGlobal.size());
 		for(auto s : currentStagesGlobal) {
 			if(s->canBeContinued(nullptr)) {
+				ret = true;
 				auto begin = std::chrono::steady_clock::now();
 				s->renderFunction(nullptr);
 				auto next = s->nextStage;
@@ -128,13 +133,16 @@ namespace qgl {
 			}
 		}
 		std::swap(stages, currentStagesGlobal);
+		return ret;
 	}
 	
-	void RenderStageComposer::ContinueStagesPerCamera() {
+	bool RenderStageComposer::ContinueStagesPerCamera() {
+		bool ret = false;
 		std::vector<StageCameraPair> stages;
 		stages.reserve(currentStagesPerCamera.size());
 		for(auto p : currentStagesPerCamera) {
 			if(p.stage->canBeContinued(p.camera)) {
+				ret = true;
 				auto begin = std::chrono::steady_clock::now();
 				p.stage->renderFunction(p.camera);
 				auto next = p.stage->nextStage;
@@ -178,15 +186,18 @@ namespace qgl {
 			}
 		}
 		std::swap(stages, currentStagesPerCamera);
+		return ret;
 	}
 	
-	void RenderStageComposer::ContinueStagesPerFbo() {
+	bool RenderStageComposer::ContinueStagesPerFbo() {
+		bool ret = false;
 		std::unordered_map<std::shared_ptr<Camera>,
 			std::vector<std::shared_ptr<Stage>>> camerasInUse;
 		{
 			std::vector<StageCameraPair> stages = currentStagesPerFbo;
 			for(auto& p : stages) {
 				if(p.stage->canBeContinued(p.camera)) {
+					ret = true;
 					camerasInUse[p.camera].emplace_back(p.stage);
 				} else {
 					currentStagesPerFbo.emplace_back(p);
@@ -238,6 +249,7 @@ namespace qgl {
 				timings.push_back({stage->pipeline, stage, camera, t});
 			}
 		}
+		return ret;
 	}
 	
 	bool RenderStageComposer::HasAnyStagesLeft() {

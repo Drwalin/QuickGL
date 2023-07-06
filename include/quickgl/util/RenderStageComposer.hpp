@@ -87,7 +87,11 @@ namespace qgl {
 		
 		void RestartStages(std::vector<std::shared_ptr<Camera>> cameras);
 		
-		void ContinueStages();
+		/* 
+		 * return false when nothing was updated (no ::canBeContinue() returned
+		 * true.
+		 */
+		bool ContinueStages();
 		bool HasAnyStagesLeft();
 		
 		void Clear();
@@ -99,9 +103,9 @@ namespace qgl {
 		
 	private:
 		
-		void ContinueStagesGlobal();
-		void ContinueStagesPerCamera();
-		void ContinueStagesPerFbo();
+		bool ContinueStagesGlobal();
+		bool ContinueStagesPerCamera();
+		bool ContinueStagesPerFbo();
 		
 	private:
 		
