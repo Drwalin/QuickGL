@@ -65,6 +65,7 @@ namespace qgl {
 		std::unique_ptr<gl::Shader> frustumCullingShader;
 		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
 		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounter;
+		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounterAsyncFetch;
 		glm::vec4 clippingPlanesValues[5];
 		std::shared_ptr<gl::VBO> clippingPlanes;
 		
@@ -72,6 +73,8 @@ namespace qgl {
 		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 		
 		gl::Sync syncFrustumCulledEntitiesCountReadyToFetch;
+		
+		uint32_t *mappedPointerToentitiesCount;
 	};
 }
 

@@ -68,6 +68,24 @@ namespace qgl {
 		const static uint32_t ints[3] = {0, 1, 1};
 		frustumCulledIdsCountAtomicCounter->Update(ints, 0, sizeof(ints));
 		
+		frustumCulledIdsCountAtomicCounterAsyncFetch = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
+		frustumCulledIdsCountAtomicCounterAsyncFetch->InitImmutable(nullptr, 3,
+				gl::IMMUTABLE_STORAGE_MAPPED_ASYNC_MANUAL_FLUSH);
+		
+		GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
+		mappedPointerToentitiesCount = (uint32_t*)glMapNamedBufferRange(
+				frustumCulledIdsCountAtomicCounterAsyncFetch->GetIdGL(),
+				0,
+				12,
+				gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT
+					| GL_MAP_FLUSH_EXPLICIT_BIT);
+		
+		GL_CHECK_PUSH_ERROR;
+		gl::openGL.PrintErrors();
+		
 		// init shaders
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
 		if(indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE))
@@ -155,6 +173,15 @@ namespace qgl {
 				gl::Shader::Unuse();
 				glMemoryBarrier(GL_ALL_BARRIER_BITS);
 				
+	GL_CHECK_PUSH_ERROR;
+				frustumCulledIdsCountAtomicCounterAsyncFetch->
+					Copy(frustumCulledIdsCountAtomicCounter.get(), 0, 0, 12);
+	GL_CHECK_PUSH_ERROR;
+				glFlushMappedNamedBufferRange(
+						frustumCulledIdsCountAtomicCounterAsyncFetch->GetIdGL(),
+						0, 12);
+	GL_CHECK_PUSH_ERROR;
+				
 				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
 		}
@@ -173,8 +200,7 @@ namespace qgl {
 				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
 			
 				// fetch number of entities to render after culling
-				frustumCulledIdsCountAtomicCounter
-					->Fetch(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
 				
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			},
@@ -188,10 +214,8 @@ namespace qgl {
 			"Generating indirect draw buffer",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				// set visible entities count
 				indirectDrawBufferShader->Use();
-// 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 				
 				// bind buffers
 				frustumCulledIdsCountAtomicCounter

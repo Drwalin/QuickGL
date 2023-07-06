@@ -16,7 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <chrono>
 #include <set>
+#include <thread>
 
 #include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
@@ -107,6 +109,7 @@ namespace qgl {
 		renderStageComposer.RestartStages({mainCamera});
 		while(renderStageComposer.HasAnyStagesLeft()) {
 			renderStageComposer.ContinueStages();
+			std::this_thread::sleep_for(std::chrono::microseconds(100));
 			// do some CPU work between render stages here
 		}
 	}

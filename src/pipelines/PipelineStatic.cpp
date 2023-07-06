@@ -80,21 +80,6 @@ namespace qgl {
 			"Render static entities",
 			STAGE_PER_CAMERA_FBO,
 			[=](std::shared_ptr<Camera> camera) {
-				glMemoryBarrier(GL_ALL_BARRIER_BITS);
-				syncMemoryBarrierForGlMultiDraw.StartFence();
-			}
-		);
-		
-		stages.emplace_back(
-			"Render static entities",
-			STAGE_PER_CAMERA_FBO,
-			[=](std::shared_ptr<Camera> camera) {
-			
-				if(syncMemoryBarrierForGlMultiDraw.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
-					gl::Finish();
-				}
-				syncMemoryBarrierForGlMultiDraw.Destroy();
-				
 				if(frustumCulledEntitiesCount == 0) {
 					return;
 				}
@@ -108,9 +93,6 @@ namespace qgl {
 				vao->DrawMultiElementsIndirect(NULL,
 						frustumCulledEntitiesCount);
 				vao->Unbind();
-			},
-			[this](std::shared_ptr<Camera> camera) -> bool {
-				return syncMemoryBarrierForGlMultiDraw.IsDone();
 			}
 		);
 	}
