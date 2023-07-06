@@ -58,8 +58,6 @@ namespace qgl {
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;
-		
-		gl::Sync syncMemoryBarrierForGlMultiDraw;
 	};
 }
 
