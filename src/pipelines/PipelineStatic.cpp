@@ -94,47 +94,20 @@ namespace qgl {
 					gl::Finish();
 				}
 				syncMemoryBarrierForGlMultiDraw.Destroy();
+				
+				if(frustumCulledEntitiesCount == 0) {
+					return;
+				}
 			
 				// draw with indirect draw buffer
 				renderShader->Use();
-						gl::Finish(); QUICKGL_LOG("after shader use");
 				glm::mat4 pv = camera->GetPerspectiveMatrix()
 					* camera->GetViewMatrix();
-						gl::Finish(); QUICKGL_LOG("after calc projection view matrix");
 				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
-						gl::Finish(); QUICKGL_LOG("after seting projection view matrix");
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
-						gl::Finish(); QUICKGL_LOG("after bind indirect buffer");
-				if(false) {
-					vao->DrawMultiElementsIndirect(NULL,
-							frustumCulledEntitiesCount);
-							gl::Finish(); QUICKGL_LOG("after draw muli elements");
-				} else if(frustumCulledEntitiesCount > 0) {
-					vao->Bind();
-					GL_CHECK_PUSH_ERROR;
-						gl::Finish(); QUICKGL_LOG("after vao bind");
-					glBindBuffer(gl::DRAW_INDIRECT_BUFFER,
-							vao->indirectDrawBuffer->GetIdGL());
-					GL_CHECK_PUSH_ERROR;
-						gl::Finish(); QUICKGL_LOG("after bind indirect buffer");
-					uint32_t drawCount = frustumCulledEntitiesCount;
-					void* indirect = nullptr;
-					uint32_t offset = 0;
-					for(; drawCount>0;) {
-						const int currentDrawCount
-							= std::min<uint32_t>(100, drawCount);
-						glMultiDrawElementsIndirect(vao->mode,
-								vao->typeElements, indirect,
-								currentDrawCount, 0);
-						gl::Finish(); QUICKGL_LOG("after single in loop call to glMultiDrawIndirect <%i, %i> [%i]",
-								offset, offset+currentDrawCount, currentDrawCount);
-						drawCount -= currentDrawCount;
-						indirect = (void*)((size_t)indirect + currentDrawCount*20);
-						offset += currentDrawCount;
-					}
-				}
+				vao->DrawMultiElementsIndirect(NULL,
+						frustumCulledEntitiesCount);
 				vao->Unbind();
-						gl::Finish(); QUICKGL_LOG("after unbind");
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncMemoryBarrierForGlMultiDraw.IsDone();
