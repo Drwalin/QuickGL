@@ -43,7 +43,7 @@ namespace qgl {
 	
 	Allocator::~Allocator() {
 		destructor(bufferObject);
-		bufferObject = NULL;
+		bufferObject = nullptr;
 	}
 	
 	uint32_t Allocator::Allocate(uint32_t size) {

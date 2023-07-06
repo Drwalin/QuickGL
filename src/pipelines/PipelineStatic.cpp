@@ -90,7 +90,7 @@ namespace qgl {
 					* camera->GetViewMatrix();
 				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
 				vao->BindIndirectBuffer(*indirectDrawBuffer);
-				vao->DrawMultiElementsIndirect(NULL,
+				vao->DrawMultiElementsIndirect(nullptr,
 						frustumCulledEntitiesCount);
 				vao->Unbind();
 			}
