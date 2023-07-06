@@ -192,8 +192,6 @@ namespace qgl {
 				// set visible entities count
 				indirectDrawBufferShader->Use();
 // 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
-			
-				gl::Finish();
 				
 				// bind buffers
 				frustumCulledIdsCountAtomicCounter
@@ -209,60 +207,6 @@ namespace qgl {
 				indirectDrawBufferShader->DispatchRoundGroupNumbers(
 						frustumCulledEntitiesCount, 1, 1);
 				gl::Shader::Unuse();
-				
-				if(GetPipelineName() == "PipelineStatic") {
-					static FILE* file = fopen((std::string("allEntitiesIdsLog.")+GetPipelineName()+".log").c_str(), "w");
-					gl::Finish();
-					std::vector<uint32_t> comm;
-					comm.resize(idsManager.CountIds());
-					idsManager.Vbo().Fetch(comm.data(), 0, comm.size()*4);
-					
-					fprintf(file, "\n\n all entity ids: %i for pipeline %s\n", (int)comm.size(), this->GetPipelineName().c_str());
-					
-					for(uint32_t c : comm) {
-						fprintf(file, " id: %i\n", c);
-					}
-					fflush(file);
-				}
-				
-				
-				if(GetPipelineName() == "PipelineStatic") {
-					static FILE* file = fopen((std::string("generatedBufferIdsInViewLog.")+GetPipelineName()+".log").c_str(), "w");
-					gl::Finish();
-					std::vector<uint32_t> comm;
-					comm.resize(frustumCulledEntitiesCount);
-					frustumCulledIdsBuffer->Fetch(comm.data(), 0, comm.size()*4);
-					
-					fprintf(file, "\n\n generated buffers: %i/%i for pipeline %s\n", (int)comm.size(), this->GetEntitiesCount(), this->GetPipelineName().c_str());
-					
-					for(uint32_t c : comm) {
-						fprintf(file, " id: %i\n", c);
-					}
-					fflush(file);
-				}
-				
-				if(GetPipelineName() == "PipelineStatic") {
-					static FILE* file = fopen((std::string("generatedBufferLog.")+GetPipelineName()+".log").c_str(), "w");
-					struct DrawElementsIndirectCommand {
-						uint count;
-						uint instanceCount;
-						uint firstIndex;
-						int  baseVertex;
-						uint baseInstance;
-					};
-					gl::Finish();
-					std::vector<DrawElementsIndirectCommand> comm;
-					comm.resize(frustumCulledEntitiesCount);
-					indirectDrawBuffer->Fetch(comm.data(), 0, comm.size()*20);
-					
-					fprintf(file, "\n\n generated buffers: %i/%i for pipeline %s\n", (int)comm.size(), this->GetEntitiesCount(), this->GetPipelineName().c_str());
-					
-					for(DrawElementsIndirectCommand c : comm) {
-						fprintf(file, " count: %i instanceCount: %i firstIndex: %i baseVertex: %i baseInstance: %i\n",
-								c.count, c.instanceCount, c.firstIndex, c.baseVertex, c.baseInstance);
-					}
-					fflush(file);
-				}
 				
 				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
 			});

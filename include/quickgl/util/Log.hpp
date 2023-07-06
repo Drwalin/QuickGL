@@ -19,7 +19,7 @@
 #ifndef QUICKGL_LOG_HPP
 #define QUICKGL_LOG_HPP
 
-#define QUICKGL_ENABLE_LOG
+// #define QUICKGL_ENABLE_LOG
 
 namespace qgl {
 	class Log final {

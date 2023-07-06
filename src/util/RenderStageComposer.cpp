@@ -44,10 +44,8 @@ namespace qgl {
 				auto sn = s.stageName;
 				auto pn = s.pipeline->GetPipelineName();
 				s.renderFunction = [rf, sn, pn](std::shared_ptr<Camera> cam){
-					gl::Finish();
 					QUICKGL_LOG("start stage  '%s' : '%s'", pn.c_str(), sn.c_str());
 					rf(cam);
-					gl::Finish();
 					QUICKGL_LOG("finish stage '%s' : '%s'", pn.c_str(), sn.c_str());
 				};
 				renderStagesPtr[i] = std::make_shared<Stage>(std::move(s));
