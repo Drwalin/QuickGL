@@ -42,11 +42,11 @@ namespace qgl {
 	
 	
 	std::string InputManager::GetClipboardContent() const {
-		return glfwGetClipboardString(NULL);
+		return glfwGetClipboardString(nullptr);
 	}
 	
 	void InputManager::SetClipboardContent(std::string value) {
-		glfwSetClipboardString(NULL, value.c_str());
+		glfwSetClipboardString(nullptr, value.c_str());
 	}
 	
 	
