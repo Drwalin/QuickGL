@@ -108,8 +108,9 @@ namespace qgl {
 		
 		renderStageComposer.RestartStages({mainCamera});
 		while(renderStageComposer.HasAnyStagesLeft()) {
-			renderStageComposer.ContinueStages();
-			std::this_thread::sleep_for(std::chrono::microseconds(100));
+			if(renderStageComposer.ContinueStages() == false) {
+				std::this_thread::sleep_for(std::chrono::microseconds(100));
+			}
 			// do some CPU work between render stages here
 		}
 	}
