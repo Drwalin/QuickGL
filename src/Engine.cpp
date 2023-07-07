@@ -117,7 +117,7 @@ namespace qgl {
 	
 	void Engine::SwapBuffers() {
 		Gui::EndFrame();
-		glFlush();
+		gl::Flush();
 		gl::openGL.SwapBuffer();
 	}
 	

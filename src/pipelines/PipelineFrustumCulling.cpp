@@ -64,27 +64,16 @@ namespace qgl {
 		frustumCulledIdsCountAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsCountAtomicCounter->Init();
-		frustumCulledIdsCountAtomicCounter->Generate(nullptr, 3);
 		const static uint32_t ints[3] = {0, 1, 1};
-		frustumCulledIdsCountAtomicCounter->Update(ints, 0, sizeof(ints));
+		frustumCulledIdsCountAtomicCounter->Generate(ints, 3);
 		
 		frustumCulledIdsCountAtomicCounterAsyncFetch = std::make_shared<gl::VBO>(
 				sizeof(uint32_t),
-				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
-		frustumCulledIdsCountAtomicCounterAsyncFetch->InitImmutable(nullptr, 3,
-				gl::IMMUTABLE_STORAGE_MAPPED_ASYNC_MANUAL_FLUSH);
-		
-		GL_CHECK_PUSH_ERROR;
-		GL_CHECK_PUSH_ERROR;
-		mappedPointerToentitiesCount = (uint32_t*)glMapNamedBufferRange(
-				frustumCulledIdsCountAtomicCounterAsyncFetch->GetIdGL(),
-				0,
-				12,
-				gl::MAP_READ_BIT | gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT
-					| GL_MAP_FLUSH_EXPLICIT_BIT);
-		
-		GL_CHECK_PUSH_ERROR;
-		gl::openGL.PrintErrors();
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		mappedPointerToentitiesCount = (uint32_t*)
+			frustumCulledIdsCountAtomicCounterAsyncFetch->InitMapPersistent(
+					nullptr, 3,
+					gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
 		
 		// init shaders
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
@@ -167,14 +156,11 @@ namespace qgl {
 					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
 				gl::Shader::Unuse();
 				
-	GL_CHECK_PUSH_ERROR;
 				frustumCulledIdsCountAtomicCounterAsyncFetch->
 					Copy(frustumCulledIdsCountAtomicCounter.get(), 0, 0, 12);
-	GL_CHECK_PUSH_ERROR;
-				glFlushMappedNamedBufferRange(
-						frustumCulledIdsCountAtomicCounterAsyncFetch->GetIdGL(),
-						0, 12);
-	GL_CHECK_PUSH_ERROR;
+				
+				frustumCulledIdsCountAtomicCounterAsyncFetch->
+					FlushFromGpuMapPersistentFullRange();
 				
 				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
@@ -222,7 +208,9 @@ namespace qgl {
 						frustumCulledEntitiesCount, 1, 1);
 				gl::Shader::Unuse();
 				
-				glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
+						gl::SHADER_STORAGE_BARRIER_BIT |
+						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
 			});
 		}
 	}

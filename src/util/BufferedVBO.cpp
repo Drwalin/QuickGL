@@ -18,8 +18,8 @@
 
 #include <cstdio>
 
-#include "../../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
-#include "../../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 
 #include "../../include/quickgl/util/BufferedVBO.hpp"
 
@@ -37,7 +37,7 @@ namespace qgl {
 	void BufferedVBO::Destroy() {
 		if(vbo) {
 			fflush(stdout);
-			glFinish();
+			gl::Finish();
 			vbo->Destroy();
 			delete vbo;
 			vbo = nullptr;
