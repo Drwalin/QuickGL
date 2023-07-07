@@ -23,6 +23,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 
 #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
+#include "openglwrapper/OpenGL.hpp"
 
 namespace qgl {
 	UntypedManagedSparselyUpdatedVBO::UntypedManagedSparselyUpdatedVBO(
@@ -127,7 +128,7 @@ void main() {
 		
 		const uint32_t elementsToUpdate =
 			deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
 		shader->Use();
 		shader->SetUInt(shaderDeltaCommandsLocation,
 				elementsToUpdate);
