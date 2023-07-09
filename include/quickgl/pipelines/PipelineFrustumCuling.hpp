@@ -75,6 +75,8 @@ namespace qgl {
 		gl::Sync syncFrustumCulledEntitiesCountReadyToFetch;
 		
 		uint32_t *mappedPointerToentitiesCount;
+		
+		uint32_t objectsPerInvocation;
 	};
 }
 

@@ -35,7 +35,7 @@ namespace qgl {
 		rotation = glm::quat(0, {0,1,0});
 		euler = {0,0,0};
 		near = 0.1;
-		far = 10000;
+		far = 1000001;
 	}
 	
 	FreeFlyCamera::~FreeFlyCamera() {
