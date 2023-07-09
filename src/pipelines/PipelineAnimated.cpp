@@ -336,7 +336,7 @@ layout (packed, std430, binding=2) readonly buffer bbb {
 	AnimationMetadata animationMetadata[];
 };
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
 	uint id = gl_GlobalInvocationID.x;

@@ -79,9 +79,16 @@ namespace qgl {
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
 		if(indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE))
 			exit(31);
+		
 		frustumCullingShader = std::make_unique<gl::Shader>();
 		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
 			exit(31);
+		
+		objectsPerInvocation = 16;
+		frustumCullingShader->SetUInt(
+				frustumCullingShader
+					->GetUniformLocation("objectsPerInvocation"),
+				objectsPerInvocation);
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
@@ -123,6 +130,8 @@ namespace qgl {
 			frustumCullingShader->GetUniformLocation("entitiesCount");
 		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
 			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
+		const int32_t OBJECTS_PER_INVOCATION_LOCATION =
+			frustumCullingShader->GetUniformLocation("objectsPerInvocation");
 
 		stages.emplace_back(
 			"Performing frustum culling",
@@ -152,8 +161,12 @@ namespace qgl {
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 
 				// perform frustum culling
+				
 				frustumCullingShader
-					->DispatchRoundGroupNumbers((idsManager.CountIds()+3)/4, 1, 1);
+					->DispatchRoundGroupNumbers(
+							(idsManager.CountIds()+objectsPerInvocation-1) /
+								objectsPerInvocation,
+							1, 1);
 				gl::Shader::Unuse();
 				
 				frustumCulledIdsCountAtomicCounterAsyncFetch->
@@ -262,7 +275,8 @@ uint IsInView(uint id) {
 	return 0;
 }
 
-const uint OBJECTS_PER_INVOCATION = 16;
+const uint MAX_OBJECTS_PER_INVOCATION = 16;
+uniform uint objectsPerInvocation;
 
 void main() {
 	if(gl_LocalInvocationID.x == 0)
@@ -270,10 +284,10 @@ void main() {
 	barrier();
 	
 	uint inViewCount = 0;
-	uint inViewIds[OBJECTS_PER_INVOCATION];
+	uint inViewIds[MAX_OBJECTS_PER_INVOCATION];
 
-	for(uint i=0; i<OBJECTS_PER_INVOCATION; ++i) {
-		uint invocationId = gl_GlobalInvocationID.x*OBJECTS_PER_INVOCATION + i;
+	for(uint i=0; i<objectsPerInvocation; ++i) {
+		uint invocationId = gl_GlobalInvocationID.x*objectsPerInvocation + i;
 		uint isIn = IsInView(invocationId);
 		inViewIds[inViewCount] = allEntitiesIds[invocationId];
 		inViewCount += isIn;

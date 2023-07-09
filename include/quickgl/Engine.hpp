@@ -62,7 +62,12 @@ namespace qgl {
 		inline uint64_t CountNanosecondsOnCpu() const { return renderStageComposer.CountNanosecondsOnCpu(); }
 		inline uint64_t CountTotalNanosecondsOnCpu() const { return renderStageComposer.CountTotalNanosecondsOnCpu(); }
 		
+		void EnableProfiling(bool value);
+		bool GetProfiling() const;
+		
 	protected:
+		
+		bool profiling;
 		
 		bool initialized;
 		

@@ -130,7 +130,7 @@ int main() {
 		= std::make_shared<qgl::FreeFlyCamera>();
 	engine->SetMainCamera(camera);
 	camera->SetFov(75);
-	camera->SetPosition({0,-2,5});
+	camera->SetPosition({0,-2,100});
 	
 	auto AddRandomEntity = [&]() {
 		if(rand()%2) {
@@ -174,6 +174,9 @@ int main() {
 			break;
 		}
 		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_P)) {
+			engine->EnableProfiling(!engine->GetProfiling());
+		}
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
 			for(int i=0; i<500; ++i)

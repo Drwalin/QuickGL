@@ -83,6 +83,8 @@ namespace qgl {
 	class RenderStageComposer final {
 	public:
 		
+		RenderStageComposer();
+		
 		void AddPipelineStages(std::shared_ptr<Pipeline> pipeline);
 		
 		void RestartStages(std::vector<std::shared_ptr<Camera>> cameras);
@@ -101,6 +103,8 @@ namespace qgl {
 		inline uint64_t CountTotalNanosecondsOnCpu() const { return totalTimeCountNs; }
 		void PrintStagesStructure();
 		
+		void SetGlFinishInEveryStageToProfile(bool value);
+		
 	private:
 		
 		bool ContinueStagesGlobal();
@@ -108,6 +112,8 @@ namespace qgl {
 		bool ContinueStagesPerFbo();
 		
 	private:
+		
+		bool enableGlFinishInEveryStageToProfile = false;
 		
 		uint64_t sumTimeCount;
 		uint64_t totalTimeCountNs;

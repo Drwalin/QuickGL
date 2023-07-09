@@ -27,6 +27,10 @@
 
 namespace qgl {
 	
+	RenderStageComposer::RenderStageComposer() {
+		enableGlFinishInEveryStageToProfile = false;
+	}
+	
 	void RenderStageComposer::AddPipelineStages(
 			std::shared_ptr<Pipeline> pipeline) {
 		std::vector<std::shared_ptr<Stage>> renderStagesPtr;
@@ -43,9 +47,12 @@ namespace qgl {
 				auto rf = s.renderFunction;
 				auto sn = s.stageName;
 				auto pn = s.pipeline->GetPipelineName();
-				s.renderFunction = [rf, sn, pn](std::shared_ptr<Camera> cam){
+				s.renderFunction = [this, rf, sn, pn](std::shared_ptr<Camera> cam){
 					QUICKGL_LOG("start stage  '%s' : '%s'", pn.c_str(), sn.c_str());
 					rf(cam);
+					if(enableGlFinishInEveryStageToProfile) {
+						gl::Finish();
+					}
 					QUICKGL_LOG("finish stage '%s' : '%s'", pn.c_str(), sn.c_str());
 				};
 				renderStagesPtr[i] = std::make_shared<Stage>(std::move(s));
@@ -295,6 +302,10 @@ namespace qgl {
 					e.stage->pipeline->GetPipelineName().c_str(),
 					e.stage->stageName.c_str());
 		}
+	}
+	
+	void RenderStageComposer::SetGlFinishInEveryStageToProfile(bool value) {
+		enableGlFinishInEveryStageToProfile = value;
 	}
 }
 

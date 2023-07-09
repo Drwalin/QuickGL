@@ -31,6 +31,7 @@
 namespace qgl {
 	Engine::Engine() {
 		initialized = false;
+		profiling = false;
 	}
 	
 	Engine::~Engine() {
@@ -129,6 +130,15 @@ namespace qgl {
 		// TODO: is it optional?
 		gl::openGL.PrintErrors();
 		gl::openGL.ClearErrors();
+	}
+	
+	bool Engine::GetProfiling() const {
+		return profiling;
+	}
+	
+	void Engine::EnableProfiling(bool value) {
+		profiling = value;
+		renderStageComposer.SetGlFinishInEveryStageToProfile(profiling);
 	}
 }
 
