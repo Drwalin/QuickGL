@@ -53,10 +53,6 @@ namespace qgl {
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		indirectDrawBuffer->Init();
 		
-		frustumCulledFlags = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		frustumCulledFlags->Init();
-		
 		frustumCulledIdsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsBuffer->Init();
@@ -93,10 +89,6 @@ namespace qgl {
 				frustumCullingShader
 					->GetUniformLocation("objectsPerInvocation"),
 				objectsPerInvocation);
-		
-		frustumCullingOnlyShader = std::make_unique<gl::Shader>();
-		if(frustumCullingOnlyShader->Compile(FRUSTUM_CULLING_ONLY_COMPUTE_SHADER_SOURCE))
-			exit(31);
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
@@ -109,7 +101,6 @@ namespace qgl {
 			if(i != indirectDrawBuffer->GetVertexCount()) {
 				indirectDrawBuffer->Generate(nullptr, i);
 				frustumCulledIdsBuffer->Generate(nullptr, i);
-				frustumCulledFlags->Generate(nullptr, i);
 			}
 			
 		}
@@ -133,54 +124,15 @@ namespace qgl {
 			}
 		);
 		}
-
-		{
-		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
-			frustumCullingOnlyShader->GetUniformLocation("entitiesCount");
-		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
-			frustumCullingOnlyShader->GetUniformLocation("cameraInverseTransform");
-		
-		stages.emplace_back(
-			"Performing frustum culling only",
-			STAGE_PER_CAMERA,
-			[=](std::shared_ptr<Camera> camera) {
-				// set visible entities count
-				frustumCullingOnlyShader->Use();
-				frustumCullingOnlyShader
-					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-							idsManager.CountIds());
-				frustumCullingOnlyShader
-					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
-							camera->GetViewMatrix());
-
-				// bind buffers
-				frustumCulledFlags
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-				idsManager.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-				transformMatrices.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
-				clippingPlanes
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				perEntityMeshInfoBoundingSphere.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
-
-				// perform frustum culling
-				
-				frustumCullingOnlyShader
-					->DispatchRoundGroupNumbers(
-							(idsManager.CountIds()+31)/32,
-							1, 1);
-				gl::Shader::Unuse();
-			});
-		}
 		
 		{
 		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
 			frustumCullingShader->GetUniformLocation("entitiesCount");
+		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
+			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 
 		stages.emplace_back(
-			"Performing culled ids construction",
+			"Performing frustum culling",
 			STAGE_PER_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
@@ -188,23 +140,30 @@ namespace qgl {
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
 							idsManager.CountIds());
+				frustumCullingShader
+					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
+							camera->GetViewMatrix());
 
 				// bind buffers
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
 				idsManager.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-				frustumCulledFlags
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+				transformMatrices.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
 				frustumCulledIdsCountAtomicCounter
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
+				clippingPlanes
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+				perEntityMeshInfoBoundingSphere.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
 
 				// perform frustum culling
 				
 				frustumCullingShader
 					->DispatchRoundGroupNumbers(
-							(idsManager.CountIds()+31) /
-								32,
+							(idsManager.CountIds()+objectsPerInvocation-1) /
+								objectsPerInvocation,
 							1, 1);
 				gl::Shader::Unuse();
 				
@@ -267,7 +226,7 @@ namespace qgl {
 		}
 	}
 	
-	const char* PipelineFrustumCulling::FRUSTUM_CULLING_ONLY_COMPUTE_SHADER_SOURCE = R"(
+	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
 #version 450 core
 
 layout (packed, std430, binding=1) writeonly buffer aaa {
@@ -278,6 +237,9 @@ layout (packed, std430, binding=2) readonly buffer bbb {
 };
 layout (packed, std430, binding=3) readonly buffer ccc {
 	mat4 entitesTransformations[];
+};
+layout (packed, std430, binding=4) buffer ddd {
+	uint globalAtomicCounter;
 };
 layout (packed, std430, binding=5) readonly buffer eee {
 	vec4 clippingPlanes[];
@@ -291,69 +253,44 @@ layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 uniform uint entitiesCount;
 uniform mat4 cameraInverseTransform;
 
-uint IsInView(uint id) {
-	vec3 pos = (
-		cameraInverseTransform *
-		entitesTransformations[id] *
-			vec4(meshInfo[id].xyz, 1)).xyz;
-	for(uint i=0; i<5; ++i) {
-		float d = dot(clippingPlanes[i].xyz, pos);
-		if(d+meshInfo[id].w < clippingPlanes[i].w) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-void main() {
-	uint inViewCount = 0;
-	uint inViewFlags = 0;
-
-	for(uint i=0; i<32; ++i) {
-		uint invocationId = gl_GlobalInvocationID.x*32 + i;
-		if(invocationId >= entitiesCount)
-			break;
-		uint isIn = IsInView(allEntitiesIds[invocationId]);
-		inViewCount += isIn;
-		inViewFlags |= isIn << i;
-	}
-
-	frustumCulledEntitiesIds[gl_GlobalInvocationID.x] = inViewFlags;
-}
-)";
-	
-	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
-
-layout (packed, std430, binding=1) writeonly buffer aaa {
-	uint frustumCulledEntitiesIds[];
-};
-layout (packed, std430, binding=2) readonly buffer bbb {
-	uint allEntitiesIds[];
-};
-layout (packed, std430, binding=3) readonly buffer ccc {
-	uint frustumCulledEntitiesIdsRead[];
-};
-layout (packed, std430, binding=4) buffer ddd {
-	uint globalAtomicCounter;
-};
-
-layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
-
-uniform uint entitiesCount;
-
 shared uint localAtomicCounter;
 shared uint commonStartingLocation;
+
+uint IsInView(uint id) {
+	if(id < entitiesCount) {
+		id = allEntitiesIds[id];
+		vec3 pos = (
+			cameraInverseTransform *
+			entitesTransformations[id] *
+				vec4(meshInfo[id].xyz, 1)).xyz;
+		for(uint i=0; i<5; ++i) {
+			float d = dot(clippingPlanes[i].xyz, pos);
+			if(d+meshInfo[id].w < clippingPlanes[i].w) {
+				return 0;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+const uint MAX_OBJECTS_PER_INVOCATION = 16;
+uniform uint objectsPerInvocation;
 
 void main() {
 	if(gl_LocalInvocationID.x == 0)
 		localAtomicCounter = 0;
 	barrier();
-
-	uint id = gl_GlobalInvocationID.x;
-	uint bitFields = frustumCulledEntitiesIdsRead[id];
 	
-	uint inViewCount = bitCount(bitFields);
+	uint inViewCount = 0;
+	uint inViewIds[MAX_OBJECTS_PER_INVOCATION];
+
+	for(uint i=0; i<objectsPerInvocation; ++i) {
+		uint invocationId = gl_GlobalInvocationID.x*objectsPerInvocation + i;
+		uint isIn = IsInView(invocationId);
+		inViewIds[inViewCount] = allEntitiesIds[invocationId];
+		inViewCount += isIn;
+	}
 	
 	uint localStartingLocation = 0;
 	if(inViewCount > 0) // @TODO: this condition can be removed
@@ -365,20 +302,11 @@ void main() {
 	if(gl_LocalInvocationID.x == 0)
 		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter);
 	barrier();
-
-	if(inViewCount == 0)
-		return;
 	
-	uint globalStartingLocation = commonStartingLocation + localStartingLocation;
+	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
 	
-	uint off = globalStartingLocation;
-	id = id * 32; 
-	for(uint i=0; i<32; ++i, ++id) {
-		uint isInView = (bitFields >> i) & 1;
-		if(isInView == 1) {
-			frustumCulledEntitiesIds[off] = allEntitiesIds[id];
-			++off;
-		}
+	for(uint i=0; i<inViewCount; ++i) {
+		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
 	}
 }
 )";
