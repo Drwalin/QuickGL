@@ -148,12 +148,14 @@ namespace qgl {
 				updateAnimationShader->SetFloat(TIME_STAMP_LOCATION,
 						engine->GetInputManager().GetTime());
 				
+				perEntityAnimationState.Vbo()
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+				
 				animatedMeshManager->GetAnimationManager()
 					.GetAnimationsMetadata().Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 				
-				perEntityAnimationState.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+				idsManager.Vbo().BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
 				
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
@@ -242,6 +244,11 @@ const uint BONE_FRAMES_H = 16384;
 mat4 GetBonePose(uint frameStart, uint bone);
 mat4 GetFrameMatrix(uint frameStart);
 mat4 GetPoseBoneMatrix();
+
+
+layout (packed, std430, binding=3) readonly buffer ccc {
+	uint allEntities[];
+};
 
 void main() {
 	mat4 poseMat = GetPoseBoneMatrix();
@@ -334,6 +341,10 @@ layout (packed, std430, binding=1) buffer aaa {
 
 layout (packed, std430, binding=2) readonly buffer bbb {
 	AnimationMetadata animationMetadata[];
+};
+
+layout (packed, std430, binding=3) readonly buffer ccc {
+	uint allEntities[];
 };
 
 layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
