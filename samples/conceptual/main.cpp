@@ -11,6 +11,7 @@
 #include "../../include/quickgl/util/Log.hpp"
 
 #include <ctime>
+#include <cstdio>
 
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
@@ -21,7 +22,8 @@
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
 #include <chrono>
-#include <cstdio>
+#include <random>
+#include <algorithm>
 
 int main() {
 	srand(time(NULL));
@@ -132,16 +134,20 @@ int main() {
 	camera->SetFov(75);
 	camera->SetPosition({0,-2,100});
 	
+	std::vector<uint32_t> entSta, entAni;
+	
 	auto AddRandomEntity = [&]() {
 		if(rand()%2) {
 			uint32_t standId = pipelineStatic->CreateEntity();
 			pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
 			pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+			entSta.emplace_back(standId);
 		} else {
 			uint32_t entity = pipelineAnimated->CreateEntity();
 			pipelineAnimated->SetEntityMesh(entity, rand()%2);
 			pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
 			pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
+			entAni.emplace_back(entity);
 		}
 		++I;
 	};
@@ -197,6 +203,26 @@ int main() {
 			for(int i=0; i<1000*10; ++i)
 				AddRandomEntity();
 			pressedSomething = true;
+		}
+		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_DELETE)) {
+			for(int i=0; i<1000; ++i) {
+				if(rand()%2) {
+					if(entSta.size() > 10) {
+						uint32_t p = rand() % (entSta.size()-4) + 4;
+						pipelineStatic->DeleteEntity(entSta[p]);
+						std::swap(entSta[p], entSta.back());
+						entSta.erase(entSta.end());
+					}
+				} else {
+					if(entAni.size() > 10) {
+						uint32_t p = rand() % (entAni.size()-4) + 4;
+						pipelineAnimated->DeleteEntity(entAni[p]);
+						std::swap(entAni[p], entAni.back());
+						entAni.erase(entAni.end());
+					}
+				}
+			}
 		}
 		
 		
