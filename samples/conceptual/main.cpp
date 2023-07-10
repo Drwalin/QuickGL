@@ -190,7 +190,7 @@ int main() {
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_0)) {
-			for(int i=0; i<1000*1000; ++i)
+			for(int i=0; i<3000*1000; ++i)
 				AddRandomEntity();
 			pressedSomething = true;
 		}
