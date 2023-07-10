@@ -184,6 +184,11 @@ int main() {
 			engine->EnableProfiling(!engine->GetProfiling());
 		}
 		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_Y)) {
+			for(int i=0; i<5; ++i)
+				AddRandomEntity();
+			pressedSomething = true;
+		}
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_T)) {
 			for(int i=0; i<500; ++i)
 				AddRandomEntity();
