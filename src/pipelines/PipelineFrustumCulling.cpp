@@ -130,8 +130,6 @@ namespace qgl {
 			frustumCullingShader->GetUniformLocation("entitiesCount");
 		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
 			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
-		const int32_t OBJECTS_PER_INVOCATION_LOCATION =
-			frustumCullingShader->GetUniformLocation("objectsPerInvocation");
 
 		stages.emplace_back(
 			"Performing frustum culling",
@@ -250,7 +248,7 @@ layout (packed, std430, binding=6) readonly buffer fff {
 	vec4 meshInfo[];
 };
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 uniform uint entitiesCount;
 uniform mat4 cameraInverseTransform;
@@ -305,6 +303,7 @@ void main() {
 	barrier();
 	
 	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
+	
 	for(uint i=0; i<inViewCount; ++i) {
 		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
 	}
