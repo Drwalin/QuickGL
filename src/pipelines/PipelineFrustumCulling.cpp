@@ -61,19 +61,47 @@ namespace qgl {
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		clippingPlanes->Init();
 		
-		frustumCulledIdsCountAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
-				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
-		frustumCulledIdsCountAtomicCounter->Init();
-		const static uint32_t ints[3] = {0, 1, 1};
-		frustumCulledIdsCountAtomicCounter->Generate(ints, 3);
 		
-		frustumCulledIdsCountAtomicCounterAsyncFetch = std::make_shared<gl::VBO>(
+		
+		areInView = std::make_shared<gl::VBO>(
 				sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		mappedPointerToentitiesCount = (uint32_t*)
-			frustumCulledIdsCountAtomicCounterAsyncFetch->InitMapPersistent(
-					nullptr, 3,
-					gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
+		reduceOffsets1 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceOffsets2 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceOffsets3 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceOffsets4 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceCounts1 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceCounts2 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceCounts3 = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		reduceCounts3fetch = std::make_shared<gl::VBO>(
+				sizeof(uint32_t),
+				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+		
+		areInView->Init(32*4096);
+		reduceOffsets1->Init(32*4096);
+		reduceOffsets2->Init(32*4096);
+		reduceOffsets3->Init(32*4096);
+		reduceOffsets4->InitMapPersistent(nullptr, 4096,
+				gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
+		reduceCounts1->Init(32*4096);
+		reduceCounts2->Init(32*4096);
+		reduceCounts3->Init(4096);
+		reduceCounts3fetch->InitMapPersistent(nullptr, 4096,
+				gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
 		
 		// init shaders
 		indirectDrawBufferShader = std::make_unique<gl::Shader>();
@@ -84,11 +112,21 @@ namespace qgl {
 		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
 			exit(31);
 		
-		objectsPerInvocation = 16;
-		frustumCullingShader->SetUInt(
-				frustumCullingShader
-					->GetUniformLocation("objectsPerInvocation"),
-				objectsPerInvocation);
+		sumReduceShader = std::make_unique<gl::Shader>();
+		if(sumReduceShader->Compile(SUM_REDUCE_COMPUTE_SHADER_SOURCE))
+			exit(31);
+		
+		sumReduceShader->SetUInt(
+				sumReduceShader->GetUniformLocation("reduceCount"),
+				REDUCE_SIZE);
+		
+		sumReduceReconstructShader = std::make_unique<gl::Shader>();
+		if(sumReduceReconstructShader->Compile(SUM_REDUCE_RECONSTRUCT_COMPUTE_SHADER_SOURCE))
+			exit(31);
+		
+		sumReduceReconstructShader->SetUInt(
+				sumReduceReconstructShader->GetUniformLocation("reduceCount"),
+				REDUCE_SIZE);
 	}
 	
 	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
@@ -105,8 +143,15 @@ namespace qgl {
 			
 		}
 		frustumCulledEntitiesCount = 0;
-		frustumCulledIdsCountAtomicCounter
-			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+		if(reduceOffsets1->GetVertexCount() < GetEntitiesCount()) {
+			reduceOffsets1->Resize(GetEntitiesCount());
+			areInView->Resize(GetEntitiesCount());
+			if(reduceOffsets2->GetVertexCount()
+					< ((GetEntitiesCount()+REDUCE_SIZE-1)/REDUCE_SIZE)) {
+				reduceOffsets2->Resize((GetEntitiesCount()+REDUCE_SIZE-1)/REDUCE_SIZE);
+				reduceCounts1->Resize((GetEntitiesCount()+REDUCE_SIZE-1)/REDUCE_SIZE);
+			}
+		}
 		return ret;
 	}
 	
@@ -145,41 +190,117 @@ namespace qgl {
 							camera->GetViewMatrix());
 
 				// bind buffers
-				frustumCulledIdsBuffer
+				areInView
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
 				idsManager.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 				transformMatrices.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
-				frustumCulledIdsCountAtomicCounter
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 				clippingPlanes
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 				perEntityMeshInfoBoundingSphere.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
 
 				// perform frustum culling
-				
 				frustumCullingShader
-					->DispatchRoundGroupNumbers(
-							(idsManager.CountIds()+objectsPerInvocation-1) /
-								objectsPerInvocation,
-							1, 1);
+					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
+				
 				gl::Shader::Unuse();
-				
-				frustumCulledIdsCountAtomicCounterAsyncFetch->
-					Copy(frustumCulledIdsCountAtomicCounter.get(), 0, 0, 12);
-				
-				frustumCulledIdsCountAtomicCounterAsyncFetch->
-					FlushFromGpuMapPersistentFullRange();
-				
-				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
 			});
 		}
 
 		{
+		const int32_t COUNT_IN_LOCATION =
+			sumReduceShader->GetUniformLocation("countIn");
+		const int32_t COUNT_OUT_LOCATION =
+			sumReduceShader->GetUniformLocation("countOut");
+
 		stages.emplace_back(
-			"Fetching count of entities in frustum view to CPU",
+			"Frustum culling count reduce 1",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
+				sumReduceShader->Use();
+				sumReduceShader->SetUInt(COUNT_IN_LOCATION,
+							idsManager.CountIds());
+				sumReduceShader->SetUInt(COUNT_OUT_LOCATION,
+							(idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE);
+
+				// bind buffers
+				areInView
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+				reduceOffsets1
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+				reduceCounts1
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+
+				// perform sum reduce
+				sumReduceShader
+					->DispatchRoundGroupNumbers(idsManager.CountIds(), 1, 1);
+				
+				gl::Shader::Unuse();
+			});
+
+		stages.emplace_back(
+			"Frustum culling count reduce 2",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
+				sumReduceShader->Use();
+				sumReduceShader->SetUInt(COUNT_IN_LOCATION,
+							(idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE);
+				sumReduceShader->SetUInt(COUNT_OUT_LOCATION,
+							(((idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE);
+
+				// bind buffers
+				reduceCounts1
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+				reduceOffsets2
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+				reduceCounts2
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+
+				// perform sum reduce
+				sumReduceShader
+					->DispatchRoundGroupNumbers(
+							(idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE,
+							1, 1);
+				
+				gl::Shader::Unuse();
+			});
+
+		stages.emplace_back(
+			"Frustum culling count reduce 3",
+			STAGE_PER_CAMERA,
+			[=](std::shared_ptr<Camera> camera) {
+				// perform reduce
+				sumReduceShader->Use();
+				sumReduceShader->SetUInt(COUNT_IN_LOCATION,
+							(((idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE);
+				sumReduceShader->SetUInt(COUNT_OUT_LOCATION,
+							(((((idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE);
+
+				// bind buffers
+				reduceCounts2
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+				reduceOffsets3
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+				reduceCounts3
+					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+
+				sumReduceShader
+					->DispatchRoundGroupNumbers(
+							(((idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE,
+							1, 1);
+				
+				gl::Shader::Unuse();
+				
+				reduceCounts3fetch->Copy(reduceCounts3.get(), 0, 0, reduceCounts3fetch->GetVertexCount()*sizeof(uint32_t));
+				reduceCounts3fetch->FlushToGpuMapPersistentFullRange();
+				
+				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
+			});
+
+		stages.emplace_back(
+			"Fetching count entities in view, reconstructing culled ids buffer",
 			STAGE_PER_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
 				// wait for fence
@@ -187,9 +308,23 @@ namespace qgl {
 					gl::Finish();
 				}
 				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
-			
-				// fetch number of entities to render after culling
-				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
+				
+				uint32_t countSrc = 
+						(((((idsManager.CountIds()+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE)+REDUCE_SIZE-1)/REDUCE_SIZE;
+				
+				uint32_t *reduceCountPtr = (uint32_t*)reduceCounts3fetch->GetMappedPointer();
+				
+				uint32_t *offset = (uint32_t*)reduceOffsets4->GetMappedPointer();
+				frustumCulledEntitiesCount = 0;
+				
+				for(int i=0; i<countSrc; ++i) {
+					offset[i] = frustumCulledEntitiesCount;
+					frustumCulledEntitiesCount += reduceCountPtr[i];
+				}
+				
+				gl::MemoryBarrier(gl::CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+				
+				// reconstruct ids buffer
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
@@ -230,7 +365,7 @@ namespace qgl {
 #version 450 core
 
 layout (packed, std430, binding=1) writeonly buffer aaa {
-	uint frustumCulledEntitiesIds[];
+	uint isInViewOneOrZero[];
 };
 layout (packed, std430, binding=2) readonly buffer bbb {
 	uint allEntitiesIds[];
@@ -238,23 +373,17 @@ layout (packed, std430, binding=2) readonly buffer bbb {
 layout (packed, std430, binding=3) readonly buffer ccc {
 	mat4 entitesTransformations[];
 };
-layout (packed, std430, binding=4) buffer ddd {
-	uint globalAtomicCounter;
-};
-layout (packed, std430, binding=5) readonly buffer eee {
+layout (packed, std430, binding=4) readonly buffer eee {
 	vec4 clippingPlanes[];
 };
-layout (packed, std430, binding=6) readonly buffer fff {
+layout (packed, std430, binding=5) readonly buffer fff {
 	vec4 meshInfo[];
 };
 
-layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 uniform uint entitiesCount;
 uniform mat4 cameraInverseTransform;
-
-shared uint localAtomicCounter;
-shared uint commonStartingLocation;
 
 uint IsInView(uint id) {
 	if(id < entitiesCount) {
@@ -273,39 +402,110 @@ uint IsInView(uint id) {
 	return 0;
 }
 
-const uint MAX_OBJECTS_PER_INVOCATION = 16;
-uniform uint objectsPerInvocation;
+void main() {
+	uint id = gl_GlobalInvocationID.x;
+	if(id >= entitiesCount) {
+		return;
+	}
+	isInViewOneOrZero[id] = IsInView(id);
+}
+)";
+	
+	const char* PipelineFrustumCulling::SUM_REDUCE_COMPUTE_SHADER_SOURCE = R"(
+layout (packed, std430, binding=1) readonly buffer aaa {
+	uint inCounts[];
+};
+layout (packed, std430, binding=2) writeonly buffer bbb{
+	uint outOffsets[];
+};
+layout (packed, std430, binding=3) writeonly buffer ccc {
+	uint outCounts[];
+};
+
+uniform uint countIn;
+uniform uint countOut;
+uniform uint reduceCount;
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-	if(gl_LocalInvocationID.x == 0)
-		localAtomicCounter = 0;
-	barrier();
-	
-	uint inViewCount = 0;
-	uint inViewIds[MAX_OBJECTS_PER_INVOCATION];
-
-	for(uint i=0; i<objectsPerInvocation; ++i) {
-		uint invocationId = gl_GlobalInvocationID.x*objectsPerInvocation + i;
-		uint isIn = IsInView(invocationId);
-		inViewIds[inViewCount] = allEntitiesIds[invocationId];
-		inViewCount += isIn;
+	const uint outId = gl_GlobalInvocationID.x;
+	const uint startId = outId * reduceCount;
+	if(startId >= countIn)
+		return;
+	const uint endId = min(startId + reduceCount, countIn);
+	uint count = 0;
+	for(uint id=startId; id<endId; ++id) {
+		outOffsets[id] = count;
+		count += inCounts[id];
 	}
+	if(startId < countIn) {
+		outCounts[outId] = count;
+	}
+}
+)"; 
 	
-	uint localStartingLocation = 0;
-	if(inViewCount > 0) // @TODO: this condition can be removed
-	                                            // and code still will work:
-	                                            // @TODO: check if removign this condition is faster
-		localStartingLocation = atomicAdd(localAtomicCounter, inViewCount);
-	
-	barrier();
-	if(gl_LocalInvocationID.x == 0)
-		commonStartingLocation = atomicAdd(globalAtomicCounter, localAtomicCounter);
-	barrier();
-	
-	uint globalStartingLocation = commonStartingLocation+localStartingLocation;
-	
-	for(uint i=0; i<inViewCount; ++i) {
-		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
+	const char* PipelineFrustumCulling::SUM_REDUCE_RECONSTRUCT_COMPUTE_SHADER_SOURCE = R"(
+layout (packed, std430, binding=1) readonly buffer aaa {
+	uint areInView[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceOffsets1[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceOffsets2[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceOffsets3[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceOffsets4[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceCounts1[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceCounts2[];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint reduceCounts3[];
+};
+
+layout (packed, std430, binding=) readonly buffer {
+	uint [];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint [];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint [];
+};
+layout (packed, std430, binding=) readonly buffer {
+	uint [];
+};
+layout (packed, std430, binding=2) writeonly buffer bbb{
+	uint outOffsets[];
+};
+layout (packed, std430, binding=3) writeonly buffer ccc {
+	uint outCounts[];
+};
+
+uniform uint entitesCount;
+uniform uint reduceCount;
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main() {
+	const uint outId = gl_GlobalInvocationID.x;
+	const uint startId = outId * reduceCount;
+	const uint endId = min(startId + reduceCount, countIn);
+	uint count = 0;
+	for(uint id=startId; id<endId; ++id) {
+		outOffsets[id] = count;
+		count += inCounts[id];
+	}
+	if(startId < countIn) {
+		outCounts[outId] = count;
 	}
 }
 )";
@@ -326,9 +526,6 @@ struct PerEntityMeshInfo {
 	uint elementsCount;
 };
 
-layout (packed, std430, binding=4) readonly buffer cccaaa {
-	uint entitiesCount;
-};
 layout (packed, std430, binding=5) writeonly buffer aaa {
 	DrawElementsIndirectCommand indirectCommands[];
 };
@@ -338,6 +535,8 @@ layout (packed, std430, binding=6) readonly buffer bbb {
 layout (packed, std430, binding=7) readonly buffer ccc {
 	uint visibleEntityIds[];
 };
+
+uniform uint entitiesCount;
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
