@@ -23,7 +23,6 @@
 
 #include <vector>
 #include <map>
-#include <unordered_map>
 
 #include "ManagedSparselyUpdatedVBO.hpp"
 
@@ -76,11 +75,11 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<uint32_t> vbo;
 		
-		std::vector<uint32_t> ids;
 		std::vector<uint32_t> freeIdsStack;
 		
 		std::vector<uint32_t> arrayOfUsedIds;
-		std::unordered_map<uint32_t, uint32_t> mapIdToOffsetInArrayOfUsedIds;
+		std::vector<uint32_t> mapIdToOffsetInArrayOfUsedIds;
+		
 	};
 }
 

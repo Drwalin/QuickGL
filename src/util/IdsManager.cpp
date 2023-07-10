@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
+
 #include "../../include/quickgl/util/IdsManager.hpp"
 
 namespace qgl {
@@ -60,28 +62,28 @@ namespace qgl {
 	}
 	
 	uint32_t IdsManagerVBOManaged::GetNewId() {
-		if(freeIdsStack.size()) {
-			uint32_t id = freeIdsStack.back();
-			freeIdsStack.resize(freeIdsStack.size()-1);
-			uint32_t arrayOfUsedIdsOffset = arrayOfUsedIds.size();
-			mapIdToOffsetInArrayOfUsedIds[id] = arrayOfUsedIdsOffset;
-			vbo.SetValue(id, arrayOfUsedIds.size());
-			arrayOfUsedIds.emplace_back(id);
-			return id;
-		} else {
-			uint32_t id = ids.size();
-			ids.resize(id+1);
-			vbo.SetValue(id, arrayOfUsedIds.size());
-			arrayOfUsedIds.push_back(id);
-			mapIdToOffsetInArrayOfUsedIds[id] = id; 
-			return id;
+		if(freeIdsStack.empty()) {
+			const uint32_t addSize = std::max<uint32_t>(256, (arrayOfUsedIds.size()*3)/2);
+			const uint32_t start = arrayOfUsedIds.size();
+			arrayOfUsedIds.reserve(arrayOfUsedIds.size()+addSize);
+			mapIdToOffsetInArrayOfUsedIds.resize(arrayOfUsedIds.size()+addSize);
+			freeIdsStack.resize(addSize);
+			for(int i=0; i<addSize; ++i) {
+				freeIdsStack[i] = start+addSize-1-i;
+			}
 		}
+		uint32_t id = freeIdsStack.back();
+		freeIdsStack.resize(freeIdsStack.size()-1);
+		uint32_t arrayOfUsedIdsOffset = arrayOfUsedIds.size();
+		mapIdToOffsetInArrayOfUsedIds[id] = arrayOfUsedIdsOffset;
+		vbo.SetValue(id, arrayOfUsedIds.size());
+		arrayOfUsedIds.emplace_back(id);
+		return id;
 	}
 	
 	void IdsManagerVBOManaged::FreeId(uint32_t id) {
 		freeIdsStack.emplace_back(id);
 		uint32_t arrayOfUsedIdsOffset = mapIdToOffsetInArrayOfUsedIds[id];
-		mapIdToOffsetInArrayOfUsedIds.erase(id);
 		
 		if(arrayOfUsedIdsOffset != arrayOfUsedIds.size()-1) {
 			uint32_t movingId = arrayOfUsedIds.back();
