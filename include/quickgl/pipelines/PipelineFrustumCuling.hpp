@@ -60,23 +60,35 @@ namespace qgl {
 		
 	private:
 		
+		const inline static uint32_t REDUCE_SIZE = 32;
+		
 		std::unique_ptr<gl::Shader> indirectDrawBufferShader;
 		
 		std::unique_ptr<gl::Shader> frustumCullingShader;
 		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
-		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounter;
-		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounterAsyncFetch;
+		
+		std::unique_ptr<gl::Shader> sumReduceShader;
+		std::unique_ptr<gl::Shader> sumReduceReconstructShader;
+		std::shared_ptr<gl::VBO> areInView;
+		std::shared_ptr<gl::VBO> reduceOffsets1;
+		std::shared_ptr<gl::VBO> reduceOffsets2;
+		std::shared_ptr<gl::VBO> reduceOffsets3;
+		std::shared_ptr<gl::VBO> reduceOffsets4;
+		std::shared_ptr<gl::VBO> reduceCounts1;
+		std::shared_ptr<gl::VBO> reduceCounts2;
+		std::shared_ptr<gl::VBO> reduceCounts3;
+		std::shared_ptr<gl::VBO> reduceCounts3fetch;
+		
+		
 		glm::vec4 clippingPlanesValues[5];
 		std::shared_ptr<gl::VBO> clippingPlanes;
 		
 		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
+		static const char* SUM_REDUCE_COMPUTE_SHADER_SOURCE;
+		static const char* SUM_REDUCE_RECONSTRUCT_COMPUTE_SHADER_SOURCE;
 		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 		
 		gl::Sync syncFrustumCulledEntitiesCountReadyToFetch;
-		
-		uint32_t *mappedPointerToentitiesCount;
-		
-		uint32_t objectsPerInvocation;
 	};
 }
 
