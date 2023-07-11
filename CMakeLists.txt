@@ -66,7 +66,17 @@ target_link_libraries(QuickGL OpenGLWrapper)
 if(BUILD_EXAMPLES)
 	add_executable(sample_conceptual_quickgl samples/conceptual/main.cpp)
 	target_link_libraries(sample_conceptual_quickgl QuickGL)
+
+	add_custom_target(
+		run ALL
+		COMMAND sample_conceptual_quickgl
+		DEPENDS sample_conceptual_quickgl
+		COMMENT "Running sample"
+	)
+	set_target_properties(run PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
+
+
 
 
 
