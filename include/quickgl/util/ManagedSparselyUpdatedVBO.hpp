@@ -67,15 +67,50 @@ namespace qgl {
 	};
 	
 	template<typename T>
-	class ManagedSparselyUpdatedVBO final : public UntypedManagedSparselyUpdatedVBO {
+	class ManagedSparselyUpdatedVBO : public UntypedManagedSparselyUpdatedVBO {
 	public:
 		
-		ManagedSparselyUpdatedVBO() : UntypedManagedSparselyUpdatedVBO(sizeof(T)) {}
+		ManagedSparselyUpdatedVBO() :
+			UntypedManagedSparselyUpdatedVBO(sizeof(T)) {}
 		~ManagedSparselyUpdatedVBO() {}
 		
 		void SetValue(const T& value, uint32_t id) {
 			UntypedManagedSparselyUpdatedVBO::SetValue((const void*)&value, id);
 		}
+	};
+	
+	template<typename T>
+	class ManagedSparselyUpdatedVBOWithLocal :
+		public ManagedSparselyUpdatedVBO<T> {
+	public:
+		
+		ManagedSparselyUpdatedVBOWithLocal() {}
+		~ManagedSparselyUpdatedVBOWithLocal() {}
+		
+		void SetValue(const T& value, uint32_t id) {
+			ManagedSparselyUpdatedVBO<T>::SetValue(value, id);
+			if(localBuffer.size() <= id) {
+				localBuffer.resize(id+1);
+			}
+			localBuffer[id] = value;
+		}
+		
+		void Resize(uint32_t size) {
+			UntypedManagedSparselyUpdatedVBO::Resize(size);
+			localBuffer.resize(size);
+		}
+		
+		const T& GetValue(uint32_t id) const {
+			return localBuffer[id];
+		}
+		
+		uint32_t Count() const {
+			return localBuffer.size();
+		}
+		
+	private:
+		
+		std::vector<T> localBuffer;
 	};
 }
 
