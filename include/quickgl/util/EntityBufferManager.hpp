@@ -43,11 +43,11 @@ namespace qgl {
 		};
 		
 		struct BufferInfo {
-			void (*reserve)(uint32_t newCapacity);
-			void (*resize)(uint32_t newSize);
-			void (*moveByVbo)(gl::VBO* deltaVbo);
-			void (*moveByOne)(uint32_t from, uint32_t to);
-			void (*updateVbo)(uint32_t stageId);
+			void (*reserve)(void* object, uint32_t newCapacity);
+			void (*resize)(void* object, uint32_t newSize);
+			void (*moveByVbo)(void* object, gl::VBO* deltaVbo);
+			void (*moveByOne)(void* object, uint32_t from, uint32_t to);
+			void (*updateVbo)(void* object, uint32_t stageId);
 			
 			void* data;
 		};
@@ -68,7 +68,8 @@ namespace qgl {
 		void AddVBO(gl::VBO* vbo);
 		template<typename T>
 		void AddVector(std::vector<T>* vec);
-		void AddManagedSparselyUpdateVBO(qgl::UntypedManagedSparselyUpdatedVBO* vbo);
+		void AddManagedSparselyUpdateVBO(
+				qgl::UntypedManagedSparselyUpdatedVBO* vbo);
 		
 		uint32_t GetOffsetOfEntity(uint32_t entity) const;
 		
@@ -95,20 +96,21 @@ namespace qgl {
 	
 	template<typename T>
 	void EntityBufferManager::AddVector(std::vector<T>* vec) {
-		buffers.emplace_back(
-			[vec](uint32_t capacity) {
-				vec->reserve(capacity);
+		buffers.push_back(BufferInfo{
+			[](void* vec, uint32_t capacity) {
+				((std::vector<T>*)vec)->reserve(capacity);
 			},
-			[vec](uint32_t size) {
-				vec->resize(size);
+			[](void* vec, uint32_t size) {
+				((std::vector<T>*)vec)->resize(size);
 			},
 			nullptr,
-			[vec](uint32_t from, uint32_t to) {
-				std::swap(vec[0][from], vec[0][to]);
+			[](void* vec, uint32_t from, uint32_t to) {
+				std::swap(((std::vector<T>*)vec)[0][from],
+						((std::vector<T>*)vec)[0][to]);
 			},
 			nullptr,
 			vec
-		);
+		});
 	}
 }
 
