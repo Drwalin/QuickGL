@@ -52,6 +52,8 @@ namespace qgl {
 		void Render();
 		void SwapBuffers();
 		
+		uint32_t GetEntitiesCount() const;
+		
 		void SetMainCamera(std::shared_ptr<Camera> camera);
 		
 		inline InputManager& GetInputManager() { return inputManager; }

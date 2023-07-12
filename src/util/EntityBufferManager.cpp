@@ -29,6 +29,8 @@ namespace qgl {
 	EntityBufferManager::EntityBufferManager() {
 	}
 	
+	uint64_t EntityBufferManager::allEntitiesAdded = 0;
+	
 	EntityBufferManager::~EntityBufferManager() {
 		Destroy();
 	}
@@ -57,6 +59,7 @@ namespace qgl {
 	}
 	
 	uint32_t EntityBufferManager::GetNewEntity() {
+		allEntitiesAdded++;
 		uint32_t entity = 0;
 		for(;;) {
 			entity = ++lastAddedEntity;

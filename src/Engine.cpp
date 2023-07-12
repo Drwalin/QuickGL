@@ -140,5 +140,13 @@ namespace qgl {
 		profiling = value;
 		renderStageComposer.SetGlFinishInEveryStageToProfile(profiling);
 	}
+	
+	uint32_t Engine::GetEntitiesCount() const {
+		uint32_t count = 0;
+		for(auto p : pipelines) {
+			count += p->GetEntitiesCount();
+		}
+		return count;
+	}
 }
 
