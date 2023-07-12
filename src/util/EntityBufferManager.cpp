@@ -16,10 +16,11 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <unordered_map>
+
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 
 #include "../../include/quickgl/util/EntityBufferManager.hpp"
-#include <unordered_map>
 
 namespace qgl {
 	EntityBufferManager::EntityBufferManager() {
@@ -31,7 +32,23 @@ namespace qgl {
 	}
 	
 	void EntityBufferManager::Init() {
-		throw "EntityBufferManager::Init() is unimplemented.";
+		deltaVbo = new gl::VBO(sizeof(PairMove), gl::SHADER_STORAGE_BUFFER,
+				gl::DYNAMIC_DRAW);
+		deltaVbo->Init();
+		mapOffsetToEntity.Init();
+	}
+	
+	void EntityBufferManager::Destroy() {
+		delete deltaVbo;
+		deltaVbo = nullptr;
+		mapOffsetToEntity.Destroy();
+		
+		deltaFromTo.clear();
+		deltaToFrom.clear();
+		deltaBuffer.clear();
+		freeingEntites.clear();
+		mapEntityToOffset.clear();
+		buffers.clear();
 	}
 	
 	uint32_t EntityBufferManager::GetNewEntity() {
@@ -59,17 +76,17 @@ namespace qgl {
 	void EntityBufferManager::UpdateBuffers(uint32_t stageId) {
 		for(BufferInfo& buf : buffers) {
 			if(buf.updateVbo) {
-				buf.updateVbo(stageId);
+				buf.updateVbo(buf.data, stageId);
 			}
 		}
 		if(stageId == 1) {
 			GenerateDeltaBuffer();
 			for(BufferInfo& buf : buffers) {
 				if(buf.moveByVbo) {
-					buf.moveByVbo(deltaVbo);
+					buf.moveByVbo(buf.data, deltaVbo);
 				} else if(buf.moveByOne) {
 					for(PairMove& p : deltaBuffer) {
-						buf.moveByOne(p.from, p.to);
+						buf.moveByOne(buf.data, p.from, p.to);
 					}
 				}
 			}
@@ -78,42 +95,81 @@ namespace qgl {
 	
 	
 	void EntityBufferManager::AddVBO(gl::VBO* vbo) {
-		buffers.emplace_back(
-			[vbo](uint32_t capacity) { // reserve
-				vbo->Resize(capacity);
+// 		buffers.push_back({
+// 			[vbo](uint32_t capacity) { // reserve
+// 				vbo->Resize(capacity);
+// 			},
+// 			[vbo](uint32_t size) { // resize
+// 				vbo->Resize(size);
+// 			},
+// 			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
+// 				gl::DeltaBufferUpdater::GetByVertexSize(vbo->VertexSize())
+// 					->Update(vbo, deltaVbo);
+// 			},
+// 			nullptr,
+// 			nullptr,
+// 			vbo
+// 		});
+		buffers.push_back(BufferInfo{
+			[](void* vbo, uint32_t capacity) { // reserve
+				((gl::VBO*)vbo)->Resize(capacity);
 			},
-			[vbo](uint32_t size) { // resize
-				vbo->Resize(size);
-			},
-			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
-				gl::DeltaBufferUpdater::GetByVertexSize(vbo->VertexSize())
-					->Update(vbo, deltaVbo);
+			[](void* vbo, uint32_t size) { // resize
+				((gl::VBO*)vbo)->Resize(size);
 			},
 			nullptr,
+			[](void* vbo, uint32_t from, uint32_t to) {
+				const uint32_t vs = ((gl::VBO*)vbo)->VertexSize();
+				((gl::VBO*)vbo)->Copy(((gl::VBO*)vbo), from*vs, to*vs, vs);
+			},
 			nullptr,
 			vbo
-		);
+		});
 	}
 	
 	void EntityBufferManager::AddManagedSparselyUpdateVBO(
 			qgl::UntypedManagedSparselyUpdatedVBO* vbo) {
-		buffers.emplace_back(
-			[vbo](uint32_t capacity) { // reserve
-				vbo->Resize(capacity);
+// 		buffers.push_back({
+// 			[vbo](uint32_t capacity) { // reserve
+// 				vbo->Resize(capacity);
+// 			},
+// 			[vbo](uint32_t size) { // resize
+// 				vbo->Resize(size);
+// 			},
+// 			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
+// 				gl::DeltaBufferUpdater::GetByVertexSize(vbo->Vbo().VertexSize())
+// 					->Update(vbo, deltaVbo);
+// 			},
+// 			nullptr,
+// 			[vbo](uint32_t stageId) { // update vbo
+// 				vbo->UpdateVBO(stageId);
+// 			},
+// 			vbo
+// 		});
+		buffers.push_back(BufferInfo{
+			[](void* vbo, uint32_t capacity) { // reserve
+				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(capacity);
 			},
-			[vbo](uint32_t size) { // resize
-				vbo->Resize(size);
-			},
-			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
-				gl::DeltaBufferUpdater::GetByVertexSize(vbo->Vbo().VertexSize())
-					->Update(vbo, deltaVbo);
+			[](void* vbo, uint32_t size) { // resize
+				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(size);
 			},
 			nullptr,
-			[vbo](uint32_t stageId) { // resize
-				vbo->UpdateVBO(stageId);
+			[](void* vbo, uint32_t from, uint32_t to) {
+				const uint32_t vs
+					= ((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
+						->Vbo().VertexSize();
+				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
+					->Vbo().Copy(
+							&(((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
+								->Vbo()),
+							from*vs, to*vs, vs);
+			},
+			[](void* vbo, uint32_t stageId) { // update vbo
+				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
+					->UpdateVBO(stageId);
 			},
 			vbo
-		);
+			});
 	}
 	
 	uint32_t EntityBufferManager::GetOffsetOfEntity(uint32_t entity) const {
@@ -154,7 +210,7 @@ namespace qgl {
 		deltaBuffer.clear();
 		for(auto it : deltaFromTo) {
 			if(it.first > 0) {
-				deltaBuffer.emplace_back(it.first, it.second);
+				deltaBuffer.push_back({it.first, it.second});
 			}
 		}
 		
