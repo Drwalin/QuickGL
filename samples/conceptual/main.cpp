@@ -1,5 +1,7 @@
 
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
@@ -9,6 +11,7 @@
 #include "../../include/quickgl/Gui.hpp"
 
 #include "../../include/quickgl/util/Log.hpp"
+#include "quickgl/util/EntityBufferManager.hpp"
 
 #include <ctime>
 #include <cstdio>
@@ -154,7 +157,28 @@ int main() {
 		++I;
 	};
 	
+	auto DeleteRandomEntity = [&]() {
+		if(rand()%2) {
+			if(entSta.size() > 10) {
+				uint32_t p = rand() % (entSta.size()-4) + 4;
+				pipelineStatic->DeleteEntity(entSta[p]);
+				std::swap(entSta[p], entSta.back());
+				entSta.erase(entSta.end());
+			}
+		} else {
+			if(entAni.size() > 10) {
+				uint32_t p = rand() % (entAni.size()-4) + 4;
+				pipelineAnimated->DeleteEntity(entAni[p]);
+				std::swap(entAni[p], entAni.back());
+				entAni.erase(entAni.end());
+			}
+		}
+	};
+	
 	engine->EnableProfiling(true);
+	
+	bool stressTestigEntityCreateAndDelete = false;
+	bool stressDeleting;
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -225,20 +249,26 @@ int main() {
 				count *= 30;
 			}
 			for(int i=0; i<count; ++i) {
-				if(rand()%2) {
-					if(entSta.size() > 10) {
-						uint32_t p = rand() % (entSta.size()-4) + 4;
-						pipelineStatic->DeleteEntity(entSta[p]);
-						std::swap(entSta[p], entSta.back());
-						entSta.erase(entSta.end());
-					}
-				} else {
-					if(entAni.size() > 10) {
-						uint32_t p = rand() % (entAni.size()-4) + 4;
-						pipelineAnimated->DeleteEntity(entAni[p]);
-						std::swap(entAni[p], entAni.back());
-						entAni.erase(entAni.end());
-					}
+				DeleteRandomEntity();
+			}
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_L)) {
+			stressTestigEntityCreateAndDelete = !stressTestigEntityCreateAndDelete;
+		}
+		
+		if(stressTestigEntityCreateAndDelete) {
+			if(stressDeleting) {
+				for(int i=0; i<1000*10; ++i)
+					DeleteRandomEntity();
+				if(engine->GetEntitiesCount() < 100) {
+					stressDeleting = false;
+				}
+			} else {
+				for(int i=0; i<1000*10; ++i)
+					AddRandomEntity();
+				if(engine->GetEntitiesCount() > 1000000) {
+					stressDeleting = true;
 				}
 			}
 		}
@@ -322,6 +352,14 @@ int main() {
 					pipelineAnimated->GetEntitiesCount());
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
+			ImGui::Text("VBO memory usage: %.3f + %.3f = %.3f [MiB]",
+					gl::VBO::CountAllVBOMemoryUsage()/(1024*1024.f),
+					gl::Texture::CountAllTextureMemoryUsage()/(1024*1024.f),
+					(gl::VBO::CountAllVBOMemoryUsage() +
+						gl::Texture::CountAllTextureMemoryUsage())/(1024*1024.f)
+					);
+			ImGui::Text("all entities added: %lu",
+					qgl::EntityBufferManager::GetAllEntitiesAdded());
 		ImGui::End();
 		
 		ImGui::SetNextWindowBgAlpha(0.0);

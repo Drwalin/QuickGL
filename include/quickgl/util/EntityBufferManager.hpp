@@ -76,6 +76,8 @@ namespace qgl {
 		
 		uint32_t GetOffsetOfEntity(uint32_t entity) const;
 		
+		static inline uint64_t GetAllEntitiesAdded() { return allEntitiesAdded; }
+		
 	private:
 		
 		void GenerateDeltaBuffer();
@@ -96,6 +98,8 @@ namespace qgl {
 		uint32_t lastAddedEntity;
 		uint32_t entitiesBufferSize;
 		uint32_t entitiesCount;
+		
+		static uint64_t allEntitiesAdded;
 	};
 	
 	template<typename T>
