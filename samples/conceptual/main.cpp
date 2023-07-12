@@ -21,6 +21,7 @@
 
 #define PRINT_PARAMETER(X) {int v=0; glGetIntegerv(X, &v); printf(" %s = %i\n", #X, v); fflush(stdout);}
 
+#include <thread>
 #include <chrono>
 #include <random>
 #include <algorithm>
@@ -136,21 +137,24 @@ int main() {
 	
 	std::vector<uint32_t> entSta, entAni;
 	
+	uint32_t II = 0;
 	auto AddRandomEntity = [&]() {
 		if(rand()%2) {
 			uint32_t standId = pipelineStatic->CreateEntity();
 			pipelineStatic->SetEntityMesh(standId, fireStandIdMesh);
-			pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+			pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{4*((I%400)-200),4*((I/400)-200),II*4});
 			entSta.emplace_back(standId);
 		} else {
 			uint32_t entity = pipelineAnimated->CreateEntity();
 			pipelineAnimated->SetEntityMesh(entity, rand()%2);
-			pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),0});
+			pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),II*4});
 			pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
 			entAni.emplace_back(entity);
 		}
 		++I;
 	};
+	
+	engine->EnableProfiling(true);
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -165,6 +169,11 @@ int main() {
 			mouseLocked = !mouseLocked;
 			engine->SetFullscreen(fullscreen);
 			pressedSomething = true;
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_BACKSLASH)) {
+			I = 0;
+			II++;
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
@@ -211,7 +220,11 @@ int main() {
 		}
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_DELETE)) {
-			for(int i=0; i<1000; ++i) {
+			uint32_t count = 1000;
+			if(engine->GetInputManager().IsKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+				count *= 30;
+			}
+			for(int i=0; i<count; ++i) {
 				if(rand()%2) {
 					if(entSta.size() > 10) {
 						uint32_t p = rand() % (entSta.size()-4) + 4;
@@ -268,7 +281,16 @@ int main() {
 		auto s = std::chrono::steady_clock::now();
 		engine->Render();
 		// optionally sync CPU with all GPU draw calls
-		gl::Finish();
+		gl::Flush();
+		{
+			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+			gl::Sync sync;
+			sync.StartFence();
+			while(sync.IsDone() == false) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			sync.Destroy();
+		}
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
 		double time_from_frame_begin = 
@@ -287,9 +309,17 @@ int main() {
 					ImGuiWindowFlags_NoFocusOnAppearing |
 					ImGuiWindowFlags_AlwaysAutoResize);
 			ImGui::Text("fps: %f", 1.0f/engine->GetInputManager().GetDeltaTime());
-			ImGui::Text("Entities count: %i", pipelineStatic->GetEntitiesCount());
-			ImGui::Text("Rendering entities: %i", pipelineStatic->GetEntitiesToRender());
-			ImGui::Text("Rendering animated entities: %i", pipelineAnimated->GetEntitiesToRender());
+			ImGui::Text("Entities count: %i / %i",
+					pipelineStatic->GetEntitiesToRender()
+						+ pipelineAnimated->GetEntitiesToRender(),
+					pipelineStatic->GetEntitiesCount()
+						+ pipelineAnimated->GetEntitiesCount());
+			ImGui::Text("Rendering static entities: %i / %i",
+					pipelineStatic->GetEntitiesToRender(),
+					pipelineStatic->GetEntitiesCount());
+			ImGui::Text("Rendering animated entities: %i / %i",
+					pipelineAnimated->GetEntitiesToRender(),
+					pipelineAnimated->GetEntitiesCount());
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
 		ImGui::End();
@@ -316,12 +346,25 @@ int main() {
 					engine->CountTotalNanosecondsOnCpu()%1000000);
 		ImGui::End();
 		
+		gl::Flush();
+		{
+			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+			gl::Sync sync;
+			sync.StartFence();
+			while(sync.IsDone() == false) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			sync.Destroy();
+		}
+		
 		// swap buffers
 		engine->SwapBuffers();
 		engine->PrintErrors();
 		
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
-		gl::Finish();
+		if(engine->GetProfiling()) {
+			gl::Finish();
+		}
 	}
 	
 	}

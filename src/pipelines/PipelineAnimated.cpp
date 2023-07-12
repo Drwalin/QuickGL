@@ -104,6 +104,9 @@ namespace qgl {
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+2, 4, gl::FLOAT, false, 32, 1);
 		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+3, 4, gl::FLOAT, false, 48, 1);
 		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
+		
+		entityBufferManager
+			.AddManagedSparselyUpdateVBO(&perEntityAnimationState);
 	}
 	
 	uint32_t PipelineAnimated::FlushDataToGPU(uint32_t stageId) {
@@ -153,7 +156,6 @@ namespace qgl {
 				animatedMeshManager->GetAnimationManager()
 					.GetAnimationsMetadata().Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-				idsManager.Vbo().BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
 				
 				updateAnimationShader->DispatchRoundGroupNumbers(
 						GetEntitiesCount(), 1, 1);
@@ -336,17 +338,12 @@ layout (packed, std430, binding=2) readonly buffer bbb {
 	AnimationMetadata animationMetadata[];
 };
 
-layout (packed, std430, binding=3) readonly buffer ccc {
-	uint allEntitiesIds[];
-};
-
 layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
 	uint id = gl_GlobalInvocationID.x;
 	if(id >= entitiesCount)
 		return;
-	id = allEntitiesIds[id];
 	AnimatedState s = animatedState[id];
 
 	if((s.flags & 2) == 2) {

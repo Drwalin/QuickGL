@@ -50,6 +50,7 @@ namespace qgl {
 			void (*updateVbo)(void* object, uint32_t stageId);
 			
 			void* data;
+			void* funcData;
 		};
 		
 		EntityBufferManager();
@@ -61,7 +62,9 @@ namespace qgl {
 		uint32_t GetNewEntity();
 		void FreeEntity(uint32_t entity);
 		
-		void UpdateBuffers(uint32_t stageId);
+		uint32_t Count() const;
+		
+		uint32_t UpdateBuffers(uint32_t stageId);
 		
 	public:
 		
@@ -79,9 +82,9 @@ namespace qgl {
 		
 	private:
 		
-		std::unordered_map<uint32_t, uint32_t> deltaFromTo;
-		std::unordered_map<uint32_t, uint32_t> deltaToFrom;
-		gl::VBO* deltaVbo;
+// 		std::unordered_map<uint32_t, uint32_t> deltaFromTo;
+// 		std::unordered_map<uint32_t, uint32_t> deltaToFrom;
+// 		gl::VBO* deltaVbo;
 		std::vector<PairMove> deltaBuffer;
 		std::vector<uint32_t> freeingEntites;
 		
@@ -92,6 +95,7 @@ namespace qgl {
 		
 		uint32_t lastAddedEntity;
 		uint32_t entitiesBufferSize;
+		uint32_t entitiesCount;
 	};
 	
 	template<typename T>
