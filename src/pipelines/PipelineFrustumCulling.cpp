@@ -95,7 +95,7 @@ namespace qgl {
 		uint32_t ret = PipelineIdsManagedBase::FlushDataToGPU(stageId);
 		if(stageId==0) {
 			uint32_t i = indirectDrawBuffer->GetVertexCount();
-			while(i < idsManager.CountIds()) {
+			while(i < entityBufferManager.Count()) {
 				i = (i*3)/2 + 100;
 			}
 			if(i != indirectDrawBuffer->GetVertexCount()) {
@@ -139,7 +139,7 @@ namespace qgl {
 				frustumCullingShader->Use();
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-							idsManager.CountIds());
+							entityBufferManager.Count());
 				frustumCullingShader
 					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
 							camera->GetViewMatrix());
@@ -147,8 +147,6 @@ namespace qgl {
 				// bind buffers
 				frustumCulledIdsBuffer
 					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-				idsManager.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 				transformMatrices.Vbo()
 					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
 				frustumCulledIdsCountAtomicCounter
@@ -162,7 +160,7 @@ namespace qgl {
 				
 				frustumCullingShader
 					->DispatchRoundGroupNumbers(
-							(idsManager.CountIds()+objectsPerInvocation-1) /
+							(entityBufferManager.Count()+objectsPerInvocation-1) /
 								objectsPerInvocation,
 							1, 1);
 				gl::Shader::Unuse();
@@ -232,9 +230,6 @@ namespace qgl {
 layout (packed, std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
 };
-layout (packed, std430, binding=2) readonly buffer bbb {
-	uint allEntitiesIds[];
-};
 layout (packed, std430, binding=3) readonly buffer ccc {
 	mat4 entitesTransformations[];
 };
@@ -258,7 +253,6 @@ shared uint commonStartingLocation;
 
 uint IsInView(uint id) {
 	if(id < entitiesCount) {
-		id = allEntitiesIds[id];
 		vec3 pos = (
 			cameraInverseTransform *
 			entitesTransformations[id] *
@@ -288,7 +282,7 @@ void main() {
 	for(uint i=0; i<objectsPerInvocation; ++i) {
 		uint invocationId = gl_GlobalInvocationID.x*objectsPerInvocation + i;
 		uint isIn = IsInView(invocationId);
-		inViewIds[inViewCount] = allEntitiesIds[invocationId];
+		inViewIds[inViewCount] = invocationId;
 		inViewCount += isIn;
 	}
 	

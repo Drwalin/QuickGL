@@ -16,15 +16,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <cstdio>
+
 #include <unordered_map>
 
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/util/EntityBufferManager.hpp"
 
 namespace qgl {
 	EntityBufferManager::EntityBufferManager() {
-		lastAddedEntity = 1;
 	}
 	
 	EntityBufferManager::~EntityBufferManager() {
@@ -32,19 +34,22 @@ namespace qgl {
 	}
 	
 	void EntityBufferManager::Init() {
-		deltaVbo = new gl::VBO(sizeof(PairMove), gl::SHADER_STORAGE_BUFFER,
-				gl::DYNAMIC_DRAW);
-		deltaVbo->Init();
+// 		deltaVbo = new gl::VBO(sizeof(PairMove), gl::SHADER_STORAGE_BUFFER,
+// 				gl::DYNAMIC_DRAW);
+// 		deltaVbo->Init();
 		mapOffsetToEntity.Init();
+		lastAddedEntity = 1;
+		entitiesCount = 0;
+		entitiesBufferSize = 0;
 	}
 	
 	void EntityBufferManager::Destroy() {
-		delete deltaVbo;
-		deltaVbo = nullptr;
+// 		delete deltaVbo;
+// 		deltaVbo = nullptr;
 		mapOffsetToEntity.Destroy();
 		
-		deltaFromTo.clear();
-		deltaToFrom.clear();
+// 		deltaFromTo.clear();
+// 		deltaToFrom.clear();
 		deltaBuffer.clear();
 		freeingEntites.clear();
 		mapEntityToOffset.clear();
@@ -62,18 +67,25 @@ namespace qgl {
 		}
 		
 		uint32_t offset = entitiesBufferSize;
-		entitiesBufferSize++;
 		mapEntityToOffset[entity] = offset;
-		mapOffsetToEntity.SetValue(offset, entity);
+		mapOffsetToEntity.SetValue(entity, offset);
+		
+		entitiesBufferSize++;
+		entitiesCount++;
 		
 		return entity;
 	}
 	
 	void EntityBufferManager::FreeEntity(uint32_t entity) {
 		freeingEntites.emplace_back(entity);
+		entitiesCount--;
 	}
 	
-	void EntityBufferManager::UpdateBuffers(uint32_t stageId) {
+	uint32_t EntityBufferManager::Count() const {
+		return entitiesCount;
+	}
+	
+	uint32_t EntityBufferManager::UpdateBuffers(uint32_t stageId) {
 		for(BufferInfo& buf : buffers) {
 			if(buf.updateVbo) {
 				buf.updateVbo(buf.data, stageId);
@@ -83,7 +95,8 @@ namespace qgl {
 			GenerateDeltaBuffer();
 			for(BufferInfo& buf : buffers) {
 				if(buf.moveByVbo) {
-					buf.moveByVbo(buf.data, deltaVbo);
+					throw "EntityBufferManager::UpdateBuffers() update by VBO is not implemented.";
+// 					buf.moveByVbo(buf.data, deltaVbo);
 				} else if(buf.moveByOne) {
 					for(PairMove& p : deltaBuffer) {
 						buf.moveByOne(buf.data, p.from, p.to);
@@ -91,6 +104,9 @@ namespace qgl {
 				}
 			}
 		}
+		if(stageId == 0)
+			return 1;
+		return 0;
 	}
 	
 	
@@ -118,7 +134,7 @@ namespace qgl {
 				((gl::VBO*)vbo)->Resize(size);
 			},
 			nullptr,
-			[](void* vbo, uint32_t from, uint32_t to) {
+			[](void* vbo, uint32_t from, uint32_t to) { // move by one
 				const uint32_t vs = ((gl::VBO*)vbo)->VertexSize();
 				((gl::VBO*)vbo)->Copy(((gl::VBO*)vbo), from*vs, to*vs, vs);
 			},
@@ -154,7 +170,7 @@ namespace qgl {
 				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(size);
 			},
 			nullptr,
-			[](void* vbo, uint32_t from, uint32_t to) {
+			[](void* vbo, uint32_t from, uint32_t to) { // move by one
 				const uint32_t vs
 					= ((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
 						->Vbo().VertexSize();
@@ -163,6 +179,13 @@ namespace qgl {
 							&(((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
 								->Vbo()),
 							from*vs, to*vs, vs);
+				if(from == to) {
+					printf("%u -> %u    [%u]  / %u\n", from, to, vs, 
+							((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Count());
+					fflush(stdout);
+					gl::openGL.PrintErrors();
+					gl::openGL.ClearErrors();
+				}
 			},
 			[](void* vbo, uint32_t stageId) { // update vbo
 				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
@@ -177,47 +200,60 @@ namespace qgl {
 	}
 	
 	void EntityBufferManager::GenerateDeltaBuffer() {
-		throw "EntityBufferManager::Init() is unimplemented.";
-		
-		for(uint32_t entity : freeingEntites) {
-			uint32_t offset = mapEntityToOffset[entity];
+		deltaBuffer.clear();
+		std::unordered_map<uint32_t, PairMove> moveTo;
+		moveTo.clear();
+		for(const uint32_t entity : freeingEntites) {
+			const uint32_t offset = mapEntityToOffset[entity];
 			mapEntityToOffset.erase(entity);
+			moveTo.erase(entity);
 			
-			throw "EntityBufferManager::Init() is unimplemented.";
+			entitiesBufferSize--;
 			
-			// ...
-			auto it = deltaFromTo.find(offset);
-			if(it != deltaFromTo.end()) {
-				deltaToFrom.erase(it->second);
-				// ...
-			} else {
-				auto it = deltaFromTo.find(entitiesBufferSize);
-				if(it != deltaFromTo.end()) {
-					
-				} else {
-					
-				}
+			if(entitiesBufferSize == offset) {
+				continue;
 			}
-			// ...
+			
+			const uint32_t otherOffset = entitiesBufferSize;
+			const uint32_t otherEntity = mapOffsetToEntity.GetValue(otherOffset);
+			
+			deltaBuffer.push_back({otherOffset, offset});
+			
+			mapOffsetToEntity.SetValue(otherEntity, offset);
+			mapEntityToOffset[otherEntity] = offset;
+			
+			auto it = moveTo.find(otherEntity);
+			if(it == moveTo.end()) {
+				moveTo[otherEntity] = {otherOffset, offset};
+			} else {
+				it->second.to = offset;
+			}
 		}
 		
 		
-		
-		
+		std::unordered_set<uint32_t> s;
+		s.reserve(moveTo.size()*2);
+		for(auto it : moveTo) {
+			s.insert(it.second.from);
+			s.insert(it.second.to);
+		}
+		if(s.size() != moveTo.size()*2) {
+			printf(" s.size() = %lu == %lu\n", s.size(), moveTo.size()*2);
+		}
 		
 		
 		
 		deltaBuffer.clear();
-		for(auto it : deltaFromTo) {
+		for(auto it : moveTo) {
 			if(it.first > 0) {
-				deltaBuffer.push_back({it.first, it.second});
+				deltaBuffer.push_back(it.second);
 			}
 		}
 		
-		deltaVbo->Update(deltaBuffer.data(), 0,
-				deltaBuffer.size()*sizeof(PairMove));
-		deltaFromTo.clear();
-		deltaToFrom.clear();
+		
+// 		deltaVbo->Update(deltaBuffer.data(), 0,
+// 				deltaBuffer.size()*sizeof(PairMove));
+// 		deltaFromTo.clear();
 		freeingEntites.clear();
 	}
 }

@@ -19,6 +19,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineIdsManagedBase.hpp"
 
@@ -30,16 +31,16 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineIdsManagedBase::CreateEntity() {
-		uint32_t id = idsManager.GetNewId();
+		uint32_t id = entityBufferManager.GetNewEntity();
 		return id;
 	}
 	
 	void PipelineIdsManagedBase::DeleteEntity(uint32_t entityId) {
-		idsManager.FreeId(entityId);
+		entityBufferManager.FreeEntity(entityId);
 	}
 	
 	uint32_t PipelineIdsManagedBase::GetEntitiesCount() const {
-		return idsManager.CountIds();
+		return entityBufferManager.Count();
 	}
 	
 	void PipelineIdsManagedBase::Initialize() {
@@ -47,11 +48,16 @@ namespace qgl {
 		perEntityMeshInfo.Init();
 		perEntityMeshInfoBoundingSphere.Init();
 		transformMatrices.Init();
-		idsManager.InitVBO();
+		entityBufferManager.Init();
+		
+		entityBufferManager.AddManagedSparselyUpdateVBO(&perEntityMeshInfo);
+		entityBufferManager.AddManagedSparselyUpdateVBO(&perEntityMeshInfoBoundingSphere);
+		entityBufferManager.AddManagedSparselyUpdateVBO(&transformMatrices);
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
 			uint32_t meshId) {
+		entityId = GetEntityOffset(entityId);
 		PerEntityMeshInfo info;
 		meshManager->GetMeshIndices(meshId, info.elementsStart,
 				info.elementsCount);
@@ -65,18 +71,36 @@ namespace qgl {
 	
 	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
 			glm::vec3 pos, glm::quat rot, glm::vec3 scale) {
+		entityId = GetEntityOffset(entityId);
 		glm::mat4 t = glm::translate(glm::scale(
 					glm::mat4_cast(rot), scale), pos);
 		transformMatrices.SetValue(t, entityId);
+	}
+	
+	uint32_t PipelineIdsManagedBase::GetEntityOffset(uint32_t entityId) const {
+		return entityBufferManager.GetOffsetOfEntity(entityId);
 	}
 	
 	uint32_t PipelineIdsManagedBase::FlushDataToGPU(uint32_t stageId) {
 		uint32_t ret = 0;
 		ret = std::max(ret, perEntityMeshInfo.UpdateVBO(stageId));
 		ret = std::max(ret, perEntityMeshInfoBoundingSphere.UpdateVBO(stageId));
-		ret = std::max(ret, idsManager.UpdateVBO(stageId));
+		ret = std::max(ret, entityBufferManager.UpdateBuffers(stageId));
 		ret = std::max(ret, transformMatrices.UpdateVBO(stageId));
 		return ret;
+	}
+	
+	void PipelineIdsManagedBase::GenerateRenderStages(
+			std::vector<Stage>& stages) {
+		Pipeline::GenerateRenderStages(stages);
+		stages.emplace_back(
+			"Updating EntityBufferManager",
+			STAGE_GLOBAL,
+			[=](std::shared_ptr<Camera> camera) {
+				entityBufferManager.UpdateBuffers(0);
+				entityBufferManager.UpdateBuffers(1);
+			}
+		);
 	}
 }
 

@@ -76,6 +76,8 @@ namespace qgl {
 		
 		void SetEngine(std::shared_ptr<Engine> engine);
 		
+		virtual uint32_t GetEntityOffset(uint32_t entityId) const = 0;
+		
 	public:
 		
 		using StageFunction = std::function<void(std::shared_ptr<Camera>)>;

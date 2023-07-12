@@ -19,7 +19,7 @@
 #ifndef QUICKGL_PIPELINE_IDS_MANAGED_BASE_HPP
 #define QUICKGL_PIPELINE_IDS_MANAGED_BASE_HPP
 
-#include "../util/IdsManager.hpp"
+#include "../util/EntityBufferManager.hpp"
 #include "../util/BufferedVBO.hpp"
 
 #include "../util/ManagedSparselyUpdatedVBO.hpp"
@@ -44,6 +44,12 @@ namespace qgl {
 				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
 				glm::vec3 scale={1,1,1}) override;
 		
+		virtual uint32_t GetEntityOffset(uint32_t entityId) const override;
+		
+	public:
+		
+		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
+		
 	protected:
 		
 		virtual uint32_t FlushDataToGPU(uint32_t stageId) override;
@@ -66,7 +72,7 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		
-		IdsManagerVBOManaged idsManager;
+		EntityBufferManager entityBufferManager;
 	};
 }
 
