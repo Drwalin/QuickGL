@@ -49,6 +49,8 @@ namespace cql {
 		
 		void Update(gl::VBO* vbo, const PairMove* data, uint32_t elements);
 		
+		void Update(gl::VBO* vbo, gl::VBO* deltaVbo, uint32_t elements);
+		
 		friend class MoveVboManager;
 		
 	private:
@@ -70,6 +72,9 @@ namespace cql {
 		
 		void Update(gl::VBO* vbo, const MoveVboUpdater::PairMove* data,
 				uint32_t elements, uint32_t elementSize);
+		
+		void Update(gl::VBO* vbo, gl::VBO* deltaVbo, uint32_t elements,
+				uint32_t elementSize);
 		
 	private:
 		
