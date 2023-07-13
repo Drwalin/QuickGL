@@ -59,7 +59,6 @@ namespace qgl {
 		int32_t shaderDeltaCommandsLocation;
 		
 		std::vector<uint8_t> deltaData;
-		std::vector<uint8_t> deltaDataGPU;
 		std::unordered_map<uint32_t, uint32_t> whereSomethingWasUpdated;
 		
 		const uint32_t ELEMENT_SIZE;

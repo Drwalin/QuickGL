@@ -175,10 +175,15 @@ int main() {
 		}
 	};
 	
-	engine->EnableProfiling(true);
+	engine->EnableProfiling(false);
 	
 	bool stressTestigEntityCreateAndDelete = false;
 	bool stressDeleting;
+	
+	uint32_t BSIZE = 1;
+	gl::VBO memb(1024*16, gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
+	memb.Init();
+	
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -198,6 +203,11 @@ int main() {
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_BACKSLASH)) {
 			I = 0;
 			II++;
+		}
+		
+		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_K)) {
+			memb.Resize(BSIZE);
+			BSIZE+=16;
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
@@ -312,15 +322,6 @@ int main() {
 		engine->Render();
 		// optionally sync CPU with all GPU draw calls
 		gl::Flush();
-		{
-			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-			gl::Sync sync;
-			sync.StartFence();
-			while(sync.IsDone() == false) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-			sync.Destroy();
-		}
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
 		double time_from_frame_begin = 
@@ -385,15 +386,6 @@ int main() {
 		ImGui::End();
 		
 		gl::Flush();
-		{
-			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-			gl::Sync sync;
-			sync.StartFence();
-			while(sync.IsDone() == false) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-			sync.Destroy();
-		}
 		
 		// swap buffers
 		engine->SwapBuffers();
@@ -401,6 +393,13 @@ int main() {
 		
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
 		if(engine->GetProfiling()) {
+			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+			gl::Sync sync;
+			sync.StartFence();
+			while(sync.IsDone() == false) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			sync.Destroy();
 			gl::Finish();
 		}
 	}

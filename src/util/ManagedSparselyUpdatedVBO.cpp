@@ -21,9 +21,9 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
-#include "openglwrapper/OpenGL.hpp"
 
 namespace qgl {
 	UntypedManagedSparselyUpdatedVBO::UntypedManagedSparselyUpdatedVBO(
@@ -51,7 +51,7 @@ namespace qgl {
 					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
 		}
 		deltaVbo->Init();
-		deltaVbo->Resize(100);
+		deltaVbo->Resize(16*1024);
 		if(!shader) {
 			shader = new gl::Shader();
 			const std::string shaderSource = std::string(R"(#version 450 core
@@ -121,21 +121,22 @@ void main() {
 		if(vbo->GetVertexCount() <= maxId) {
 			vbo->Resize((maxId*3)/2+100);
 		}
-		std::swap(deltaData, deltaDataGPU);
-		deltaData.clear();
-		whereSomethingWasUpdated.clear();
-		deltaVbo->Update(&deltaDataGPU.front(), 0, deltaDataGPU.size());
-		
-		const uint32_t elementsToUpdate =
-			deltaDataGPU.size()/UPDATE_STRUCUTRE_SIZE;
-		gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+		const uint32_t vs = UPDATE_STRUCUTRE_SIZE;
 		shader->Use();
-		shader->SetUInt(shaderDeltaCommandsLocation,
-				elementsToUpdate);
-		deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-		vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-		shader->DispatchRoundGroupNumbers(elementsToUpdate, 1, 1);
+		for(uint32_t i=0; i<deltaData.size()/vs; i+=deltaVbo->GetVertexCount()) {
+			const uint32_t count = std::min<uint32_t>(deltaVbo->GetVertexCount(),
+					deltaData.size()/vs - i);
+			deltaVbo->Update(deltaData.data()+(i*vs), 0, count*vs);
+			//TODO: check if memory barrier is needed
+ 			gl::MemoryBarrier(gl::MemoryBarriers::BUFFER_UPDATE_BARRIER_BIT);
+			shader->SetUInt(shaderDeltaCommandsLocation, count);
+			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+			shader->DispatchRoundGroupNumbers(count, 1, 1);
+		}
 		gl::Shader::Unuse();
+		whereSomethingWasUpdated.clear();
+		deltaData.clear();
 		return 0;
 	}
 	
