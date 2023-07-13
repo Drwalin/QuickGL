@@ -81,13 +81,11 @@ namespace qgl {
 		return entityBufferManager.GetOffsetOfEntity(entityId);
 	}
 	
-	uint32_t PipelineIdsManagedBase::FlushDataToGPU(uint32_t stageId) {
-		uint32_t ret = 0;
-		ret = std::max(ret, perEntityMeshInfo.UpdateVBO(stageId));
-		ret = std::max(ret, perEntityMeshInfoBoundingSphere.UpdateVBO(stageId));
-		ret = std::max(ret, entityBufferManager.UpdateBuffers(stageId));
-		ret = std::max(ret, transformMatrices.UpdateVBO(stageId));
-		return ret;
+	void PipelineIdsManagedBase::FlushDataToGPU() {
+		perEntityMeshInfo.UpdateVBO();
+		perEntityMeshInfoBoundingSphere.UpdateVBO();
+		transformMatrices.UpdateVBO();
+		entityBufferManager.UpdateBuffers();
 	}
 	
 	void PipelineIdsManagedBase::GenerateRenderStages(
@@ -97,8 +95,7 @@ namespace qgl {
 			"Updating EntityBufferManager",
 			STAGE_GLOBAL,
 			[=](std::shared_ptr<Camera> camera) {
-				entityBufferManager.UpdateBuffers(0);
-				entityBufferManager.UpdateBuffers(1);
+				entityBufferManager.UpdateBuffers();
 			}
 		);
 	}

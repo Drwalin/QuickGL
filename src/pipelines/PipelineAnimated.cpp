@@ -109,10 +109,9 @@ namespace qgl {
 			.AddManagedSparselyUpdateVBO(&perEntityAnimationState);
 	}
 	
-	uint32_t PipelineAnimated::FlushDataToGPU(uint32_t stageId) {
-		uint32_t ret = perEntityAnimationState.UpdateVBO(stageId);
-		ret = std::max(ret, PipelineFrustumCulling::FlushDataToGPU(stageId));
-		return ret;
+	void PipelineAnimated::FlushDataToGPU() {
+		perEntityAnimationState.UpdateVBO();
+		PipelineFrustumCulling::FlushDataToGPU();
 	}
 	
 	void PipelineAnimated::GenerateRenderStages(std::vector<Stage>& stages) {

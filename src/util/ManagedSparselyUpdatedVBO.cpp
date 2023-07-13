@@ -113,11 +113,9 @@ void main() {
 		vbo->Resize(size);
 	}
 	
-	uint32_t UntypedManagedSparselyUpdatedVBO::UpdateVBO(uint32_t stageId) {
-		if(stageId != 0)
-			return 0;
+	void UntypedManagedSparselyUpdatedVBO::UpdateVBO() {
 		if(deltaData.size() == 0)
-			return 0;
+			return;
 		if(vbo->GetVertexCount() <= maxId) {
 			vbo->Resize((maxId*3)/2+100);
 		}
@@ -137,7 +135,6 @@ void main() {
 		gl::Shader::Unuse();
 		whereSomethingWasUpdated.clear();
 		deltaData.clear();
-		return 0;
 	}
 	
 	void UntypedManagedSparselyUpdatedVBO::SetValue(const void* value,

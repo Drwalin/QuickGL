@@ -47,9 +47,7 @@ namespace qgl {
 			"Flush data to GPU",
 			STAGE_GLOBAL,
 			[this](std::shared_ptr<Camera> camera) {
-				this->FlushDataToGPU(0);
-				gl::Flush();
-				this->FlushDataToGPU(1);
+				this->FlushDataToGPU();
 				gl::Flush();
 			}
 		);

@@ -47,7 +47,7 @@ namespace qgl {
 			void (*resize)(void* object, uint32_t newSize);
 			void (*moveByVbo)(void* object, gl::VBO* deltaVbo);
 			void (*moveByOne)(void* object, uint32_t from, uint32_t to);
-			void (*updateVbo)(void* object, uint32_t stageId);
+			void (*updateVbo)(void* object);
 			
 			void* data;
 			void* funcData;
@@ -64,7 +64,7 @@ namespace qgl {
 		
 		uint32_t Count() const;
 		
-		uint32_t UpdateBuffers(uint32_t stageId);
+		void UpdateBuffers();
 		
 	public:
 		
@@ -84,8 +84,7 @@ namespace qgl {
 		
 	private:
 		
-// 		std::unordered_map<uint32_t, uint32_t> deltaFromTo;
-// 		std::unordered_map<uint32_t, uint32_t> deltaToFrom;
+		std::unordered_map<uint32_t, PairMove> deltaFromTo;
 // 		gl::VBO* deltaVbo;
 		std::vector<PairMove> deltaBuffer;
 		std::vector<uint32_t> freeingEntites;
