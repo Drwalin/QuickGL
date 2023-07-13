@@ -45,7 +45,7 @@ namespace qgl {
 		struct BufferInfo {
 			void (*reserve)(void* object, uint32_t newCapacity);
 			void (*resize)(void* object, uint32_t newSize);
-			void (*moveByVbo)(void* object, gl::VBO* deltaVbo);
+			void (*moveByVbo)(void* object, gl::VBO* deltaVbo, uint32_t elements);
 			void (*moveByOne)(void* object, uint32_t from, uint32_t to);
 			void (*updateVbo)(void* object);
 			
