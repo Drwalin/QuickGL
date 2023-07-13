@@ -40,7 +40,9 @@ namespace qgl {
 	
 	void Engine::InitGL(std::string windowTitle) {
 	GL_CHECK_PUSH_ERROR;
-		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false, true, 4, 5);
+		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false,
+				std::thread::hardware_concurrency()<=4,
+				4, 5);
 	GL_CHECK_PUSH_ERROR;
 		gl::openGL.InitGraphic();
 	GL_CHECK_PUSH_ERROR;
