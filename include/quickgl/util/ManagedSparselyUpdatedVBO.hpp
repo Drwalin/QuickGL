@@ -43,7 +43,7 @@ namespace qgl {
 		
 		inline gl::VBO& Vbo() { return *vbo; }
 		
-		uint32_t UpdateVBO(uint32_t stageId);
+		void UpdateVBO();
 		
 		void SetValue(const void* value, uint32_t id);
 		

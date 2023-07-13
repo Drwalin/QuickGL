@@ -50,8 +50,7 @@ namespace qgl {
 // 		deltaVbo = nullptr;
 		mapOffsetToEntity.Destroy();
 		
-// 		deltaFromTo.clear();
-// 		deltaToFrom.clear();
+		deltaFromTo.clear();
 		deltaBuffer.clear();
 		freeingEntites.clear();
 		mapEntityToOffset.clear();
@@ -88,28 +87,21 @@ namespace qgl {
 		return entitiesCount;
 	}
 	
-	uint32_t EntityBufferManager::UpdateBuffers(uint32_t stageId) {
-		for(BufferInfo& buf : buffers) {
-			if(buf.updateVbo) {
-				buf.updateVbo(buf.data, stageId);
-			}
+	void EntityBufferManager::UpdateBuffers() {
+		if(freeingEntites.empty()) {
+			return;
 		}
-		if(stageId == 1) {
-			GenerateDeltaBuffer();
-			for(BufferInfo& buf : buffers) {
-				if(buf.moveByVbo) {
-					throw "EntityBufferManager::UpdateBuffers() update by VBO is not implemented.";
-// 					buf.moveByVbo(buf.data, deltaVbo);
-				} else if(buf.moveByOne) {
-					for(PairMove& p : deltaBuffer) {
-						buf.moveByOne(buf.data, p.from, p.to);
-					}
+		GenerateDeltaBuffer();
+		for(BufferInfo& buf : buffers) {
+			if(buf.moveByVbo) {
+				throw "EntityBufferManager::UpdateBuffers() update by VBO is not implemented.";
+// 				buf.moveByVbo(buf.data, deltaVbo);
+			} else if(buf.moveByOne) {
+				for(PairMove& p : deltaBuffer) {
+					buf.moveByOne(buf.data, p.from, p.to);
 				}
 			}
 		}
-		if(stageId == 0)
-			return 1;
-		return 0;
 	}
 	
 	
@@ -190,9 +182,9 @@ namespace qgl {
 					gl::openGL.ClearErrors();
 				}
 			},
-			[](void* vbo, uint32_t stageId) { // update vbo
+			[](void* vbo) { // update vbo
 				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
-					->UpdateVBO(stageId);
+					->UpdateVBO();
 			},
 			vbo
 			});
@@ -204,13 +196,11 @@ namespace qgl {
 	
 	void EntityBufferManager::GenerateDeltaBuffer() {
 		deltaBuffer.clear();
-		std::unordered_map<uint32_t, PairMove> moveTo;
-		moveTo.clear();
+		deltaFromTo.clear();
 		for(const uint32_t entity : freeingEntites) {
 			const uint32_t offset = mapEntityToOffset[entity];
 			mapEntityToOffset.erase(entity);
-			moveTo.erase(entity);
-			
+			deltaFromTo.erase(entity);
 			entitiesBufferSize--;
 			
 			if(entitiesBufferSize == offset) {
@@ -220,43 +210,26 @@ namespace qgl {
 			const uint32_t otherOffset = entitiesBufferSize;
 			const uint32_t otherEntity = mapOffsetToEntity.GetValue(otherOffset);
 			
-			deltaBuffer.push_back({otherOffset, offset});
-			
 			mapOffsetToEntity.SetValue(otherEntity, offset);
 			mapEntityToOffset[otherEntity] = offset;
 			
-			auto it = moveTo.find(otherEntity);
-			if(it == moveTo.end()) {
-				moveTo[otherEntity] = {otherOffset, offset};
+			auto it = deltaFromTo.find(otherEntity);
+			if(it == deltaFromTo.end()) {
+				deltaFromTo[otherEntity] = {otherOffset, offset};
 			} else {
 				it->second.to = offset;
 			}
 		}
 		
-		
-		std::unordered_set<uint32_t> s;
-		s.reserve(moveTo.size()*2);
-		for(auto it : moveTo) {
-			s.insert(it.second.from);
-			s.insert(it.second.to);
-		}
-		if(s.size() != moveTo.size()*2) {
-			printf(" s.size() = %lu == %lu\n", s.size(), moveTo.size()*2);
-		}
-		
-		
-		
-		deltaBuffer.clear();
-		for(auto it : moveTo) {
+		for(auto it : deltaFromTo) {
 			if(it.first > 0) {
 				deltaBuffer.push_back(it.second);
 			}
 		}
 		
-		
 // 		deltaVbo->Update(deltaBuffer.data(), 0,
 // 				deltaBuffer.size()*sizeof(PairMove));
-// 		deltaFromTo.clear();
+		deltaFromTo.clear();
 		freeingEntites.clear();
 	}
 }

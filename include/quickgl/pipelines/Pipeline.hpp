@@ -86,7 +86,7 @@ namespace qgl {
 		
 	protected:
 		
-		virtual uint32_t FlushDataToGPU(uint32_t stageId) = 0;
+		virtual void FlushDataToGPU() = 0;
 		
 	protected:
 		

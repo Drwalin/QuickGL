@@ -91,23 +91,19 @@ namespace qgl {
 				objectsPerInvocation);
 	}
 	
-	uint32_t PipelineFrustumCulling::FlushDataToGPU(uint32_t stageId) {
-		uint32_t ret = PipelineIdsManagedBase::FlushDataToGPU(stageId);
-		if(stageId==0) {
-			uint32_t i = indirectDrawBuffer->GetVertexCount();
-			while(i < entityBufferManager.Count()) {
-				i = (i*3)/2 + 100;
-			}
-			if(i != indirectDrawBuffer->GetVertexCount()) {
-				indirectDrawBuffer->Generate(nullptr, i);
-				frustumCulledIdsBuffer->Generate(nullptr, i);
-			}
-			
+	void PipelineFrustumCulling::FlushDataToGPU() {
+		PipelineIdsManagedBase::FlushDataToGPU();
+		uint32_t i = indirectDrawBuffer->GetVertexCount();
+		while(i < entityBufferManager.Count()) {
+			i = (i*3)/2 + 100;
+		}
+		if(i != indirectDrawBuffer->GetVertexCount()) {
+			indirectDrawBuffer->Generate(nullptr, i);
+			frustumCulledIdsBuffer->Generate(nullptr, i);
 		}
 		frustumCulledEntitiesCount = 0;
 		frustumCulledIdsCountAtomicCounter
 			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-		return ret;
 	}
 	
 	void PipelineFrustumCulling::GenerateRenderStages(

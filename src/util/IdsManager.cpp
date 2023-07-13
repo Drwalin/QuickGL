@@ -95,8 +95,8 @@ namespace qgl {
 		arrayOfUsedIds.resize(arrayOfUsedIds.size()-1);
 	}
 	
-	uint32_t IdsManagerVBOManaged::UpdateVBO(uint32_t stageId) {
-		return vbo.UpdateVBO(stageId);
+	void IdsManagerVBOManaged::UpdateVBO() {
+		vbo.UpdateVBO();
 	}
 }
 
