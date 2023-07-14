@@ -25,7 +25,9 @@
 
 namespace qgl {
 	PipelineIdsManagedBase::PipelineIdsManagedBase(std::shared_ptr<Engine> engine) :
-		Pipeline(engine), entityBufferManager(engine) {
+		Pipeline(engine), entityBufferManager(engine),
+		perEntityMeshInfo(engine), perEntityMeshInfoBoundingSphere(engine),
+		transformMatrices(engine) {
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {

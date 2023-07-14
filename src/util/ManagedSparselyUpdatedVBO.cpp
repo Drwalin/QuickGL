@@ -23,15 +23,18 @@
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
+#include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/util/DeltaVboManager.hpp"
+
 #include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace qgl {
 	UntypedManagedSparselyUpdatedVBO::UntypedManagedSparselyUpdatedVBO(
-			uint32_t elementSize) :
+			std::shared_ptr<Engine> engine,
+			uint32_t elementSize) : engine(engine),
 			ELEMENT_SIZE((elementSize+3)-((elementSize+3)&3)),
    			UPDATE_STRUCUTRE_SIZE(ELEMENT_SIZE+sizeof(uint32_t)) {
 		vbo = nullptr;
-		deltaVbo = nullptr;
 		shader = nullptr;
 	}
 	
@@ -46,12 +49,6 @@ namespace qgl {
 		}
 		vbo->Init();
 		vbo->Resize(100);
-		if(!deltaVbo) {
-			deltaVbo = new gl::VBO(UPDATE_STRUCUTRE_SIZE,
-					gl::ARRAY_BUFFER, gl::DYNAMIC_DRAW);
-		}
-		deltaVbo->Init();
-		deltaVbo->Resize(16*1024);
 		if(!shader) {
 			shader = new gl::Shader();
 			const std::string shaderSource = std::string(R"(#version 450 core
@@ -101,11 +98,6 @@ void main() {
 			delete vbo;
 			vbo = nullptr;
 		}
-		if(deltaVbo) {
-			gl::Finish();
-			delete deltaVbo;
-			deltaVbo = nullptr;
-		}
 		deltaData.clear();
 	}
 	
@@ -121,8 +113,10 @@ void main() {
 		}
 		const uint32_t vs = UPDATE_STRUCUTRE_SIZE;
 		shader->Use();
-		for(uint32_t i=0; i<deltaData.size()/vs; i+=deltaVbo->GetVertexCount()) {
-			const uint32_t count = std::min<uint32_t>(deltaVbo->GetVertexCount(),
+		for(uint32_t i=0; i<deltaData.size()/vs; ) {
+			auto deltaVbo = engine->GetDeltaVboManager()->GetNextUpdateVBO();
+			const uint32_t count = std::min<uint32_t>(
+					deltaVbo->GetVertexCount()/vs,
 					deltaData.size()/vs - i);
 			deltaVbo->Update(deltaData.data()+(i*vs), 0, count*vs);
 			//TODO: check if memory barrier is needed
@@ -131,6 +125,8 @@ void main() {
 			deltaVbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
 			vbo->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
 			shader->DispatchRoundGroupNumbers(count, 1, 1);
+			
+			i += count;
 		}
 		gl::Shader::Unuse();
 		whereSomethingWasUpdated.clear();

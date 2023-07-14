@@ -36,7 +36,7 @@
 
 namespace qgl {
 	PipelineAnimated::PipelineAnimated(std::shared_ptr<Engine> engine) :
-		PipelineFrustumCulling(engine) {
+		PipelineFrustumCulling(engine), perEntityAnimationState(engine) {
 	}
 	
 	PipelineAnimated::~PipelineAnimated() {
