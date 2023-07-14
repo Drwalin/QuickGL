@@ -25,6 +25,8 @@
 #include "../include/quickgl/cameras/Camera.hpp"
 #include "../include/quickgl/pipelines/Pipeline.hpp"
 #include "../include/quickgl/Gui.hpp"
+#include "../include/quickgl/util/DeltaVboManager.hpp"
+#include "../include/quickgl/util/MoveVboUpdater.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -50,6 +52,10 @@ namespace qgl {
 	GL_CHECK_PUSH_ERROR;
 		Gui::InitIMGUI();
 		initialized = true;
+		
+		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024, 16);
+		deltaVboManager->Init();
+		moveVboManager = std::make_shared<MoveVboManager>(shared_from_this());
 	}
 	
 	void Engine::Destroy() {
@@ -149,6 +155,14 @@ namespace qgl {
 			count += p->GetEntitiesCount();
 		}
 		return count;
+	}
+	
+	std::shared_ptr<DeltaVboManager> Engine::GetDeltaVboManager() {
+		return deltaVboManager;
+	}
+	
+	std::shared_ptr<MoveVboManager> Engine::GetMoveVboManager() {
+		return moveVboManager;
 	}
 }
 

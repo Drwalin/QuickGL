@@ -37,7 +37,7 @@ namespace qgl {
 	class PipelineStatic final : public PipelineFrustumCulling {
 	public:
 		
-		PipelineStatic();
+		PipelineStatic(std::shared_ptr<Engine> engine);
 		virtual ~PipelineStatic();
 		
 		virtual void Initialize() override;

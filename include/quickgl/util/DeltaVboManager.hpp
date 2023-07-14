@@ -30,7 +30,7 @@ namespace gl {
 #endif
 }
 
-namespace cql {
+namespace qgl {
 	class DeltaVboManager final {
 	public:
 		
@@ -49,6 +49,7 @@ namespace cql {
 		
 	private:
 		
+		uint32_t vboSize;
 		uint32_t lastUsedVbo;
 		std::vector<std::shared_ptr<gl::VBO>> vbos;
 	};

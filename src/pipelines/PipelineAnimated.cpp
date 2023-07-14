@@ -35,7 +35,8 @@
 #include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
 
 namespace qgl {
-	PipelineAnimated::PipelineAnimated() {
+	PipelineAnimated::PipelineAnimated(std::shared_ptr<Engine> engine) :
+		PipelineFrustumCulling(engine) {
 	}
 	
 	PipelineAnimated::~PipelineAnimated() {

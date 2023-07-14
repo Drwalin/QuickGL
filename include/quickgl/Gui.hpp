@@ -19,6 +19,8 @@
 #ifndef QUICKGL_GUI_HPP
 #define QUICKGL_GUI_HPP
 
+#include <memory>
+
 #include "../../thirdparty/imgui/imgui.h"
 
 #include "util/Log.hpp"
@@ -32,7 +34,7 @@ namespace qgl {
 		Gui();
 		virtual ~Gui();
 		
-		virtual void RenderGui(qgl::Engine* engine) = 0;
+		virtual void RenderGui(std::shared_ptr<Engine> engine) = 0;
 		
 		static void InitIMGUI();
 		static void DeinitIMGUI();

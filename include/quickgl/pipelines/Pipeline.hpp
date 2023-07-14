@@ -46,11 +46,12 @@ namespace qgl {
 	class MeshManager;
 	class Camera;
 	class Engine;
+	class Engine;
 	
 	class Pipeline : public std::enable_shared_from_this<Pipeline> {
 	public:
 		
-		Pipeline();
+		Pipeline(std::shared_ptr<Engine> engine);
 		virtual ~Pipeline();
 		
 		virtual void Initialize();
@@ -92,9 +93,9 @@ namespace qgl {
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
-		std::shared_ptr<MeshManager> meshManager;
-		
 		std::shared_ptr<Engine> engine;
+		
+		std::shared_ptr<MeshManager> meshManager;
 	};
 }
 

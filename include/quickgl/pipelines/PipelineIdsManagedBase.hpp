@@ -30,7 +30,7 @@ namespace qgl {
 	class PipelineIdsManagedBase : public Pipeline {
 	public:
 		
-		PipelineIdsManagedBase();
+		PipelineIdsManagedBase(std::shared_ptr<Engine> engine);
 		virtual ~PipelineIdsManagedBase();
 		
 		virtual uint32_t CreateEntity() override;

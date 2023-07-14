@@ -19,13 +19,14 @@
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
 
 #include "../../include/quickgl/pipelines/Pipeline.hpp"
 
 namespace qgl {
 	
-	Pipeline::Pipeline() {}
+	Pipeline::Pipeline(std::shared_ptr<Engine> engine) : engine(engine) {}
 	
 	Pipeline::~Pipeline() {}
 	

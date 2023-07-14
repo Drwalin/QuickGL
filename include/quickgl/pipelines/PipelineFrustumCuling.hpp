@@ -38,7 +38,7 @@ namespace qgl {
 	class PipelineFrustumCulling : public PipelineIdsManagedBase {
 	public:
 		
-		PipelineFrustumCulling();
+		PipelineFrustumCulling(std::shared_ptr<Engine> engine);
 		virtual ~PipelineFrustumCulling();
 		
 		virtual uint32_t GetEntitiesToRender() const override;

@@ -20,5 +20,39 @@
 
 #include "../../include/quickgl/util/DeltaVboManager.hpp"
 
-
+namespace qgl {
+	DeltaVboManager::DeltaVboManager(uint32_t bytesPerVbo,
+			uint32_t numberOfVbos) {
+		vboSize = bytesPerVbo;
+		vbos.resize(numberOfVbos);
+	}
+	
+	DeltaVboManager::~DeltaVboManager() {
+		Destroy();
+	}
+	
+	void DeltaVboManager::Init() {
+		lastUsedVbo = 0;
+		if(vbos[0] == nullptr) {
+			for(std::shared_ptr<gl::VBO>& vbo : vbos) {
+				vbo = std::make_shared<gl::VBO>(1, gl::SHADER_STORAGE_BUFFER,
+						gl::DYNAMIC_DRAW);
+				vbo->Init(vboSize);
+			}
+		}
+	}
+	
+	void DeltaVboManager::Destroy() {
+		for(std::shared_ptr<gl::VBO>& vbo : vbos) {
+			vbo->Destroy();
+			vbo = nullptr;
+		}
+	}
+	
+	std::shared_ptr<gl::VBO> DeltaVboManager::GetNextUpdateVBO() {
+		std::shared_ptr<gl::VBO> ret = vbos[lastUsedVbo];
+		lastUsedVbo = (lastUsedVbo+1) % vbos.size();
+		return ret;
+	}
+}
 
