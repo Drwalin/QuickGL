@@ -54,8 +54,12 @@ namespace qgl {
 		);
 	}
 	
-	void Pipeline::SetEngine(std::shared_ptr<Engine> engine) {
-		this->engine = engine;
+	void Pipeline::SetPipelineId(uint32_t newId) {
+		pipelineId = newId;
+	}
+	
+	uint32_t Pipeline::GetPipelineId() const {
+		return pipelineId;
 	}
 }
 

@@ -285,27 +285,27 @@ int main() {
 		
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_1)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 0, 0, true, 0, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_2)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 1, 0, true, 1, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_3)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 0, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_4)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 2, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_5)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 3, 0, true, 3, false);
 			pressedSomething = true;
 		}
@@ -353,7 +353,7 @@ int main() {
 					pipelineAnimated->GetEntitiesCount());
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
-			ImGui::Text("VBO memory usage: %.3f + %.3f = %.3f [MiB]",
+			ImGui::Text("VRAM usage: %.3f + %.3f = %.3f [MiB]",
 					gl::VBO::CountAllVBOMemoryUsage()/(1024*1024.f),
 					gl::Texture::CountAllTextureMemoryUsage()/(1024*1024.f),
 					(gl::VBO::CountAllVBOMemoryUsage() +

@@ -31,6 +31,7 @@ namespace qgl {
 	class Camera;
 	class DeltaVboManager;
 	class MoveVboManager;
+	class GlobalEntityManager;
 	
 	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
@@ -48,7 +49,7 @@ namespace qgl {
 		bool IsQuitRequested();
 		
 		int32_t AddPipeline(std::shared_ptr<Pipeline> pipeline);
-		std::shared_ptr<Pipeline> GetPipeline(int32_t id);
+		std::shared_ptr<Pipeline> GetPipeline(uint32_t id);
 		
 		void BeginNewFrame();
 		void Render();
@@ -72,6 +73,8 @@ namespace qgl {
 		std::shared_ptr<DeltaVboManager> GetDeltaVboManager();
 		std::shared_ptr<MoveVboManager> GetMoveVboManager();
 		
+		std::shared_ptr<GlobalEntityManager> GetGlobalEntityManager();
+		
 	protected:
 		
 		bool profiling;
@@ -86,6 +89,8 @@ namespace qgl {
 		
 		std::shared_ptr<DeltaVboManager> deltaVboManager;
 		std::shared_ptr<MoveVboManager> moveVboManager;
+		
+		std::shared_ptr<GlobalEntityManager> globalEntityManager;
 	};
 }
 

@@ -24,38 +24,41 @@
 #include "../../include/quickgl/pipelines/PipelineIdsManagedBase.hpp"
 
 namespace qgl {
-	PipelineIdsManagedBase::PipelineIdsManagedBase(std::shared_ptr<Engine> engine) :
-		Pipeline(engine), entityBufferManager(engine),
-		perEntityMeshInfo(engine), perEntityMeshInfoBoundingSphere(engine),
-		transformMatrices(engine) {
+	PipelineIdsManagedBase::PipelineIdsManagedBase(
+		std::shared_ptr<Engine> engine) :
+			Pipeline(engine), perEntityMeshInfo(engine),
+			perEntityMeshInfoBoundingSphere(engine), transformMatrices(engine) {
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {
 	}
 	
 	uint32_t PipelineIdsManagedBase::CreateEntity() {
-		uint32_t id = entityBufferManager.GetNewEntity();
+		uint32_t id = entityBufferManager->GetNewEntity();
 		return id;
 	}
 	
 	void PipelineIdsManagedBase::DeleteEntity(uint32_t entityId) {
-		entityBufferManager.FreeEntity(entityId);
+		entityBufferManager->FreeEntity(entityId);
 	}
 	
 	uint32_t PipelineIdsManagedBase::GetEntitiesCount() const {
-		return entityBufferManager.Count();
+		return entityBufferManager->Count();
 	}
 	
 	void PipelineIdsManagedBase::Initialize() {
+		entityBufferManager = std::make_shared<EntityBufferManager>(engine,
+				shared_from_this());
+		
 		Pipeline::Initialize();
 		perEntityMeshInfo.Init();
 		perEntityMeshInfoBoundingSphere.Init();
 		transformMatrices.Init();
-		entityBufferManager.Init();
+		entityBufferManager->Init();
 		
-		entityBufferManager.AddManagedSparselyUpdateVBO(&perEntityMeshInfo);
-		entityBufferManager.AddManagedSparselyUpdateVBO(&perEntityMeshInfoBoundingSphere);
-		entityBufferManager.AddManagedSparselyUpdateVBO(&transformMatrices);
+		entityBufferManager->AddManagedSparselyUpdateVBO(&perEntityMeshInfo);
+		entityBufferManager->AddManagedSparselyUpdateVBO(&perEntityMeshInfoBoundingSphere);
+		entityBufferManager->AddManagedSparselyUpdateVBO(&transformMatrices);
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
@@ -81,14 +84,13 @@ namespace qgl {
 	}
 	
 	uint32_t PipelineIdsManagedBase::GetEntityOffset(uint32_t entityId) const {
-		return entityBufferManager.GetOffsetOfEntity(entityId);
+		return entityBufferManager->GetOffsetOfEntity(entityId);
 	}
 	
 	void PipelineIdsManagedBase::FlushDataToGPU() {
 		perEntityMeshInfo.UpdateVBO();
 		perEntityMeshInfoBoundingSphere.UpdateVBO();
 		transformMatrices.UpdateVBO();
-		entityBufferManager.UpdateBuffers();
 	}
 	
 	void PipelineIdsManagedBase::GenerateRenderStages(
@@ -98,7 +100,7 @@ namespace qgl {
 			"Updating EntityBufferManager",
 			STAGE_GLOBAL,
 			[=](std::shared_ptr<Camera> camera) {
-				entityBufferManager.UpdateBuffers();
+				entityBufferManager->UpdateBuffers();
 			}
 		);
 	}

@@ -55,6 +55,7 @@ namespace qgl {
 	void PipelineAnimated::SetAnimationState(uint32_t entityId,
 			uint32_t animationId, float timeOffset, bool enableUpdateTime,
 			uint32_t animationIdAfter, bool continueNextAnimation) {
+		entityId = GetEntityOffset(entityId);
 		perEntityAnimationState.SetValue({
 				animationId,
 				animationIdAfter,
@@ -107,7 +108,7 @@ namespace qgl {
 		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
 		
 		entityBufferManager
-			.AddManagedSparselyUpdateVBO(&perEntityAnimationState);
+			->AddManagedSparselyUpdateVBO(&perEntityAnimationState);
 	}
 	
 	void PipelineAnimated::FlushDataToGPU() {
