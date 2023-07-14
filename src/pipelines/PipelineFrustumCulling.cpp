@@ -95,7 +95,7 @@ namespace qgl {
 	void PipelineFrustumCulling::FlushDataToGPU() {
 		PipelineIdsManagedBase::FlushDataToGPU();
 		uint32_t i = indirectDrawBuffer->GetVertexCount();
-		while(i < entityBufferManager.Count()) {
+		while(i < entityBufferManager->Count()) {
 			i = (i*3)/2 + 100;
 		}
 		if(i != indirectDrawBuffer->GetVertexCount()) {
@@ -136,7 +136,7 @@ namespace qgl {
 				frustumCullingShader->Use();
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-							entityBufferManager.Count());
+							entityBufferManager->Count());
 				frustumCullingShader
 					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
 							camera->GetViewMatrix());
@@ -157,7 +157,7 @@ namespace qgl {
 				
 				frustumCullingShader
 					->DispatchRoundGroupNumbers(
-							(entityBufferManager.Count()+objectsPerInvocation-1) /
+							(entityBufferManager->Count()+objectsPerInvocation-1) /
 								objectsPerInvocation,
 							1, 1);
 				gl::Shader::Unuse();

@@ -75,9 +75,10 @@ namespace qgl {
 		
 		inline std::shared_ptr<MeshManager> GetMeshManager() { return meshManager; }
 		
-		void SetEngine(std::shared_ptr<Engine> engine);
-		
 		virtual uint32_t GetEntityOffset(uint32_t entityId) const = 0;
+		
+		void SetPipelineId(uint32_t newId);
+		uint32_t GetPipelineId() const;
 		
 	public:
 		
@@ -90,6 +91,8 @@ namespace qgl {
 		virtual void FlushDataToGPU() = 0;
 		
 	protected:
+		
+		uint32_t pipelineId;
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		

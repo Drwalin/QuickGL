@@ -72,7 +72,7 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		
-		EntityBufferManager entityBufferManager;
+		std::shared_ptr<EntityBufferManager> entityBufferManager;
 	};
 }
 

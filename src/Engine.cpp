@@ -27,6 +27,7 @@
 #include "../include/quickgl/Gui.hpp"
 #include "../include/quickgl/util/DeltaVboManager.hpp"
 #include "../include/quickgl/util/MoveVboUpdater.hpp"
+#include "../include/quickgl/GlobalEntityManager.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -56,6 +57,7 @@ namespace qgl {
 		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024, 16);
 		deltaVboManager->Init();
 		moveVboManager = std::make_shared<MoveVboManager>(shared_from_this());
+		globalEntityManager = std::make_shared<GlobalEntityManager>(shared_from_this());
 	}
 	
 	void Engine::Destroy() {
@@ -65,7 +67,6 @@ namespace qgl {
 			renderStageComposer.Clear();
 
 			for(auto& p : pipelines) {
-				gl::Finish();
 				p = nullptr;
 			}
 			pipelines.clear();
@@ -77,6 +78,8 @@ namespace qgl {
 			glfwTerminate();
 			initialized = false;
 		}
+		
+		globalEntityManager = nullptr;
 	}
 	
 	void Engine::SetFullscreen(bool fullscreen) {
@@ -94,16 +97,16 @@ namespace qgl {
 	int32_t Engine::AddPipeline(std::shared_ptr<Pipeline> pipeline) {
 		int32_t id = pipelines.size();
 		pipelines.emplace_back(pipeline);
-		pipeline->SetEngine(this->shared_from_this());
+		pipeline->SetPipelineId(pipelines.size());
 		pipeline->Initialize();
 		renderStageComposer.AddPipelineStages(pipeline);
 		return id;
 	}
 	
-	std::shared_ptr<Pipeline> Engine::GetPipeline(int32_t id) {
-		if(id < 0 || id >= pipelines.size())
+	std::shared_ptr<Pipeline> Engine::GetPipeline(uint32_t id) {
+		if(id == 0 || id > pipelines.size())
 			return nullptr;
-		return pipelines[id];
+		return pipelines[id-1];
 	}
 	
 	void Engine::BeginNewFrame() {
@@ -163,6 +166,10 @@ namespace qgl {
 	
 	std::shared_ptr<MoveVboManager> Engine::GetMoveVboManager() {
 		return moveVboManager;
+	}
+	
+	std::shared_ptr<GlobalEntityManager> Engine::GetGlobalEntityManager() {
+		return globalEntityManager;
 	}
 }
 
