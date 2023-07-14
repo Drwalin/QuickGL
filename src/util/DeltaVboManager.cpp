@@ -37,7 +37,7 @@ namespace qgl {
 			for(std::shared_ptr<gl::VBO>& vbo : vbos) {
 				vbo = std::make_shared<gl::VBO>(1, gl::SHADER_STORAGE_BUFFER,
 						gl::DYNAMIC_DRAW);
-				vbo->Init(vboSize);
+				vbo->InitImmutable(nullptr, vboSize, gl::DYNAMIC_STORAGE_BIT);
 			}
 		}
 	}

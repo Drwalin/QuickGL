@@ -31,7 +31,7 @@
 
 namespace qgl {
 	EntityBufferManager::EntityBufferManager(std::shared_ptr<Engine> engine) :
-		engine(engine) {
+		mapOffsetToEntity(engine), engine(engine) {
 	}
 	
 	uint64_t EntityBufferManager::allEntitiesAdded = 0;
@@ -94,13 +94,13 @@ namespace qgl {
 		GenerateDeltaBuffer();
 		
 		const uint32_t elements = deltaBuffer.size();
-// 		if(elements < 128) {
-// 			for(BufferInfo& buf : buffers) {
-// 				for(PairMove& p : deltaBuffer) {
-// 					buf.moveByOne(buf.data, p.from, p.to);
-// 				}
-// 			}
-// 		} else {
+		if(elements < 128) {
+			for(BufferInfo& buf : buffers) {
+				for(PairMove& p : deltaBuffer) {
+					buf.moveByOne(buf.data, p.from, p.to);
+				}
+			}
+		} else {
 			for(uint32_t i=0; i<elements;) {
 				auto deltaVbo = engine->GetDeltaVboManager()
 					->GetNextUpdateVBO();
@@ -130,7 +130,7 @@ namespace qgl {
 				
 				i += elem;
 			}
-// 		}
+		}
 	}
 	
 	

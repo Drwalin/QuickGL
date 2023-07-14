@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 namespace gl {
 	class Shader;
@@ -30,10 +31,13 @@ namespace gl {
 }
 
 namespace qgl {
+	class Engine;
+	
 	class UntypedManagedSparselyUpdatedVBO {
 	public:
 		
-		UntypedManagedSparselyUpdatedVBO(uint32_t elementSize);
+		UntypedManagedSparselyUpdatedVBO(std::shared_ptr<Engine> engine,
+				uint32_t elementSize);
 		~UntypedManagedSparselyUpdatedVBO();
 		
 		void Init();
@@ -51,8 +55,8 @@ namespace qgl {
 		
 	private:
 		
+		std::shared_ptr<Engine> engine;
 		gl::VBO* vbo;
-		gl::VBO* deltaVbo;
 		gl::Shader* shader;
 		
 		uint32_t maxId;
@@ -69,8 +73,8 @@ namespace qgl {
 	class ManagedSparselyUpdatedVBO : public UntypedManagedSparselyUpdatedVBO {
 	public:
 		
-		ManagedSparselyUpdatedVBO() :
-			UntypedManagedSparselyUpdatedVBO(sizeof(T)) {}
+		ManagedSparselyUpdatedVBO(std::shared_ptr<Engine> engine) :
+			UntypedManagedSparselyUpdatedVBO(engine, sizeof(T)) {}
 		~ManagedSparselyUpdatedVBO() {}
 		
 		void SetValue(const T& value, uint32_t id) {
@@ -83,7 +87,8 @@ namespace qgl {
 		public ManagedSparselyUpdatedVBO<T> {
 	public:
 		
-		ManagedSparselyUpdatedVBOWithLocal() {}
+		ManagedSparselyUpdatedVBOWithLocal(std::shared_ptr<Engine> engine) :
+			ManagedSparselyUpdatedVBO<T>(engine) {}
 		~ManagedSparselyUpdatedVBOWithLocal() {}
 		
 		void SetValue(const T& value, uint32_t id) {
