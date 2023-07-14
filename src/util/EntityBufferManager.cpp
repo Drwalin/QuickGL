@@ -22,10 +22,10 @@
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
-#include "../include/quickgl/util/DeltaVboManager.hpp"
-#include "../include/quickgl/util/MoveVboUpdater.hpp"
-#include "../include/quickgl/pipelines/Pipeline.hpp"
-#include "../include/quickgl/GlobalEntityManager.hpp"
+#include "../../include/quickgl/util/DeltaVboManager.hpp"
+#include "../../include/quickgl/util/MoveVboUpdater.hpp"
+#include "../../include/quickgl/pipelines/Pipeline.hpp"
+#include "../../include/quickgl/GlobalEntityManager.hpp"
 
 #include "../../include/quickgl/util/EntityBufferManager.hpp"
 

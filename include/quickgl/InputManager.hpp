@@ -58,7 +58,7 @@ namespace qgl {
 		
 	private:
 		
-		float time, deltaTime;
+		double time, deltaTime;
 	};
 }
 
