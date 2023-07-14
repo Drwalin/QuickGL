@@ -34,7 +34,8 @@
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 
 namespace qgl {
-	PipelineStatic::PipelineStatic() {
+	PipelineStatic::PipelineStatic(std::shared_ptr<Engine> engine) :
+		PipelineFrustumCulling(engine) {
 	}
 	
 	PipelineStatic::~PipelineStatic() {

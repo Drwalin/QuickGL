@@ -23,10 +23,15 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
+#include "../../include/quickgl/Engine.hpp"
+#include "../include/quickgl/util/DeltaVboManager.hpp"
+#include "../include/quickgl/util/MoveVboUpdater.hpp"
+
 #include "../../include/quickgl/util/EntityBufferManager.hpp"
 
 namespace qgl {
-	EntityBufferManager::EntityBufferManager() {
+	EntityBufferManager::EntityBufferManager(std::shared_ptr<Engine> engine) :
+		engine(engine) {
 	}
 	
 	uint64_t EntityBufferManager::allEntitiesAdded = 0;
@@ -36,9 +41,6 @@ namespace qgl {
 	}
 	
 	void EntityBufferManager::Init() {
-// 		deltaVbo = new gl::VBO(sizeof(PairMove), gl::SHADER_STORAGE_BUFFER,
-// 				gl::DYNAMIC_DRAW);
-// 		deltaVbo->Init();
 		mapOffsetToEntity.Init();
 		lastAddedEntity = 1;
 		entitiesCount = 0;
@@ -46,8 +48,6 @@ namespace qgl {
 	}
 	
 	void EntityBufferManager::Destroy() {
-// 		delete deltaVbo;
-// 		deltaVbo = nullptr;
 		mapOffsetToEntity.Destroy();
 		
 		deltaFromTo.clear();
@@ -92,35 +92,49 @@ namespace qgl {
 			return;
 		}
 		GenerateDeltaBuffer();
-		for(BufferInfo& buf : buffers) {
-			if(buf.moveByVbo) {
-				throw "EntityBufferManager::UpdateBuffers() update by VBO is not implemented.";
-// 				buf.moveByVbo(buf.data, deltaVbo);
-			} else if(buf.moveByOne) {
-				for(PairMove& p : deltaBuffer) {
-					buf.moveByOne(buf.data, p.from, p.to);
+		
+		const uint32_t elements = deltaBuffer.size();
+// 		if(elements < 128) {
+// 			for(BufferInfo& buf : buffers) {
+// 				for(PairMove& p : deltaBuffer) {
+// 					buf.moveByOne(buf.data, p.from, p.to);
+// 				}
+// 			}
+// 		} else {
+			for(uint32_t i=0; i<elements;) {
+				auto deltaVbo = engine->GetDeltaVboManager()
+					->GetNextUpdateVBO();
+				const uint32_t elem = std::min<uint32_t>(
+						deltaVbo->GetVertexCount()/sizeof(PairMove),
+						elements-i);
+				
+				deltaVbo->Update(&(deltaBuffer[i]), 0, elem*sizeof(PairMove));
+				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT);
+				
+				for(BufferInfo& buf : buffers) {
+					if(buf.moveByVbo) {
+						buf.moveByVbo(buf.data, engine, deltaVbo.get(), elem);
+					}
 				}
+				gl::Flush();
+				
+				for(BufferInfo& buf : buffers) {
+					if(!buf.moveByVbo) {
+						uint32_t end = i+elem;
+						for(uint32_t j=i; j<end; ++j) {
+							PairMove p = deltaBuffer[j];
+							buf.moveByOne(buf.data, p.from, p.to);
+						}
+					}
+				}
+				
+				i += elem;
 			}
-		}
+// 		}
 	}
 	
 	
 	void EntityBufferManager::AddVBO(gl::VBO* vbo) {
-// 		buffers.push_back({
-// 			[vbo](uint32_t capacity) { // reserve
-// 				vbo->Resize(capacity);
-// 			},
-// 			[vbo](uint32_t size) { // resize
-// 				vbo->Resize(size);
-// 			},
-// 			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
-// 				gl::DeltaBufferUpdater::GetByVertexSize(vbo->VertexSize())
-// 					->Update(vbo, deltaVbo);
-// 			},
-// 			nullptr,
-// 			nullptr,
-// 			vbo
-// 		});
 		buffers.push_back(BufferInfo{
 			[](void* vbo, uint32_t capacity) { // reserve
 				((gl::VBO*)vbo)->Resize(capacity);
@@ -128,7 +142,10 @@ namespace qgl {
 			[](void* vbo, uint32_t size) { // resize
 				((gl::VBO*)vbo)->Resize(size);
 			},
-			nullptr,
+			[](void* vbo, std::shared_ptr<Engine> engine, gl::VBO* deltaVbo, uint32_t elements) { // update with delta buffer
+				engine->GetMoveVboManager()->Update(((gl::VBO*)vbo),
+						deltaVbo, elements, ((gl::VBO*)vbo)->VertexSize());
+			},
 			[](void* vbo, uint32_t from, uint32_t to) { // move by one
 				const uint32_t vs = ((gl::VBO*)vbo)->VertexSize();
 				((gl::VBO*)vbo)->Copy(((gl::VBO*)vbo), from*vs, to*vs, vs);
@@ -140,47 +157,29 @@ namespace qgl {
 	
 	void EntityBufferManager::AddManagedSparselyUpdateVBO(
 			qgl::UntypedManagedSparselyUpdatedVBO* vbo) {
-// 		buffers.push_back({
-// 			[vbo](uint32_t capacity) { // reserve
-// 				vbo->Resize(capacity);
-// 			},
-// 			[vbo](uint32_t size) { // resize
-// 				vbo->Resize(size);
-// 			},
-// 			[vbo](gl::VBO* deltaVbo) { // update with delta buffer
-// 				gl::DeltaBufferUpdater::GetByVertexSize(vbo->Vbo().VertexSize())
-// 					->Update(vbo, deltaVbo);
-// 			},
-// 			nullptr,
-// 			[vbo](uint32_t stageId) { // update vbo
-// 				vbo->UpdateVBO(stageId);
-// 			},
-// 			vbo
-// 		});
 		buffers.push_back(BufferInfo{
 			[](void* vbo, uint32_t capacity) { // reserve
-				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(capacity);
+				((UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(capacity);
 			},
 			[](void* vbo, uint32_t size) { // resize
-				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(size);
+				((UntypedManagedSparselyUpdatedVBO*)vbo)->Resize(size);
 			},
-			nullptr,
+			[](void* vbo, std::shared_ptr<Engine> engine, gl::VBO* deltaVbo, uint32_t elements) { // update with delta buffer
+				engine->GetMoveVboManager()->Update(
+						&(((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Vbo()),
+						deltaVbo, elements,
+						((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Vbo()
+							.VertexSize());
+			},
 			[](void* vbo, uint32_t from, uint32_t to) { // move by one
 				const uint32_t vs
 					= ((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
 						->Vbo().VertexSize();
-				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
+				((UntypedManagedSparselyUpdatedVBO*)vbo)
 					->Vbo().Copy(
 							&(((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
 								->Vbo()),
 							from*vs, to*vs, vs);
-				if(from == to) {
-					printf("%u -> %u    [%u]  / %u\n", from, to, vs, 
-							((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)->Count());
-					fflush(stdout);
-					gl::openGL.PrintErrors();
-					gl::openGL.ClearErrors();
-				}
 			},
 			[](void* vbo) { // update vbo
 				((qgl::UntypedManagedSparselyUpdatedVBO*)vbo)
@@ -227,8 +226,6 @@ namespace qgl {
 			}
 		}
 		
-// 		deltaVbo->Update(deltaBuffer.data(), 0,
-// 				deltaBuffer.size()*sizeof(PairMove));
 		deltaFromTo.clear();
 		freeingEntites.clear();
 	}

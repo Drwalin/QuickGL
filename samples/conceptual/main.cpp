@@ -57,7 +57,7 @@ int main() {
 		
 	// create animated pipeline
 	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
-		= std::make_shared<qgl::PipelineAnimated>();
+		= std::make_shared<qgl::PipelineAnimated>(engine);
 	engine->AddPipeline(pipelineAnimated);
 	
 	// load animated models
@@ -85,7 +85,7 @@ int main() {
 	
 	// create static pipeline
 	std::shared_ptr<qgl::PipelineStatic> pipelineStatic
-		= std::make_shared<qgl::PipelineStatic>();
+		= std::make_shared<qgl::PipelineStatic>(engine);
 	engine->AddPipeline(pipelineStatic);
 	
 	// load models

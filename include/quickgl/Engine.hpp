@@ -29,6 +29,8 @@
 namespace qgl {
 	class Pipeline;
 	class Camera;
+	class DeltaVboManager;
+	class MoveVboManager;
 	
 	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
@@ -67,6 +69,9 @@ namespace qgl {
 		void EnableProfiling(bool value);
 		bool GetProfiling() const;
 		
+		std::shared_ptr<DeltaVboManager> GetDeltaVboManager();
+		std::shared_ptr<MoveVboManager> GetMoveVboManager();
+		
 	protected:
 		
 		bool profiling;
@@ -78,6 +83,9 @@ namespace qgl {
 		
 		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		std::shared_ptr<Camera> mainCamera;
+		
+		std::shared_ptr<DeltaVboManager> deltaVboManager;
+		std::shared_ptr<MoveVboManager> moveVboManager;
 	};
 }
 

@@ -35,7 +35,8 @@
 #include "../../include/quickgl/pipelines/PipelineFrustumCuling.hpp"
 
 namespace qgl {
-	PipelineFrustumCulling::PipelineFrustumCulling() {
+	PipelineFrustumCulling::PipelineFrustumCulling(std::shared_ptr<Engine> engine) :
+		PipelineIdsManagedBase(engine) {
 	}
 	
 	PipelineFrustumCulling::~PipelineFrustumCulling() {

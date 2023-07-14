@@ -24,7 +24,8 @@
 #include "../../include/quickgl/pipelines/PipelineIdsManagedBase.hpp"
 
 namespace qgl {
-	PipelineIdsManagedBase::PipelineIdsManagedBase() {
+	PipelineIdsManagedBase::PipelineIdsManagedBase(std::shared_ptr<Engine> engine) :
+		Pipeline(engine), entityBufferManager(engine) {
 	}
 	
 	PipelineIdsManagedBase::~PipelineIdsManagedBase() {

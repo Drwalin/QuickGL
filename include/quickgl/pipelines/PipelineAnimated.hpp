@@ -38,7 +38,7 @@ namespace qgl {
 	class PipelineAnimated final : public PipelineFrustumCulling {
 	public:
 		
-		PipelineAnimated();
+		PipelineAnimated(std::shared_ptr<Engine> engine);
 		virtual ~PipelineAnimated();
 		
 		virtual void Initialize() override;

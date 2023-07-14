@@ -34,6 +34,8 @@ namespace gl {
 }
 
 namespace qgl {
+	class Engine;
+	
 	class EntityBufferManager final {
 	public:
 		
@@ -45,7 +47,8 @@ namespace qgl {
 		struct BufferInfo {
 			void (*reserve)(void* object, uint32_t newCapacity);
 			void (*resize)(void* object, uint32_t newSize);
-			void (*moveByVbo)(void* object, gl::VBO* deltaVbo, uint32_t elements);
+			void (*moveByVbo)(void* object, std::shared_ptr<Engine> engine, gl::VBO* deltaVbo,
+					uint32_t elements);
 			void (*moveByOne)(void* object, uint32_t from, uint32_t to);
 			void (*updateVbo)(void* object);
 			
@@ -53,7 +56,7 @@ namespace qgl {
 			void* funcData;
 		};
 		
-		EntityBufferManager();
+		EntityBufferManager(std::shared_ptr<Engine> engine);
 		~EntityBufferManager();
 		
 		void Init();
@@ -85,7 +88,6 @@ namespace qgl {
 	private:
 		
 		std::unordered_map<uint32_t, PairMove> deltaFromTo;
-// 		gl::VBO* deltaVbo;
 		std::vector<PairMove> deltaBuffer;
 		std::vector<uint32_t> freeingEntites;
 		
@@ -99,6 +101,8 @@ namespace qgl {
 		uint32_t entitiesCount;
 		
 		static uint64_t allEntitiesAdded;
+		
+		std::shared_ptr<Engine> engine;
 	};
 	
 	template<typename T>

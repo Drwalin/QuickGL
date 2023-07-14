@@ -33,7 +33,9 @@ namespace gl {
 #endif
 }
 
-namespace cql {
+namespace qgl {
+	class Engine;
+	
 	class MoveVboUpdater final {
 	public:
 		
@@ -42,10 +44,11 @@ namespace cql {
 			uint32_t to;
 		};
 		
-		MoveVboUpdater(uint32_t bytes);
+		MoveVboUpdater(std::shared_ptr<Engine> engine, uint32_t bytes);
 		~MoveVboUpdater();
 		
 		void Init();
+		void Destroy();
 		
 		void Update(gl::VBO* vbo, const PairMove* data, uint32_t elements);
 		
@@ -55,17 +58,18 @@ namespace cql {
 		
 	private:
 		
-		gl::Shader* shader;
 		const uint32_t BYTES;
+		std::shared_ptr<Engine> engine;
+		std::shared_ptr<gl::Shader> shader;
+		uint32_t updateElementsCountLocation;
 	};
 	
 	class MoveVboManager final {
 	public:
 		
-		MoveVboManager();
+		MoveVboManager(std::shared_ptr<Engine> engine);
 		~MoveVboManager();
 		
-		void Init();
 		void Destroy();
 		
 		std::shared_ptr<MoveVboUpdater> GetByObjectSize(uint32_t bytes);
@@ -79,7 +83,7 @@ namespace cql {
 	private:
 		
 		std::unordered_map<uint32_t, std::shared_ptr<MoveVboUpdater>> updatersByElementSizeSize;
-		
+		std::shared_ptr<Engine> engine;
 	};
 }
 
