@@ -26,6 +26,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/Mesh.hpp"
 
 #include "../../include/quickgl/AnimatedMeshManager.hpp"
