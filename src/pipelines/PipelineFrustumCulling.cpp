@@ -222,7 +222,9 @@ namespace qgl {
 	}
 	
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
+#extension GL_ARB_compute_shader : require
+#extension GL_ARB_shader_storage_buffer_object : require
 
 layout (packed, std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
@@ -303,7 +305,9 @@ void main() {
 )";
 	
 	const char* PipelineFrustumCulling::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
+#extension GL_ARB_compute_shader : require
+#extension GL_ARB_shader_storage_buffer_object : require
 
 struct DrawElementsIndirectCommand {
 	uint count;

@@ -42,7 +42,9 @@ namespace qgl {
 		
 		shader = std::make_shared<gl::Shader>();
 		
-		const std::string shaderSource = std::string(R"(#version 450 core
+		const std::string shaderSource = std::string(R"(#version 420 core
+#extension GL_ARB_compute_shader : require
+#extension GL_ARB_shader_storage_buffer_object : require
 const uint ELEMENT_SIZE = )") + std::to_string(BYTES) + R"(;
 struct Data {
 	uint data[ELEMENT_SIZE/4];

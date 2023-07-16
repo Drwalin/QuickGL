@@ -221,7 +221,7 @@ namespace qgl {
 	}
 	
 	const char* PipelineAnimated::VERTEX_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
 
 in vec3 in_pos;
 in vec4 in_color;
@@ -288,7 +288,7 @@ mat4 GetBonePose(uint frameStart, uint bone) {
 )";
 	
 	const char* PipelineAnimated::FRAGMENT_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
 
 in vec4 color;
 in vec3 normal;
@@ -306,7 +306,9 @@ void main() {
 )";
 	
 	const char* PipelineAnimated::UPDATE_ANIMATION_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
+#extension GL_ARB_compute_shader : require
+#extension GL_ARB_shader_storage_buffer_object : require
 
 struct AnimatedState {
 	uint animationId;
