@@ -123,7 +123,7 @@ namespace qgl {
 	}
 	
 	const char* PipelineStatic::VERTEX_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
 
 in vec3 in_pos;
 in vec4 in_color;
@@ -146,7 +146,7 @@ void main() {
 )";
 	
 	const char* PipelineStatic::FRAGMENT_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
 
 in vec4 color;
 in vec3 normal;
