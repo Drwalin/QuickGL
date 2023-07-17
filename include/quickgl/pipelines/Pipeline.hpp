@@ -61,6 +61,10 @@ namespace qgl {
 
 		PipelineStagesScheduler& GetStageScheduler();
 		
+		void SetPipelineId(uint32_t newId);
+		uint32_t GetPipelineId() const;
+		virtual std::string GetName() const = 0;
+		
 	public:
 		
 		virtual uint32_t CreateEntity() = 0;
@@ -83,8 +87,7 @@ namespace qgl {
 		
 		virtual uint32_t GetEntityOffset(uint32_t entityId) const = 0;
 		
-		void SetPipelineId(uint32_t newId);
-		uint32_t GetPipelineId() const;
+		inline std::shared_ptr<Engine> GetEngine() { return engine; }
 		
 	protected:
 		

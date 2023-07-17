@@ -41,7 +41,9 @@ namespace qgl {
 		MaterialBoneAnimated(std::shared_ptr<Engine> engine);
 		virtual ~MaterialBoneAnimated();
 		
-		virtual void Initialize() override;
+		virtual void Init() override;
+		virtual void Destroy() override;
+		
 		virtual std::string GetName() const override;
 		
 		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,

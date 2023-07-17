@@ -44,7 +44,8 @@ namespace qgl {
 	};
 
 	enum StageOrder : uint32_t {
-		STAGE_GLOBAL = 0,
+		STAGE_UPDATE_DATA = 0,
+		STAGE_GLOBAL = 2,
 		STAGE_CAMERA = 4,
 		
 		STAGE_1_RENDER_PASS_1 = 8 | STAGE_REQUIRE_BOUND_FBO,
@@ -76,7 +77,8 @@ namespace qgl {
 				StageOrder stageOrder,
 				std::shared_ptr<Pipeline> pipeline,
 				std::function<void(std::shared_ptr<Camera>)> taskFunction,
-				std::function<bool(std::shared_ptr<Camera>)> canExecute=EmptyCanExecute
+				std::function<bool(std::shared_ptr<Camera>)> canExecute
+					= EmptyCanExecute
 				) :
 					name(name),
 					executionPolicy(stageOrder),
@@ -113,9 +115,16 @@ namespace qgl {
 	class PipelineStagesScheduler {
 	public:
 		
+		void Init(std::shared_ptr<Pipeline> pipeline);
 		void Destroy();
 		
 		void AddStage(std::shared_ptr<Stage> stage);
+		void AddStage(
+				std::string name,
+				StageOrder stageOrder,
+				std::function<void(std::shared_ptr<Camera>)> taskFunction,
+				std::function<bool(std::shared_ptr<Camera>)> canExecute
+					= Stage::EmptyCanExecute);
 		
 		bool HasMoreStages();
 		bool CanExecuteNextStage();
@@ -140,6 +149,8 @@ namespace qgl {
 		std::vector<std::shared_ptr<Stage>> perCameraStages;
 		
 		RenderStageComposer* renderStageComposer;
+		
+		std::shared_ptr<Pipeline> pipeline;
 	};
 	
 	class RenderStageComposer final {

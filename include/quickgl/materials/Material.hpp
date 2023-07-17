@@ -34,35 +34,34 @@ namespace qgl {
 	class Engine;
 	class MeshManager;
 	
-	class Material {
+	class Material : std::enable_shared_from_this<Material> {
 	public:
 		
 		Material(std::shared_ptr<Pipeline> pipeline);
 		virtual ~Material();
 		
+		virtual void Init();
+		virtual void Destroy();
+		
+		virtual std::shared_ptr<Pipeline> GetPipeline() = 0;
+		
 		virtual std::string GetName() const = 0;
 		
-		virtual void Initialize();
-		
-		void GenerateIndirectDrawBuffer(
+		virtual void RenderPass(std::shared_ptr<Camera> camera,
 				std::shared_ptr<gl::VBO> entitiesToRender,
-				uint32_t entitiesCount);
-		
-		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
 				uint32_t entitiesCount) = 0;
-		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
 	protected:
 		
-		std::shared_ptr<Pipeline> pipeline;
+		static std::shared_ptr<gl::VBO> GenerateIndirectDrawBuffer(
+			std::shared_ptr<gl::VBO> entitiesToRender,
+			uint32_t entitiesCount);
+		
+		static std::shared_ptr<gl::Shader> GetIndirectDrawBufferGenerator();
+		
+	protected:
+		
 		std::shared_ptr<Engine> engine;
-		
-		std::shared_ptr<gl::VAO> vao;
-		std::shared_ptr<gl::Shader> renderShader;
-		
-		std::shared_ptr<gl::VBO> indirectDrawBuffer;
-		static std::shared_ptr<gl::Shader> idirectDrawBufferGenerator;
 	};
 }
 

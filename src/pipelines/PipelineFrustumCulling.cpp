@@ -46,8 +46,8 @@ namespace qgl {
 		return frustumCulledEntitiesCount;
 	}
 	
-	void PipelineFrustumCulling::Initialize() {
-		PipelineIdsManagedBase::Initialize();
+	void PipelineFrustumCulling::Init() {
+		PipelineIdsManagedBase::Init();
 		
 		// init buffer objects
 		indirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t)*5,
@@ -90,37 +90,32 @@ namespace qgl {
 				frustumCullingShader
 					->GetUniformLocation("objectsPerInvocation"),
 				objectsPerInvocation);
-	}
-	
-	void PipelineFrustumCulling::FlushDataToGPU() {
-		PipelineIdsManagedBase::FlushDataToGPU();
-		uint32_t i = indirectDrawBuffer->GetVertexCount();
-		while(i < entityBufferManager->Count()) {
-			i = (i*3)/2 + 100;
-		}
-		if(i != indirectDrawBuffer->GetVertexCount()) {
-			indirectDrawBuffer->Generate(nullptr, i);
-			frustumCulledIdsBuffer->Generate(nullptr, i);
-		}
-		frustumCulledEntitiesCount = 0;
-		frustumCulledIdsCountAtomicCounter
-			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-	}
-	
-	void PipelineFrustumCulling::GenerateRenderStages(
-			std::vector<Stage>& stages) {
-		PipelineIdsManagedBase::GenerateRenderStages(stages);
 		
-		{
-		stages.emplace_back(
+		stagesScheduler.AddStage(
+			"Update frustum culling data",
+			STAGE_UPDATE_DATA,
+			[this](std::shared_ptr<Camera>) {
+				uint32_t i = indirectDrawBuffer->GetVertexCount();
+				while(i < entityBufferManager->Count()) {
+					i = (i*3)/2 + 100;
+				}
+				if(i != indirectDrawBuffer->GetVertexCount()) {
+					indirectDrawBuffer->Generate(nullptr, i);
+					frustumCulledIdsBuffer->Generate(nullptr, i);
+				}
+				frustumCulledEntitiesCount = 0;
+				frustumCulledIdsCountAtomicCounter
+					->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+			});
+		
+		stagesScheduler.AddStage(
 			"Updating clipping planes of camera to GPU",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-			}
-		);
-		}
+			});
+	
 		
 		{
 		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
@@ -128,9 +123,9 @@ namespace qgl {
 		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
 			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Performing frustum culling",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
 				frustumCullingShader->Use();
@@ -173,9 +168,9 @@ namespace qgl {
 		}
 
 		{
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Fetching count of entities in frustum view to CPU",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
 				// wait for fence
 				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
@@ -192,9 +187,9 @@ namespace qgl {
 		}
 
 		{
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Generating indirect draw buffer",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
 				indirectDrawBufferShader->Use();
@@ -219,6 +214,28 @@ namespace qgl {
 						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
 			});
 		}
+	}
+	
+	void PipelineFrustumCulling::Destroy() {
+		indirectDrawBufferShader->Destroy();
+		frustumCullingShader->Destroy();
+		frustumCulledIdsBuffer->Destroy();
+		frustumCulledIdsCountAtomicCounter->Destroy();
+		frustumCulledIdsCountAtomicCounterAsyncFetch->Destroy();
+		clippingPlanes->Destroy();
+		
+		indirectDrawBufferShader = nullptr;
+		frustumCullingShader = nullptr;
+		frustumCulledIdsBuffer = nullptr;
+		frustumCulledIdsCountAtomicCounter = nullptr;
+		frustumCulledIdsCountAtomicCounterAsyncFetch = nullptr;
+		clippingPlanes = nullptr;
+		
+		syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
+		
+		mappedPointerToentitiesCount = nullptr;
+		
+		PipelineIdsManagedBase::Destroy();
 	}
 	
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(

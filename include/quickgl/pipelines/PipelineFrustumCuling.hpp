@@ -43,15 +43,8 @@ namespace qgl {
 		
 		virtual uint32_t GetEntitiesToRender() const override;
 		
-		virtual void Initialize() override;
-		
-	public:
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
-		
-	protected:
-		
-		virtual void FlushDataToGPU() override;
+		virtual void Init() override;
+		virtual void Destroy() override;
 		
 	protected:
 		

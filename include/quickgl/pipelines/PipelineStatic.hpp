@@ -40,16 +40,16 @@ namespace qgl {
 		PipelineStatic(std::shared_ptr<Engine> engine);
 		virtual ~PipelineStatic();
 		
-		virtual void Initialize() override;
-		virtual std::string GetPipelineName() const override;
+		virtual void Init() override;
+		virtual void Destroy() override;
 		
-	public:
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
+		virtual std::string GetName() const override;
 		
 	protected:
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
+		
+		friend class MaterialStatic;
 		
 	private:
 		

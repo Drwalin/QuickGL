@@ -46,11 +46,12 @@ namespace qgl {
 		return entityBufferManager->Count();
 	}
 	
-	void PipelineIdsManagedBase::Initialize() {
+	void PipelineIdsManagedBase::Init() {
+		Pipeline::Init();
+		
 		entityBufferManager = std::make_shared<EntityBufferManager>(engine,
 				shared_from_this());
 		
-		Pipeline::Initialize();
 		perEntityMeshInfo.Init();
 		perEntityMeshInfoBoundingSphere.Init();
 		transformMatrices.Init();
@@ -59,6 +60,33 @@ namespace qgl {
 		entityBufferManager->AddManagedSparselyUpdateVBO(&perEntityMeshInfo);
 		entityBufferManager->AddManagedSparselyUpdateVBO(&perEntityMeshInfoBoundingSphere);
 		entityBufferManager->AddManagedSparselyUpdateVBO(&transformMatrices);
+		
+		
+		stagesScheduler.AddStage(
+				"Update ID manager data",
+				STAGE_UPDATE_DATA,
+				[this](std::shared_ptr<Camera>) {
+					perEntityMeshInfo.UpdateVBO();
+					perEntityMeshInfoBoundingSphere.UpdateVBO();
+					transformMatrices.UpdateVBO();
+				});
+		
+		stagesScheduler.AddStage(
+				"Updating EntityBufferManager",
+				STAGE_GLOBAL,
+				[this](std::shared_ptr<Camera>) {
+					entityBufferManager->UpdateBuffers();
+				});
+	}
+	
+	void PipelineIdsManagedBase::Destroy() {
+		perEntityMeshInfo.Destroy();
+		perEntityMeshInfoBoundingSphere.Destroy();
+		transformMatrices.Destroy();
+		entityBufferManager->Destroy();
+		entityBufferManager = nullptr;
+		
+		Pipeline::Destroy();
 	}
 	
 	void PipelineIdsManagedBase::SetEntityMesh(uint32_t entityId,
@@ -87,22 +115,5 @@ namespace qgl {
 		return entityBufferManager->GetOffsetOfEntity(entityId);
 	}
 	
-	void PipelineIdsManagedBase::FlushDataToGPU() {
-		perEntityMeshInfo.UpdateVBO();
-		perEntityMeshInfoBoundingSphere.UpdateVBO();
-		transformMatrices.UpdateVBO();
-	}
-	
-	void PipelineIdsManagedBase::GenerateRenderStages(
-			std::vector<Stage>& stages) {
-		Pipeline::GenerateRenderStages(stages);
-		stages.emplace_back(
-			"Updating EntityBufferManager",
-			STAGE_GLOBAL,
-			[=](std::shared_ptr<Camera> camera) {
-				entityBufferManager->UpdateBuffers();
-			}
-		);
-	}
 }
 
