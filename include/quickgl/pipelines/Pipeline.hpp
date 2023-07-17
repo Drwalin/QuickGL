@@ -32,6 +32,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "../util/Log.hpp"
+#include "../util/RenderStageComposer.hpp"
 
 namespace gl {
 	class VBO;
@@ -47,6 +48,7 @@ namespace qgl {
 	class Camera;
 	class Engine;
 	class Engine;
+	class Material;
 	
 	class Pipeline : public std::enable_shared_from_this<Pipeline> {
 	public:
@@ -54,8 +56,12 @@ namespace qgl {
 		Pipeline(std::shared_ptr<Engine> engine);
 		virtual ~Pipeline();
 		
-		virtual void Initialize();
-		virtual std::string GetPipelineName() const = 0;
+		virtual void Init(); // init buffers and prepare stages
+		virtual void Destroy();
+
+		PipelineStagesScheduler& GetStageScheduler();
+		
+	public:
 		
 		virtual uint32_t CreateEntity() = 0;
 		virtual void DeleteEntity(uint32_t entityId) = 0;
@@ -80,25 +86,20 @@ namespace qgl {
 		void SetPipelineId(uint32_t newId);
 		uint32_t GetPipelineId() const;
 		
-	public:
-		
-		using StageFunction = std::function<void(std::shared_ptr<Camera>)>;
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages);
-		
 	protected:
 		
-		virtual void FlushDataToGPU() = 0;
+		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
 		
 	protected:
 		
 		uint32_t pipelineId;
 		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() = 0;
-		
 		std::shared_ptr<Engine> engine;
 		
 		std::shared_ptr<MeshManager> meshManager;
+		
+		PipelineStagesScheduler stagesScheduler;
+		std::shared_ptr<Material> material;
 	};
 }
 
