@@ -41,14 +41,10 @@ namespace qgl {
 		PipelineAnimated(std::shared_ptr<Engine> engine);
 		virtual ~PipelineAnimated();
 		
-		virtual void Initialize() override;
-		virtual std::string GetPipelineName() const override;
+		virtual void Init() override;
+		virtual void Destroy() override;
 		
-		virtual uint32_t CreateEntity() override;
-		
-	public:
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
+		virtual std::string GetName() const override;
 		
 		void SetAnimationState(uint32_t entityId, uint32_t animationId,
 				float timeOffset, bool enableUpdateTime,
@@ -56,8 +52,9 @@ namespace qgl {
 		
 	protected:
 		
+		friend class MaterialBoneAnimated;
+		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
-		virtual void FlushDataToGPU() override;
 		
 	private:
 		
@@ -76,14 +73,10 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<AnimatedState> perEntityAnimationState;
 		
-		std::unique_ptr<gl::VAO> vao;
-		std::unique_ptr<gl::Shader> renderShader;
 		std::unique_ptr<gl::Shader> updateAnimationShader;
 		
 		std::shared_ptr<AnimatedMeshManager> animatedMeshManager;
 		
-		static const char* VERTEX_SHADER_SOURCE;
-		static const char* FRAGMENT_SHADER_SOURCE;
 		static const char* UPDATE_ANIMATION_SHADER_SOURCE;
 	};
 }

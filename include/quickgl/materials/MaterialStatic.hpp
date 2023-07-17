@@ -33,22 +33,32 @@
 #include "Material.hpp"
 
 namespace qgl {
+	class PipelineStatic;
 	
 	class MaterialStatic final : public Material {
 	public:
 		
-		MaterialStatic(std::shared_ptr<Engine> engine);
+		MaterialStatic(std::shared_ptr<PipelineStatic> pipeline);
 		virtual ~MaterialStatic();
 		
-		virtual void Initialize() override;
+		virtual void Init() override;
+		virtual void Destroy() override;
+		
 		virtual std::string GetName() const override;
 		
-		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
+		virtual std::shared_ptr<Pipeline> GetPipeline() override;
+		
+		virtual void RenderPass(std::shared_ptr<Camera> camera,
+				std::shared_ptr<gl::VBO> entitiesToRender,
 				uint32_t entitiesCount) override;
 		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
-		
 	private:
+		
+		std::shared_ptr<gl::VAO> vao;
+		std::shared_ptr<gl::Shader> renderShader;
+		std::shared_ptr<PipelineStatic> pipeline;
+		
+		int32_t PROJECTION_VIEW_LOCATION;
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;

@@ -43,16 +43,26 @@ namespace qgl {
 	
 	
 	
+	void PipelineStagesScheduler::Init(std::shared_ptr<Pipeline> pipeline) {
+		this->pipeline = pipeline;
+	}
 	
 	void PipelineStagesScheduler::Destroy() {
 		currentCamera = nullptr;
 		globalStages.clear();
 		perCameraStages.clear();
 		renderStageComposer = nullptr;
+		pipeline = nullptr;
 	}
 	
 	void PipelineStagesScheduler::AddStage(std::shared_ptr<Stage> stage) {
 		if(stage->executionPolicy < STAGE_CAMERA) {
+			for(int i=0; i<globalStages.size(); ++i) {
+				if(globalStages[i]->executionPolicy > stage->executionPolicy) {
+					globalStages.insert(globalStages.begin() + 1, stage);
+					return;
+				}
+			}
 			globalStages.push_back(stage);
 		} else {
 			for(int i=0; i<perCameraStages.size(); ++i) {
@@ -63,6 +73,15 @@ namespace qgl {
 			}
 			perCameraStages.push_back(stage);
 		}
+	}
+	
+	void PipelineStagesScheduler::AddStage(
+				std::string name,
+				StageOrder stageOrder,
+				std::function<void(std::shared_ptr<Camera>)> taskFunction,
+				std::function<bool(std::shared_ptr<Camera>)> canExecute) {
+		AddStage(std::make_shared<Stage>(name, stageOrder, pipeline,
+					taskFunction, canExecute));
 	}
 	
 	bool PipelineStagesScheduler::HasMoreStages() {
@@ -82,7 +101,8 @@ namespace qgl {
 	void PipelineStagesScheduler::ExecuteNextStage() {
 		if(CanExecuteNextStage()) {
 			auto stage = GetNextStage();
-			if(stage->executionPolicy & STAGE_REQUIRE_BOUND_FBO) {
+			if(stage->executionPolicy & STAGE_REQUIRE_BOUND_FBO
+					&& stage->pipeline->GetStageScheduler().GetCurrentCamera()) {
 				stage->pipeline->GetStageScheduler().GetCurrentCamera()->UseFbo();
 			}
 			stage->task(currentCamera);
@@ -124,7 +144,7 @@ namespace qgl {
 		return nullptr;
 	}
 	
-	
+
 	
 	
 	

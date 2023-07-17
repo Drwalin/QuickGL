@@ -63,9 +63,8 @@ namespace qgl {
 		
 		void PrintErrors();
 		
-		inline const std::vector<Timings>& GetTimings() const { return renderStageComposer.GetTimings(); }
-		inline uint64_t CountNanosecondsOnCpu() const { return renderStageComposer.CountNanosecondsOnCpu(); }
-		inline uint64_t CountTotalNanosecondsOnCpu() const { return renderStageComposer.CountTotalNanosecondsOnCpu(); }
+		inline const std::vector<StageTiming> GetTimings() const { return renderStageComposer.GetTimings(); }
+		inline double CountCpuTime() const { return renderStageComposer.GetTotalCpuTime(); }
 		
 		void EnableProfiling(bool value);
 		bool GetProfiling() const;
