@@ -20,41 +20,30 @@ public:
 			std::shared_ptr<gl::VBO> ids, uint32_t count);
 };
 
-enum StageExecutionPolicy : uint32_t {
-	EXEC_GLOBAL1 = 1,
-	EXEC_GLOBAL2 = 2,
-	EXEC_GLOBAL3 = 3,
-	EXEC_CAMERA = 4,
-	EXEC_FBO_RENDER_PASS_1 = 5,
-	EXEC_FBO_RENDER_PASS_2 = 6,
+enum StageTypeFlags : uint32_t {
 	/*
-	 * Execution of EXEC_OCCLUSION_PASS starts exactly after all materials
-	 * finish it's EXEC_FBO_RENDER_PASS_2 stage for current camera.
+	 * Waits for aother materials/pipelines to finish all stage before stageId
+	 * for current camera.
 	 */
-	EXEC_OCCLUSION_PASS = 7,
-	/*
-	 * Execution of EXEC_FBO_RENDER_PASS_3 starts exactly after all materials
-	 * finish it's EXEC_OCCLUSION_PASS stage for current camera.
-	 */
-	EXEC_FBO_RENDER_PASS_3 = 8,
-	/*
-	 * Execution of EXEC_FBO_RENDER_PASS_4 starts exactly after all materials
-	 * finish it's EXEC_FBO_RENDER_PASS_3 stage for current camera.
-	 */
-	EXEC_FBO_RENDER_PASS_4 = 9,
+	STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA = 1,
+	STAGE_REQUIRE_BOUND_FBO = 2,
 };
 
-const static bool stageExecutionPolicyWaitForAllMaterialsToFinishPreviousForCurrentCamera[] = {
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	false,
-	true,
-	true,
-	true,
+enum StageOrder : uint32_t {
+	STAGE_GLOBAL = 0,
+	STAGE_CAMERA = 4,
+	
+	STAGE_1_RENDER_PASS_1 = 8 | STAGE_REQUIRE_BOUND_FBO,
+	STAGE_2_OCCLUSION_PASS_1 = 8 | STAGE_REQUIRE_BOUND_FBO | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+	STAGE_3_RENDER_PASS_2 = 12 | STAGE_REQUIRE_BOUND_FBO,
+	STAGE_4_OCCLUSION_PASS_2 = 12 | STAGE_REQUIRE_BOUND_FBO | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+	STAGE_5_RENDER_PASS_3 = 16 | STAGE_REQUIRE_BOUND_FBO,
+	
+	STAGE_RENDER_PASS_WATER = 64 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+	
+	STAGE_RENDER_PASS_TRANSLUCENT = 128 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+	
+	STAGE_POST_PROCESS = 256 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
 };
 
 class PipelineStage {
@@ -62,7 +51,7 @@ public:
 	std::function<void()> executeFunction;
 	std::function<bool()> canExecute;
 	std::shared_ptr<class Pipeline> pipeline;
-	StageExecutionPolicy executionPolicy;
+	StageOrder executionPolicy;
 };
 
 

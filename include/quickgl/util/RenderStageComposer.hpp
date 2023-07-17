@@ -19,65 +19,127 @@
 #ifndef QUICKGL_RENDER_STAGE_COMPOSER_HPP
 #define QUICKGL_RENDER_STAGE_COMPOSER_HPP
 
+#include <cinttypes>
+
 #include <unordered_map>
 #include <string>
+#include <chrono>
 #include <vector>
-
-#include "../pipelines/Pipeline.hpp"
+#include <map>
+#include <set>
+#include <memory>
+#include <functional>
 
 namespace qgl {
+	class Camera;
+	class Pipeline;
 	
-	struct Timings {
-		std::shared_ptr<Pipeline> pipeline;
-		std::shared_ptr<struct Stage> stage;
-		std::shared_ptr<Camera> camera;
-		uint64_t measuredTimeNanoseconds;
+	enum StageTypeFlags : uint32_t {
+		/*
+		 * Waits for aother materials/pipelines to finish all stage before stageId
+		 * for current camera.
+		 */
+		STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA = 1,
+		STAGE_REQUIRE_BOUND_FBO = 2,
 	};
-	
-	enum StageType {
-		// any next stage cannot have lower stage type then current
-		STAGE_GLOBAL = 1,
-		STAGE_PER_CAMERA = 2,
-		STAGE_PER_CAMERA_FBO = 3,
+
+	enum StageOrder : uint32_t {
+		STAGE_GLOBAL = 0,
+		STAGE_CAMERA = 4,
+		
+		STAGE_1_RENDER_PASS_1 = 8 | STAGE_REQUIRE_BOUND_FBO,
+		STAGE_2_OCCLUSION_PASS_1 = 8 | STAGE_REQUIRE_BOUND_FBO | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+		STAGE_3_RENDER_PASS_2 = 12 | STAGE_REQUIRE_BOUND_FBO,
+		STAGE_4_OCCLUSION_PASS_2 = 12 | STAGE_REQUIRE_BOUND_FBO | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+		STAGE_5_RENDER_PASS_3 = 16 | STAGE_REQUIRE_BOUND_FBO,
+		
+		STAGE_RENDER_PASS_WATER = 64 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+		
+		STAGE_RENDER_PASS_TRANSLUCENT = 128 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
+		
+		STAGE_POST_PROCESS = 256 | STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA,
 	};
 	
 	struct Stage {
-		Stage() = default;
+// 		Stage() = default;
 		Stage(Stage&&) = default;
-		Stage(Stage&) = default;
-		Stage(const Stage&) = default;
-		Stage& operator=(Stage&&) = default;
-		Stage& operator=(Stage&) = default;
-		Stage& operator=(const Stage&) = default;
-		Stage(std::string name, StageType t,
-				Pipeline::StageFunction renderFunction,
-				std::function<bool(std::shared_ptr<Camera>)> canBeContinued=nullptr) :
-				stageName(name), stageType(t), renderFunction(renderFunction),
-				canBeContinued(canBeContinued) {
+		Stage(Stage&) = delete;
+		Stage(const Stage&) = delete;
+		Stage& operator=(Stage&&) = delete; // default;
+		Stage& operator=(Stage&) = delete;
+		Stage& operator=(const Stage&) = delete;
+		
+		static bool EmptyCanExecute(std::shared_ptr<Camera>);
+		
+		inline Stage(
+				std::string name,
+				StageOrder stageOrder,
+				std::shared_ptr<Pipeline> pipeline,
+				std::function<void(std::shared_ptr<Camera>)> taskFunction,
+				std::function<bool(std::shared_ptr<Camera>)> canExecute=EmptyCanExecute
+				) :
+					name(name),
+					executionPolicy(stageOrder),
+					task(taskFunction),
+					canExecute(canExecute),
+					pipeline(pipeline) {
 		}
 		
-		std::string stageName;
-		StageType stageType;
-		Pipeline::StageFunction renderFunction;
-		std::function<bool(std::shared_ptr<Camera>)> canBeContinued;
-		std::shared_ptr<Stage> nextStage;
-		std::shared_ptr<Pipeline> pipeline;
+		const std::string name;
+		const StageOrder executionPolicy;
+		const std::function<void(std::shared_ptr<Camera>)> task;
+		const std::function<bool(std::shared_ptr<Camera>)> canExecute;
+		const std::shared_ptr<Pipeline> pipeline;
 	};
 	
-	struct StageCameraPair {
-		StageCameraPair() = default;
-		StageCameraPair(StageCameraPair&&) = default;
-		StageCameraPair(StageCameraPair&) = default;
-		StageCameraPair(const StageCameraPair&) = default;
-		StageCameraPair& operator=(StageCameraPair&&) = default;
-		StageCameraPair& operator=(StageCameraPair&) = default;
-		StageCameraPair& operator=(const StageCameraPair&) = default;
-		StageCameraPair(std::shared_ptr<Stage> stage,
-				std::shared_ptr<Camera> camera) :
-				stage(stage), camera(camera) {
-		}
-		std::shared_ptr<Stage> stage;
+	struct StageTiming {
+		StageTiming() = default;
+		StageTiming(StageTiming&&) = default;
+		StageTiming(StageTiming&) = default;
+		StageTiming(const StageTiming&) = default;
+		StageTiming& operator=(StageTiming&&) = default;
+		StageTiming& operator=(StageTiming&) = default;
+		StageTiming& operator=(const StageTiming&) = default;
+		
+		std::shared_ptr<struct Stage> stage;
 		std::shared_ptr<Camera> camera;
+		double measuredSeconds;
+		decltype(std::chrono::steady_clock::now()) start;
+		
+		void Start(std::shared_ptr<Stage> stage);
+		void End();
+	};
+	
+	class PipelineStagesScheduler {
+	public:
+		
+		void Destroy();
+		
+		void AddStage(std::shared_ptr<Stage> stage);
+		
+		bool HasMoreStages();
+		bool CanExecuteNextStage();
+		void ExecuteNextStage();
+		
+		void RestartExecution(
+				class RenderStageComposer* renderStageComposer);
+		
+		std::shared_ptr<Stage> GetNextStage();
+		
+		std::shared_ptr<Camera> GetCurrentCamera() { return currentCamera; }
+		
+	public:
+		
+		uint32_t nextGlobalStage;
+		uint32_t nextPerCameraStage;
+		
+		std::shared_ptr<Camera> currentCamera;
+		uint32_t currentCameraId;
+		
+		std::vector<std::shared_ptr<Stage>> globalStages;
+		std::vector<std::shared_ptr<Stage>> perCameraStages;
+		
+		RenderStageComposer* renderStageComposer;
 	};
 	
 	class RenderStageComposer final {
@@ -85,10 +147,13 @@ namespace qgl {
 		
 		RenderStageComposer();
 		
-		void AddPipelineStages(std::shared_ptr<Pipeline> pipeline);
+		void AddPipeline(std::shared_ptr<Pipeline> pipeline);
+		void AddCamera(std::shared_ptr<Camera> camera);
+		void RemoveCamera(std::shared_ptr<Camera> camera);
 		
-		void RestartStages(std::vector<std::shared_ptr<Camera>> cameras);
+		void RenderAsLast(std::shared_ptr<Camera> camera);
 		
+		void ResetExecution();
 		/* 
 		 * return false when nothing was updated (no ::canBeContinue() returned
 		 * true.
@@ -96,40 +161,32 @@ namespace qgl {
 		bool ContinueStages();
 		bool HasAnyStagesLeft();
 		
-		void Clear();
+		bool CanExecuteSyncStage(uint32_t cameraId, StageOrder stageOrder);
 		
-		inline const std::vector<Timings>& GetTimings() const { return timings; }
-		inline uint64_t CountNanosecondsOnCpu() const { return sumTimeCount; }
-		inline uint64_t CountTotalNanosecondsOnCpu() const { return totalTimeCountNs; }
-		void PrintStagesStructure();
+		std::shared_ptr<Camera> GetCameraByIndex(uint32_t id);
 		
 		void SetGlFinishInEveryStageToProfile(bool value);
 		
-	private:
-		
-		bool ContinueStagesGlobal();
-		bool ContinueStagesPerCamera();
-		bool ContinueStagesPerFbo();
+		std::vector<StageTiming> GetTimings() const;
+		double GetTotalCpuTime() const;
 		
 	private:
 		
-		bool enableGlFinishInEveryStageToProfile = false;
+		std::shared_ptr<Camera> lastRenderCamera;
 		
-		uint64_t sumTimeCount;
-		uint64_t totalTimeCountNs;
-		std::vector<Timings> timings;
+		bool enableGlFinishInEveryStageToProfile;
 		
-		std::unordered_map<std::shared_ptr<Camera>,
-			std::shared_ptr<Camera>> camerasRenderingOrder;
+		std::vector<StageTiming> timings;
+		double totalCpuTime;
 		
-		std::vector<std::shared_ptr<Stage>> currentStagesGlobal;
-		std::vector<StageCameraPair> currentStagesPerCamera;
-		std::vector<StageCameraPair> currentStagesPerFbo;
+		std::map<uint32_t,
+			std::map<std::shared_ptr<Pipeline>,
+				StageOrder>> mapCurrentCameraIdToPipelines;
 		
-		std::unordered_map<std::shared_ptr<Pipeline>,
-			std::shared_ptr<Stage>> firstStageForCameraPerPipeline;
+		std::vector<std::shared_ptr<Camera>> cameras;
+		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		
-		std::vector<std::shared_ptr<Stage>> stagingPipelineTemplate;
+		bool hasAnyStagesLeft;
 	};
 }
 
