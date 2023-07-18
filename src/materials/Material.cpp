@@ -40,15 +40,5 @@ namespace qgl {
 	void Material::Destroy() {
 		engine = nullptr;
 	}
-	
-	std::shared_ptr<gl::VBO> Material::GenerateIndirectDrawBuffer(
-			std::shared_ptr<gl::VBO> entitiesToRender,
-			uint32_t entitiesCount) {
-		throw "Material::GenerateIndirectDrawBuffer() is not implemented yet.";
-	}
-	
-	std::shared_ptr<gl::Shader> Material::GetIndirectDrawBufferGenerator() {
-		throw "Material::GetIndirectDrawBufferGenerator() is not implemented yet.";
-	}
 }
 

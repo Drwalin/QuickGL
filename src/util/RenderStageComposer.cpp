@@ -43,6 +43,12 @@ namespace qgl {
 	
 	
 	
+	bool Stage::EmptyCanExecute(std::shared_ptr<Camera>) {
+		return true;
+	}
+	
+	
+	
 	void PipelineStagesScheduler::Init(std::shared_ptr<Pipeline> pipeline) {
 		this->pipeline = pipeline;
 	}
@@ -113,6 +119,9 @@ namespace qgl {
 					nextPerCameraStage = 0;
 					currentCamera = renderStageComposer
 						->GetCameraByIndex(currentCameraId);
+					if(currentCamera == nullptr) {
+						nextPerCameraStage = perCameraStages.size();
+					}
 				}
 			} else if(nextPerCameraStage < perCameraStages.size()) {
 				++nextPerCameraStage;
@@ -121,6 +130,9 @@ namespace qgl {
 					nextPerCameraStage = 0;
 					currentCamera = renderStageComposer
 						->GetCameraByIndex(currentCameraId);
+					if(currentCamera == nullptr) {
+						nextPerCameraStage = perCameraStages.size();
+					}
 				}
 			}
 		}
@@ -163,14 +175,19 @@ namespace qgl {
 	}
 	
 	void RenderStageComposer::RemoveCamera(std::shared_ptr<Camera> camera) {
-		cameras.erase(std::find(cameras.begin(), cameras.end(), camera));
+		for(int i=0; i<cameras.size(); ++i) {
+			if(cameras[i] == camera) {
+				cameras.erase(cameras.begin()+1);
+				return;
+			}
+		}
 	}
 	
 	void RenderStageComposer::RenderAsLast(std::shared_ptr<Camera> camera) {
 		lastRenderCamera = camera;
 		if(camera != nullptr) {
 			RemoveCamera(camera);
-			AddCamera(camera);
+			cameras.push_back(camera);
 		}
 	}
 	
@@ -264,6 +281,16 @@ namespace qgl {
 	
 	double RenderStageComposer::GetTotalCpuTime() const {
 		return totalCpuTime;
+	}
+		
+	void RenderStageComposer::Destroy() {
+		lastRenderCamera = nullptr;
+		timings.clear();
+		
+		mapCurrentCameraIdToPipelines.clear();
+		
+		cameras.clear();
+		pipelines.clear();
 	}
 }
 

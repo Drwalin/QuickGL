@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <memory>
+
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
@@ -24,10 +26,11 @@
 
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/IndirectDrawBufferGenerator.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 
 #include "../../include/quickgl/materials/MaterialStatic.hpp"
-#include <memory>
 
 namespace qgl {
 	MaterialStatic::MaterialStatic(std::shared_ptr<PipelineStatic> pipeline) :
@@ -85,20 +88,34 @@ namespace qgl {
 	
 	void MaterialStatic::RenderPass(std::shared_ptr<Camera> camera,
 			std::shared_ptr<gl::VBO> entitiesToRender,
+			gl::VBO& meshInfo,
 			uint32_t entitiesCount) {
 		if(entitiesCount == 0) {
 			return;
 		}
-	
+		
 		// draw with indirect draw buffer
 		renderShader->Use();
 		glm::mat4 pv = camera->GetPerspectiveMatrix()
 			* camera->GetViewMatrix();
 		renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
-		vao->BindIndirectBuffer(*indirectDrawBuffer);
-		vao->DrawMultiElementsIndirect(nullptr,
-				entitiesCount);
-		vao->Unbind();
+		
+		for(uint32_t offset=0; offset<entitiesCount;) {
+
+			uint32_t generatedEntities = 0;
+			std::shared_ptr<gl::VBO> indirectBuffer
+				= engine->GetIndirectDrawBufferGenerator()
+					->Generate(*entitiesToRender, meshInfo, entitiesCount-offset,
+							offset, generatedEntities);
+			offset += generatedEntities;
+			
+			renderShader->Use();
+			vao->BindIndirectBuffer(*indirectBuffer);
+			vao->DrawMultiElementsIndirect(nullptr,
+					generatedEntities);
+			vao->Unbind();
+		}
+		gl::Shader::Unuse();
 	}
 	
 	const char* MaterialStatic::VERTEX_SHADER_SOURCE = R"(

@@ -324,12 +324,12 @@ int main() {
 		gl::Flush();
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
-		double time_from_frame_begin = 
+		
+		qgl::Log::sync = true;
+		QUICKGL_LOG("end frame duration: %.3f ms",
 				std::chrono::duration_cast<
 					std::chrono::duration<double>>(
-							e1 - frame_start_timepoint).count();
-		qgl::Log::sync = true;
-		QUICKGL_LOG("end frame duration: %.3f ms", time_from_frame_begin*1000.0f);
+							e1 - frame_start_timepoint).count()*1000.0f);
 		if(pressedSomething)
 			QUICKGL_LOG("finished frame had something pressed");
 
@@ -369,31 +369,28 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage: %6.lu.%3.3lu us \t  %16s | %s",
-						t.measuredTimeNanoseconds / 1000lu,
-						t.measuredTimeNanoseconds % 1000lu,
-						t.pipeline->GetPipelineName().c_str(),
-						t.stage->stageName.c_str());
+				ImGui::Text("Stage: %6.3f us \t  %16s | %s",
+						t.measuredSeconds*1000000.0,
+						t.stage->pipeline->GetName().c_str(),
+						t.stage->name.c_str());
 			}
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);
-			ImGui::Text("Cpu time spent on each task separately sum: %6.lu.%6.6lu ms",
-					engine->CountNanosecondsOnCpu()/1000000,
-					engine->CountNanosecondsOnCpu()%1000000);
-			ImGui::Text("Cpu total time spent in RenderStageComposer::ContinueStages(): %6.lu.%6.6lu ms",
-					engine->CountTotalNanosecondsOnCpu()/1000000,
-					engine->CountTotalNanosecondsOnCpu()%1000000);
+			ImGui::Text("Cpu time spent on each task separately sum: %6.6f ms",
+					engine->CountCpuTime()*1000000);
 		ImGui::End();
 		
 		gl::Flush();
 		
 		// swap buffers
 		engine->SwapBuffers();
+		gl::Flush();
 		engine->PrintErrors();
 		
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
 		if(engine->GetProfiling()) {
 			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+			gl::Flush();
 			gl::Sync sync;
 			sync.StartFence();
 			while(sync.IsDone() == false) {
@@ -402,6 +399,7 @@ int main() {
 			sync.Destroy();
 			gl::Finish();
 		}
+		gl::Finish();
 	}
 	
 	}

@@ -51,6 +51,7 @@ namespace qgl {
 		
 		virtual void RenderPass(std::shared_ptr<Camera> camera,
 				std::shared_ptr<gl::VBO> entitiesToRender,
+				gl::VBO& meshInfo,
 				uint32_t entitiesCount) override;
 		
 	private:

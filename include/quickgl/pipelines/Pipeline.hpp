@@ -59,7 +59,7 @@ namespace qgl {
 		virtual void Init(); // init buffers and prepare stages
 		virtual void Destroy();
 
-		PipelineStagesScheduler& GetStageScheduler();
+		inline  PipelineStagesScheduler& GetStageScheduler() { return stagesScheduler; }
 		
 		void SetPipelineId(uint32_t newId);
 		uint32_t GetPipelineId() const;

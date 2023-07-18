@@ -16,7 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../include/quickgl/GlobalEntityManager.hpp"
+#include "../include/quickgl/pipelines/Pipeline.hpp"
+
+#include "../include/quickgl/GlobalEntityManager.hpp"
 
 namespace qgl {
 	GlobalEntityManager::GlobalEntityManager(std::shared_ptr<Engine> engine) :

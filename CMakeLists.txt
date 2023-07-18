@@ -18,10 +18,12 @@ include_directories(./OpenGLWrapper/include)
 
 aux_source_directory(./include/quickgl/ header_files)
 aux_source_directory(./include/quickgl/util/ header_files_util)
+aux_source_directory(./include/quickgl/materials/ header_files_materials)
 aux_source_directory(./include/quickgl/pipelines/ header_files_pipelines)
 aux_source_directory(./include/quickgl/cameras/ header_files_cameras)
 aux_source_directory(./src/ source_files)
 aux_source_directory(./src/util/ source_files_util)
+aux_source_directory(./src/materials/ source_files_materials)
 aux_source_directory(./src/pipelines/ source_files_pipelines)
 aux_source_directory(./src/cameras/ source_files_cameras)
 
@@ -35,6 +37,8 @@ add_library(QuickGL SHARED
 	${source_files}
 	${header_files_util}
 	${source_files_util}
+	${header_files_materials}
+	${source_files_materials}
 	${header_files_pipelines}
 	${source_files_pipelines}
 	${header_files_cameras}
