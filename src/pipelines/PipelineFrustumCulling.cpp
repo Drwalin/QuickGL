@@ -29,6 +29,8 @@
 #include "../../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/Mesh.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/IndirectDrawBufferGenerator.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
 
@@ -81,6 +83,10 @@ namespace qgl {
 				frustumCullingShader
 					->GetUniformLocation("objectsPerInvocation"),
 				objectsPerInvocation);
+		
+		indirectDrawBuffer = std::make_shared<gl::VBO>(20,
+				gl::DRAW_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
+		indirectDrawBuffer->Init(1024);
 		
 		stagesScheduler.AddStage(
 			"Update frustum culling data",
@@ -157,7 +163,6 @@ namespace qgl {
 			});
 		}
 
-		{
 		stagesScheduler.AddStage(
 			"Fetching count of entities in frustum view to CPU",
 			STAGE_CAMERA,
@@ -170,11 +175,33 @@ namespace qgl {
 			
 				// fetch number of entities to render after culling
 				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
+				
+				if(indirectDrawBuffer->GetVertexCount()
+						< frustumCulledEntitiesCount) {
+				indirectDrawBuffer->Generate(nullptr,
+						frustumCulledEntitiesCount | 0xFFF);
+				}
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
-		}
+		
+		stagesScheduler.AddStage(
+			"Generating indirect draw command buffer",
+			STAGE_CAMERA,
+			[this](std::shared_ptr<Camera> camera) {
+				
+				engine->GetIndirectDrawBufferGenerator()->Generate(
+						*frustumCulledIdsBuffer,
+						perEntityMeshInfo.Vbo(),
+						*indirectDrawBuffer,
+						frustumCulledEntitiesCount,
+						0);
+						
+				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
+						gl::SHADER_STORAGE_BARRIER_BIT |
+						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
+			});
 	}
 	
 	void PipelineFrustumCulling::Destroy() {

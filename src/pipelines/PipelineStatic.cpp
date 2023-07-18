@@ -59,13 +59,11 @@ namespace qgl {
 			"Render static entities",
 			STAGE_1_RENDER_PASS_1,
 			[=](std::shared_ptr<Camera> camera) {
-				this->material->RenderPass(camera,
-						frustumCulledIdsBuffer,
-						perEntityMeshInfo.Vbo(),
+				this->material->RenderPassIndirect(camera,
+						*indirectDrawBuffer,
 						frustumCulledEntitiesCount
 						);
-			}
-		);
+			});
 	}
 	
 	void PipelineStatic::Destroy() {

@@ -49,9 +49,8 @@ namespace qgl {
 		
 		virtual std::shared_ptr<Pipeline> GetPipeline() override;
 		
-		virtual void RenderPass(std::shared_ptr<Camera> camera,
-				std::shared_ptr<gl::VBO> entitiesToRender,
-				gl::VBO& meshInfo,
+		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
+				gl::VBO& indirectBuffer,
 				uint32_t entitiesCount) override;
 		
 	private:
