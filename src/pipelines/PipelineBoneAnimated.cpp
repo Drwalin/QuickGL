@@ -32,28 +32,29 @@
 #include "../../include/quickgl/AnimatedMeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 #include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/materials/Material.hpp"
 
-#include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
+#include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
 
 namespace qgl {
-	PipelineAnimated::PipelineAnimated(std::shared_ptr<Engine> engine) :
+	PipelineBoneAnimated::PipelineBoneAnimated(std::shared_ptr<Engine> engine) :
 		PipelineFrustumCulling(engine), perEntityAnimationState(engine) {
 	}
 	
-	PipelineAnimated::~PipelineAnimated() {
+	PipelineBoneAnimated::~PipelineBoneAnimated() {
 	}
 	
-	std::string PipelineAnimated::GetPipelineName() const {
-		return "PipelineAnimated";
+	std::string PipelineBoneAnimated::GetName() const {
+		return "PipelineBoneAnimated";
 	}
 	
-	uint32_t PipelineAnimated::CreateEntity() {
+	uint32_t PipelineBoneAnimated::CreateEntity() {
 		uint32_t entity = PipelineFrustumCulling::CreateEntity();
 		SetAnimationState(entity, 0, 0, false, 0, false);
 		return entity;
 	}
 	
-	void PipelineAnimated::SetAnimationState(uint32_t entityId,
+	void PipelineBoneAnimated::SetAnimationState(uint32_t entityId,
 			uint32_t animationId, float timeOffset, bool enableUpdateTime,
 			uint32_t animationIdAfter, bool continueNextAnimation) {
 		entityId = GetEntityOffset(entityId);
@@ -69,56 +70,24 @@ namespace qgl {
 			}, entityId);
 	}
 	
-	void PipelineAnimated::Initialize() {
-		PipelineFrustumCulling::Initialize();
+	void PipelineBoneAnimated::Init() {
+		PipelineFrustumCulling::Init();
 		
 		perEntityAnimationState.Init();
-		
-		// init shaders
-		renderShader = std::make_unique<gl::Shader>();
-		if(renderShader->Compile(VERTEX_SHADER_SOURCE, "", FRAGMENT_SHADER_SOURCE))
-			exit(31);
 		
 		updateAnimationShader = std::make_unique<gl::Shader>();
 		if(updateAnimationShader->Compile(UPDATE_ANIMATION_SHADER_SOURCE))
 			exit(31);
 		
-		// init vao
-		vao = std::make_unique<gl::VAO>(gl::TRIANGLES);
-		vao->Init();
-		gl::VBO& vbo = meshManager->GetVBO();
-		
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_pos"), 3, gl::FLOAT, false, 0, 0);
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_color"), 4, gl::UNSIGNED_BYTE, true, 12, 0);
-		vao->SetAttribPointer(vbo, renderShader->GetAttributeLocation("in_normal"), 4, gl::BYTE, true, 16, 0);
-		
-		vao->SetAttribPointer(     vbo, renderShader->GetAttributeLocation("in_weight"), 4, gl::UNSIGNED_BYTE, true, 20, 0);
-		vao->SetIntegerAttribPointer(vbo, renderShader->GetAttributeLocation("in_bones"), 4, gl::UNSIGNED_BYTE, 24, 0);
-		
-		// init animation state vertex attribute
-		vao->SetIntegerAttribPointer(perEntityAnimationState.Vbo(),
-				renderShader->GetAttributeLocation("in_animationState"),
-				4, gl::UNSIGNED_INT, 12, 1);
-		
-		// init model matrix
-		gl::VBO& modelVbo = transformMatrices.Vbo();
-		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+0, 4, gl::FLOAT, false, 0, 1);
-		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+1, 4, gl::FLOAT, false, 16, 1);
-		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+2, 4, gl::FLOAT, false, 32, 1);
-		vao->SetAttribPointer(modelVbo, renderShader->GetAttributeLocation("model")+3, 4, gl::FLOAT, false, 48, 1);
-		vao->BindElementBuffer(meshManager->GetEBO(), gl::UNSIGNED_INT);
-		
 		entityBufferManager
 			->AddManagedSparselyUpdateVBO(&perEntityAnimationState);
-	}
-	
-	void PipelineAnimated::FlushDataToGPU() {
-		perEntityAnimationState.UpdateVBO();
-		PipelineFrustumCulling::FlushDataToGPU();
-	}
-	
-	void PipelineAnimated::GenerateRenderStages(std::vector<Stage>& stages) {
-		PipelineFrustumCulling::GenerateRenderStages(stages);
+		
+		stagesScheduler.AddStage(
+			"Update ID manager data",
+			STAGE_UPDATE_DATA,
+			[this](std::shared_ptr<Camera>) {
+				perEntityAnimationState.UpdateVBO();
+			});
 		
 		{
 		const int32_t ENTITIES_COUNT_LOCATION =
@@ -128,19 +97,7 @@ namespace qgl {
 		const int32_t TIME_STAMP_LOCATION =
 			updateAnimationShader->GetUniformLocation("timeStamp");
 		
-		int loc = -1;
-		{
-			for(int i=0; i<stages.size(); ++i) {
-				if(stages[i].stageType != STAGE_GLOBAL) {
-					loc = i;
-					break;
-				}
-			}
-			if(loc < 0)
-				loc = stages.size();
-		}
-		printf(" found location for update animations: %i\n", loc);
-		stages.emplace(stages.begin()+loc,
+		stagesScheduler.AddStage(
 			"Update animation info",
 			STAGE_GLOBAL,
 			[=](std::shared_ptr<Camera> camera) {
@@ -165,31 +122,18 @@ namespace qgl {
 			});
 		}
 		
-		{
-		// get shader uniform locations
-		const int32_t PROJECTION_VIEW_LOCATION =
-			renderShader->GetUniformLocation("projectionView");
-		
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Render bone animated entities",
-			STAGE_PER_CAMERA_FBO,
+			STAGE_1_RENDER_PASS_1,
 			[=](std::shared_ptr<Camera> camera) {
-				// draw with indirect draw buffer
-				renderShader->Use();
-				
-				glm::mat4 pv = camera->GetPerspectiveMatrix()
-					* camera->GetViewMatrix();
-				renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
-				vao->BindIndirectBuffer(*indirectDrawBuffer);
-				
-				vao->DrawMultiElementsIndirect(nullptr,
-						frustumCulledEntitiesCount);
-				vao->Unbind();
+				this->material->RenderPass(camera,
+						entitiesBuffer,
+						frustumCulledEntitiesCount
+						);
 			});
-		}
 	}
 	
-	std::shared_ptr<MeshManager> PipelineAnimated::CreateMeshManager() {
+	std::shared_ptr<MeshManager> PipelineBoneAnimated::CreateMeshManager() {
 		static constexpr uint32_t stride
 			= 3*sizeof(float)   // pos
 			+ 4*sizeof(uint8_t) // color
@@ -220,92 +164,7 @@ namespace qgl {
 		return animatedMeshManager;
 	}
 	
-	const char* PipelineAnimated::VERTEX_SHADER_SOURCE = R"(
-#version 420 core
-
-in vec3 in_pos;
-in vec4 in_color;
-in vec3 in_normal;
-in uvec4 in_bones;
-in vec4 in_weight;
-
-in uvec4 in_animationState; // {firstAnimationMatrixId, secondAnimationMatrixId,
-                            // interpolactionFactor}
-in mat4 model;
-
-uniform mat4 projectionView;
-uniform sampler2DArray bones;
-
-out vec4 color;
-out vec3 normal;
-out vec4 pos;
-
-const uint BONE_FRAMES_W = 64;
-const uint BONE_FRAMES_H = 16384;
-
-mat4 GetBonePose(uint frameStart, uint bone);
-mat4 GetFrameMatrix(uint frameStart);
-mat4 GetPoseBoneMatrix();
-
-void main() {
-	mat4 poseMat = GetPoseBoneMatrix();
-	pos = model * poseMat * vec4(in_pos, 1);
-	gl_Position = projectionView * pos;
-	normal = normalize((model * poseMat * vec4(in_normal, 0)).xyz);
-	color = in_color;
-}
-
-mat4 GetPoseBoneMatrix() {
-	mat4 poseA = GetFrameMatrix(in_animationState.x); 
-	mat4 poseB = GetFrameMatrix(in_animationState.y); 
-	float factorA = uintBitsToFloat(in_animationState.z);
-	float factorB = 1.0 - factorA;
-	return (poseA * factorB) + (poseB * factorA);
-}
-
-mat4 GetFrameMatrix(uint frameStart) {
-	return
-		(GetBonePose(frameStart, in_bones[0])) * in_weight[0]
-		+ (GetBonePose(frameStart, in_bones[1]) * in_weight[1])
-		+ (GetBonePose(frameStart, in_bones[2]) * in_weight[2])
-		+ (GetBonePose(frameStart, in_bones[3]) * in_weight[3])
-	;
-}
-
-mat4 GetBonePose(uint frameStart, uint bone) {
-	uint id = (frameStart+bone)*4;
-	ivec3 p;
-	p.x = int(id % BONE_FRAMES_W);
-	id = id / BONE_FRAMES_W;
-	p.y = int(id % BONE_FRAMES_H);
-	id = id / BONE_FRAMES_H;
-	p.z = int(id);
-	return mat4(texelFetch(bones, p+ivec3(0,0,0), 0),
-				texelFetch(bones, p+ivec3(1,0,0), 0),
-				texelFetch(bones, p+ivec3(2,0,0), 0),
-				texelFetch(bones, p+ivec3(3,0,0), 0));
-}
-)";
-	
-	const char* PipelineAnimated::FRAGMENT_SHADER_SOURCE = R"(
-#version 420 core
-
-in vec4 color;
-in vec3 normal;
-in vec4 pos;
-
-layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 NormalColor;
-layout(location = 2) out vec4 PosColor;
-
-void main() {
-	FragColor = color;
-	NormalColor = vec4(normal, 0);
-	PosColor = pos;
-}
-)";
-	
-	const char* PipelineAnimated::UPDATE_ANIMATION_SHADER_SOURCE = R"(
+	const char* PipelineBoneAnimated::UPDATE_ANIMATION_SHADER_SOURCE = R"(
 #version 420 core
 #extension GL_ARB_compute_shader : require
 #extension GL_ARB_shader_storage_buffer_object : require
