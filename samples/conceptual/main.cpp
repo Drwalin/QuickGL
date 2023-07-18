@@ -384,7 +384,6 @@ int main() {
 		
 		// swap buffers
 		engine->SwapBuffers();
-		gl::Flush();
 		engine->PrintErrors();
 		
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
@@ -398,7 +397,6 @@ int main() {
 			}
 			sync.Destroy();
 		}
-		gl::Finish();
 	}
 	
 	}
