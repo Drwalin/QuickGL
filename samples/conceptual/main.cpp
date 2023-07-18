@@ -390,14 +390,13 @@ int main() {
 		// optionally sync CPU with all gui GPU draw calls and buffer swap
 		if(engine->GetProfiling()) {
 			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
-			gl::Flush();
 			gl::Sync sync;
 			sync.StartFence();
 			while(sync.IsDone() == false) {
+				gl::Flush();
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 			sync.Destroy();
-			gl::Finish();
 		}
 		gl::Finish();
 	}

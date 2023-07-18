@@ -89,7 +89,7 @@ namespace qgl {
 			->AddManagedSparselyUpdateVBO(&perEntityAnimationState);
 		
 		stagesScheduler.AddStage(
-			"Update ID manager data",
+			"Update animation data",
 			STAGE_UPDATE_DATA,
 			[this](std::shared_ptr<Camera>) {
 				perEntityAnimationState.UpdateVBO();
@@ -104,7 +104,7 @@ namespace qgl {
 			updateAnimationShader->GetUniformLocation("timeStamp");
 		
 		stagesScheduler.AddStage(
-			"Update animation info",
+			"Update animation state",
 			STAGE_GLOBAL,
 			[=](std::shared_ptr<Camera> camera) {
 				updateAnimationShader->Use();
