@@ -369,14 +369,14 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage: %10.3f us \t  %32s | %s",
+				ImGui::Text("Stage: %10.3f us \t  %24s | %s",
 						t.measuredSeconds*1000000.0,
 						t.stage->pipeline->GetName().c_str(),
 						t.stage->name.c_str());
 			}
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);
-			ImGui::Text("Cpu time spent on each task separately sum: %6.6f ms",
+			ImGui::Text("Cpu time spent on each task separately sum: %6.6f us",
 					engine->CountCpuTime()*1000000);
 		ImGui::End();
 		

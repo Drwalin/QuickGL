@@ -104,8 +104,8 @@ namespace qgl {
 		vao->BindIndirectBuffer(indirectBuffer);
 		vao->DrawMultiElementsIndirect(nullptr, entitiesCount);
 			
-		vao->Unbind();
 		gl::Shader::Unuse();
+		vao->Unbind();
 	}
 	
 	const char* MaterialStatic::VERTEX_SHADER_SOURCE = R"(
