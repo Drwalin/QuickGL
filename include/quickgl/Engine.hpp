@@ -32,6 +32,7 @@ namespace qgl {
 	class DeltaVboManager;
 	class MoveVboManager;
 	class GlobalEntityManager;
+	class IndirectDrawBufferGenerator;
 	
 	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
@@ -57,6 +58,8 @@ namespace qgl {
 		
 		uint32_t GetEntitiesCount() const;
 		
+		void AddCamera(std::shared_ptr<Camera> camera);
+		void RemoveCamera(std::shared_ptr<Camera> camera);
 		void SetMainCamera(std::shared_ptr<Camera> camera);
 		
 		inline InputManager& GetInputManager() { return inputManager; }
@@ -73,6 +76,7 @@ namespace qgl {
 		std::shared_ptr<MoveVboManager> GetMoveVboManager();
 		
 		std::shared_ptr<GlobalEntityManager> GetGlobalEntityManager();
+		std::shared_ptr<IndirectDrawBufferGenerator> GetIndirectDrawBufferGenerator();
 		
 	protected:
 		
@@ -85,11 +89,14 @@ namespace qgl {
 		
 		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		std::shared_ptr<Camera> mainCamera;
+		std::set<std::shared_ptr<Camera>> cameras;
 		
 		std::shared_ptr<DeltaVboManager> deltaVboManager;
 		std::shared_ptr<MoveVboManager> moveVboManager;
 		
 		std::shared_ptr<GlobalEntityManager> globalEntityManager;
+		
+		std::shared_ptr<IndirectDrawBufferGenerator> indirectDrawBufferGenerator;
 	};
 }
 

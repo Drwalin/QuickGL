@@ -32,7 +32,7 @@
 #include "../../include/quickgl/AnimatedMeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 #include "../../include/quickgl/Engine.hpp"
-#include "../../include/quickgl/materials/Material.hpp"
+#include "../../include/quickgl/materials/MaterialBoneAnimated.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
 
@@ -71,9 +71,15 @@ namespace qgl {
 	}
 	
 	void PipelineBoneAnimated::Init() {
+		material = std::make_shared<MaterialBoneAnimated>(
+				std::dynamic_pointer_cast<PipelineBoneAnimated>(
+					shared_from_this()));
+		
 		PipelineFrustumCulling::Init();
 		
 		perEntityAnimationState.Init();
+		
+		material->Init();
 		
 		updateAnimationShader = std::make_unique<gl::Shader>();
 		if(updateAnimationShader->Compile(UPDATE_ANIMATION_SHADER_SOURCE))
@@ -127,10 +133,20 @@ namespace qgl {
 			STAGE_1_RENDER_PASS_1,
 			[=](std::shared_ptr<Camera> camera) {
 				this->material->RenderPass(camera,
-						entitiesBuffer,
+						frustumCulledIdsBuffer,
+						perEntityMeshInfo.Vbo(),
 						frustumCulledEntitiesCount
 						);
 			});
+	}
+	
+	void PipelineBoneAnimated::Destroy() {
+		perEntityAnimationState.Destroy();
+		
+		updateAnimationShader->Destroy();
+		updateAnimationShader = nullptr;
+		
+		animatedMeshManager = nullptr;
 	}
 	
 	std::shared_ptr<MeshManager> PipelineBoneAnimated::CreateMeshManager() {

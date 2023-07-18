@@ -27,6 +27,8 @@
 #include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
+#include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/IndirectDrawBufferGenerator.hpp"
 
 #include "../../include/quickgl/materials/MaterialBoneAnimated.hpp"
 
@@ -96,21 +98,34 @@ namespace qgl {
 	
 	void MaterialBoneAnimated::RenderPass(std::shared_ptr<Camera> camera,
 			std::shared_ptr<gl::VBO> entitiesToRender,
+			gl::VBO& meshInfo,
 			uint32_t entitiesCount) {
 		if(entitiesCount == 0) {
 			return;
 		}
 	
+		vao->Bind();
 		renderShader->Use();
 		
 		glm::mat4 pv = camera->GetPerspectiveMatrix()
 			* camera->GetViewMatrix();
 		renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
-		vao->BindIndirectBuffer(*indirectDrawBuffer);
 		
-		vao->DrawMultiElementsIndirect(nullptr,
-				entitiesCount);
+		for(uint32_t offset=0; offset<entitiesCount;) {
+			uint32_t generatedEntities = 0;
+			std::shared_ptr<gl::VBO> indirectBuffer
+				= engine->GetIndirectDrawBufferGenerator()
+					->Generate(*entitiesToRender, meshInfo, entitiesCount-offset,
+							offset, generatedEntities);
+			offset += generatedEntities;
+			
+			renderShader->Use();
+			vao->BindIndirectBuffer(*indirectBuffer);
+			vao->DrawMultiElementsIndirect(nullptr,
+					generatedEntities);
+		}
 		vao->Unbind();
+		gl::Shader::Unuse();
 	}
 	
 	const char* MaterialBoneAnimated::VERTEX_SHADER_SOURCE = R"(

@@ -16,45 +16,52 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_MATERIAL_HPP
-#define QUICKGL_MATERIAL_HPP
+#ifndef QUICKGL_INDIRECT_DRAW_BUFFER_GENERATOR_HPP
+#define QUICKGL_INDIRECT_DRAW_BUFFER_GENERATOR_HPP
 
 #include <memory>
-#include <string>
 
 namespace gl {
 	class VBO;
-	class VAO;
 	class Shader;
 }
 
 namespace qgl {
-	class Camera;
-	class Pipeline;
 	class Engine;
-	class MeshManager;
+	class DeltaVboManager;
 	
-	class Material : std::enable_shared_from_this<Material> {
+	class IndirectDrawBufferGenerator final {
 	public:
 		
-		Material(std::shared_ptr<Pipeline> pipeline);
-		virtual ~Material();
+		IndirectDrawBufferGenerator(std::shared_ptr<Engine> engine);
+		~IndirectDrawBufferGenerator();
 		
-		virtual void Init();
-		virtual void Destroy();
+		void Init();
+		void Destroy();
 		
-		virtual std::shared_ptr<Pipeline> GetPipeline() = 0;
-		
-		virtual std::string GetName() const = 0;
-		
-		virtual void RenderPass(std::shared_ptr<Camera> camera,
-				std::shared_ptr<gl::VBO> entitiesToRender,
+		std::shared_ptr<gl::VBO> Generate(
+				gl::VBO& entitiesToRender,
 				gl::VBO& meshInfo,
-				uint32_t entitiesCount) = 0;
+				uint32_t entitiesCount,
+				uint32_t entitiesOffset,
+				uint32_t& generatedCount);
 		
-	protected:
+		void Generate(
+				gl::VBO& entitiesToRender,
+				gl::VBO& meshInfo,
+				gl::VBO& indirectDrawBuffer,
+				uint32_t entitiesCount,
+				uint32_t entitiesOffset);
 		
+	private:
+		
+		std::shared_ptr<gl::Shader> shader;
 		std::shared_ptr<Engine> engine;
+		
+		uint32_t ENTITIES_COUNT_LOCATION;
+		uint32_t ENTITIES_OFFSET_LOCATION;
+		
+		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 	};
 }
 

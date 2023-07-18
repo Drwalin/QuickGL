@@ -158,6 +158,8 @@ namespace qgl {
 		
 		RenderStageComposer();
 		
+		void Destroy();
+		
 		void AddPipeline(std::shared_ptr<Pipeline> pipeline);
 		void AddCamera(std::shared_ptr<Camera> camera);
 		void RemoveCamera(std::shared_ptr<Camera> camera);

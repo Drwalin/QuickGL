@@ -50,14 +50,6 @@ namespace qgl {
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
 		
 		friend class MaterialStatic;
-		
-	private:
-		
-		std::unique_ptr<gl::VAO> vao;
-		std::unique_ptr<gl::Shader> renderShader;
-		
-		static const char* VERTEX_SHADER_SOURCE;
-		static const char* FRAGMENT_SHADER_SOURCE;
 	};
 }
 

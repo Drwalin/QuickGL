@@ -50,10 +50,6 @@ namespace qgl {
 		PipelineIdsManagedBase::Init();
 		
 		// init buffer objects
-		indirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t)*5,
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		indirectDrawBuffer->Init();
-		
 		frustumCulledIdsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsBuffer->Init();
@@ -76,11 +72,6 @@ namespace qgl {
 					nullptr, 3,
 					gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
 		
-		// init shaders
-		indirectDrawBufferShader = std::make_unique<gl::Shader>();
-		if(indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE))
-			exit(31);
-		
 		frustumCullingShader = std::make_unique<gl::Shader>();
 		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
 			exit(31);
@@ -95,12 +86,11 @@ namespace qgl {
 			"Update frustum culling data",
 			STAGE_UPDATE_DATA,
 			[this](std::shared_ptr<Camera>) {
-				uint32_t i = indirectDrawBuffer->GetVertexCount();
+				uint32_t i = frustumCulledIdsBuffer->GetVertexCount();
 				while(i < entityBufferManager->Count()) {
 					i = (i*3)/2 + 100;
 				}
-				if(i != indirectDrawBuffer->GetVertexCount()) {
-					indirectDrawBuffer->Generate(nullptr, i);
+				if(i != frustumCulledIdsBuffer->GetVertexCount()) {
 					frustumCulledIdsBuffer->Generate(nullptr, i);
 				}
 				frustumCulledEntitiesCount = 0;
@@ -185,46 +175,15 @@ namespace qgl {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
 		}
-
-		{
-		stagesScheduler.AddStage(
-			"Generating indirect draw buffer",
-			STAGE_CAMERA,
-			[=](std::shared_ptr<Camera> camera) {
-				// set visible entities count
-				indirectDrawBufferShader->Use();
-				
-				// bind buffers
-				frustumCulledIdsCountAtomicCounter
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-				indirectDrawBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				perEntityMeshInfo.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
-				frustumCulledIdsBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
-				
-				// generate indirect draw command
-				indirectDrawBufferShader->DispatchRoundGroupNumbers(
-						frustumCulledEntitiesCount, 1, 1);
-				gl::Shader::Unuse();
-				
-				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
-						gl::SHADER_STORAGE_BARRIER_BIT |
-						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
-			});
-		}
 	}
 	
 	void PipelineFrustumCulling::Destroy() {
-		indirectDrawBufferShader->Destroy();
 		frustumCullingShader->Destroy();
 		frustumCulledIdsBuffer->Destroy();
 		frustumCulledIdsCountAtomicCounter->Destroy();
 		frustumCulledIdsCountAtomicCounterAsyncFetch->Destroy();
 		clippingPlanes->Destroy();
 		
-		indirectDrawBufferShader = nullptr;
 		frustumCullingShader = nullptr;
 		frustumCulledIdsBuffer = nullptr;
 		frustumCulledIdsCountAtomicCounter = nullptr;
@@ -318,53 +277,6 @@ void main() {
 	for(uint i=0; i<inViewCount; ++i) {
 		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
 	}
-}
-)";
-	
-	const char* PipelineFrustumCulling::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
-#version 420 core
-#extension GL_ARB_compute_shader : require
-#extension GL_ARB_shader_storage_buffer_object : require
-
-struct DrawElementsIndirectCommand {
-	uint count;
-	uint instanceCount;
-	uint firstIndex;
-	int  baseVertex;
-	uint baseInstance;
-};
-
-struct PerEntityMeshInfo {
-	uint elementsStart;
-	uint elementsCount;
-};
-
-layout (packed, std430, binding=4) readonly buffer cccaaa {
-	uint entitiesCount;
-};
-layout (packed, std430, binding=5) writeonly buffer aaa {
-	DrawElementsIndirectCommand indirectCommands[];
-};
-layout (packed, std430, binding=6) readonly buffer bbb {
-	PerEntityMeshInfo meshInfo[];
-};
-layout (packed, std430, binding=7) readonly buffer ccc {
-	uint visibleEntityIds[];
-};
-
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-void main() {
-	if(gl_GlobalInvocationID.x >= entitiesCount)
-		return;
-	uint id = visibleEntityIds[gl_GlobalInvocationID.x];
-	indirectCommands[gl_GlobalInvocationID.x] = DrawElementsIndirectCommand(
-		meshInfo[id].elementsCount,
-		1,
-		meshInfo[id].elementsStart,
-		0,
-		id
-	);
 }
 )";
 }

@@ -30,7 +30,7 @@
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
-#include "../../include/quickgl/materials/Material.hpp"
+#include "../../include/quickgl/materials/MaterialStatic.hpp"
 
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 
@@ -47,18 +47,29 @@ namespace qgl {
 	}
 	
 	void PipelineStatic::Init() {
+		material = std::make_shared<MaterialStatic>(
+				std::dynamic_pointer_cast<PipelineStatic>(
+					shared_from_this()));
+		
 		PipelineFrustumCulling::Init();
+		
+		material->Init();
 		
 		stagesScheduler.AddStage(
 			"Render static entities",
 			STAGE_1_RENDER_PASS_1,
 			[=](std::shared_ptr<Camera> camera) {
 				this->material->RenderPass(camera,
-						entitiesBuffer,
+						frustumCulledIdsBuffer,
+						perEntityMeshInfo.Vbo(),
 						frustumCulledEntitiesCount
 						);
 			}
 		);
+	}
+	
+	void PipelineStatic::Destroy() {
+		PipelineFrustumCulling::Destroy();
 	}
 	
 	std::shared_ptr<MeshManager> PipelineStatic::CreateMeshManager() {

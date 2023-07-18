@@ -28,6 +28,7 @@
 #include "../include/quickgl/util/DeltaVboManager.hpp"
 #include "../include/quickgl/util/MoveVboUpdater.hpp"
 #include "../include/quickgl/GlobalEntityManager.hpp"
+#include "../include/quickgl/IndirectDrawBufferGenerator.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -58,28 +59,35 @@ namespace qgl {
 		deltaVboManager->Init();
 		moveVboManager = std::make_shared<MoveVboManager>(shared_from_this());
 		globalEntityManager = std::make_shared<GlobalEntityManager>(shared_from_this());
+		
+		indirectDrawBufferGenerator
+			= std::make_shared<IndirectDrawBufferGenerator>(shared_from_this());
+		indirectDrawBufferGenerator->Init();
 	}
 	
 	void Engine::Destroy() {
 		if(initialized) {
 			gl::Finish();
 			
-			renderStageComposer.Clear();
+			renderStageComposer.Destroy();
 
 			for(auto& p : pipelines) {
 				p = nullptr;
 			}
 			pipelines.clear();
+			
+			indirectDrawBufferGenerator->Destroy();
+			indirectDrawBufferGenerator = nullptr;
 
 			mainCamera = nullptr;
+			
+			globalEntityManager = nullptr;
 
 			Gui::DeinitIMGUI();
 			gl::openGL.Destroy();
 			glfwTerminate();
 			initialized = false;
 		}
-		
-		globalEntityManager = nullptr;
 	}
 	
 	void Engine::SetFullscreen(bool fullscreen) {
@@ -98,8 +106,8 @@ namespace qgl {
 		int32_t id = pipelines.size();
 		pipelines.emplace_back(pipeline);
 		pipeline->SetPipelineId(pipelines.size());
-		pipeline->Initialize();
-		renderStageComposer.AddPipelineStages(pipeline);
+		pipeline->Init();
+		renderStageComposer.AddPipeline(pipeline);
 		return id;
 	}
 	
@@ -116,9 +124,11 @@ namespace qgl {
 	}
 	
 	void Engine::Render() {
-		mainCamera->PrepareDataForNewFrame();
+		for(auto c : cameras) {
+			c->PrepareDataForNewFrame();
+		}
 		
-		renderStageComposer.RestartStages({mainCamera});
+		renderStageComposer.ResetExecution();
 		while(renderStageComposer.HasAnyStagesLeft()) {
 			if(renderStageComposer.ContinueStages() == false) {
 				std::this_thread::sleep_for(std::chrono::microseconds(100));
@@ -133,8 +143,21 @@ namespace qgl {
 		gl::openGL.SwapBuffer();
 	}
 	
+	void Engine::AddCamera(std::shared_ptr<Camera> camera) {
+		renderStageComposer.AddCamera(camera);
+		cameras.insert(camera);
+	}
+	
+	void Engine::RemoveCamera(std::shared_ptr<Camera> camera) {
+		renderStageComposer.RemoveCamera(camera);
+		cameras.erase(camera);
+	}
+	
 	void Engine::SetMainCamera(std::shared_ptr<Camera> camera) {
+		renderStageComposer.RenderAsLast(camera);
 		mainCamera = camera;
+		if(cameras.count(camera) == 0)
+			cameras.insert(camera);
 	}
 	
 	void Engine::PrintErrors() {
@@ -170,6 +193,10 @@ namespace qgl {
 	
 	std::shared_ptr<GlobalEntityManager> Engine::GetGlobalEntityManager() {
 		return globalEntityManager;
+	}
+	
+	std::shared_ptr<IndirectDrawBufferGenerator> Engine::GetIndirectDrawBufferGenerator() {
+		return indirectDrawBufferGenerator;
 	}
 }
 
