@@ -34,11 +34,12 @@
 #include "Material.hpp"
 
 namespace qgl {
+	class PipelineBoneAnimated;
 	
 	class MaterialBoneAnimated final : public Material {
 	public:
 		
-		MaterialBoneAnimated(std::shared_ptr<Engine> engine);
+		MaterialBoneAnimated(std::shared_ptr<PipelineBoneAnimated> pipeline);
 		virtual ~MaterialBoneAnimated();
 		
 		virtual void Init() override;
@@ -46,12 +47,19 @@ namespace qgl {
 		
 		virtual std::string GetName() const override;
 		
-		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
+		virtual std::shared_ptr<Pipeline> GetPipeline() override;
+		
+		virtual void RenderPass(std::shared_ptr<Camera> camera,
+				std::shared_ptr<gl::VBO> entitiesToRender,
 				uint32_t entitiesCount) override;
 		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
-		
 	private:
+		
+		std::shared_ptr<gl::VAO> vao;
+		std::shared_ptr<gl::Shader> renderShader;
+		std::shared_ptr<PipelineBoneAnimated> pipeline;
+		
+		int32_t PROJECTION_VIEW_LOCATION;
 		
 		static const char* VERTEX_SHADER_SOURCE;
 		static const char* FRAGMENT_SHADER_SOURCE;

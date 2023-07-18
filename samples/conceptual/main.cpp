@@ -6,7 +6,7 @@
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
-#include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
+#include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
@@ -56,8 +56,8 @@ int main() {
 	
 		
 	// create animated pipeline
-	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
-		= std::make_shared<qgl::PipelineAnimated>(engine);
+	std::shared_ptr<qgl::PipelineBoneAnimated> pipelineAnimated
+		= std::make_shared<qgl::PipelineBoneAnimated>(engine);
 	engine->AddPipeline(pipelineAnimated);
 	
 	// load animated models

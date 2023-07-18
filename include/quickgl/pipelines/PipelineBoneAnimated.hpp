@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_PIPELINE_ANIMATED_HPP
-#define QUICKGL_PIPELINE_ANIMATED_HPP
+#ifndef QUICKGL_PIPELINE_BONE_ANIMATED_HPP
+#define QUICKGL_PIPELINE_BONE_ANIMATED_HPP
 
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -35,14 +35,16 @@
 
 namespace qgl {
 	
-	class PipelineAnimated final : public PipelineFrustumCulling {
+	class PipelineBoneAnimated final : public PipelineFrustumCulling {
 	public:
 		
-		PipelineAnimated(std::shared_ptr<Engine> engine);
-		virtual ~PipelineAnimated();
+		PipelineBoneAnimated(std::shared_ptr<Engine> engine);
+		virtual ~PipelineBoneAnimated();
 		
 		virtual void Init() override;
 		virtual void Destroy() override;
+		
+		virtual uint32_t CreateEntity() override;
 		
 		virtual std::string GetName() const override;
 		
