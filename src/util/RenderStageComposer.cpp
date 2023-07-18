@@ -97,7 +97,8 @@ namespace qgl {
 	bool PipelineStagesScheduler::CanExecuteNextStage() {
 		auto stage = GetNextStage();
 		bool ret = stage->canExecute(currentCamera);
-		if(ret && stage->executionPolicy & STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA) {
+		if(currentCamera && ret
+				&& stage->executionPolicy & STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA) {
 			return renderStageComposer->CanExecuteSyncStage(currentCameraId,
 					stage->executionPolicy);
 		}
@@ -105,7 +106,7 @@ namespace qgl {
 	}
 	
 	void PipelineStagesScheduler::ExecuteNextStage() {
-		if(CanExecuteNextStage()) {
+		if(HasMoreStages() && CanExecuteNextStage()) {
 			auto stage = GetNextStage();
 			if(stage->executionPolicy & STAGE_REQUIRE_BOUND_FBO
 					&& stage->pipeline->GetStageScheduler().GetCurrentCamera()) {
@@ -219,9 +220,11 @@ namespace qgl {
 		for(auto p : pipelines) {
 			PipelineStagesScheduler& s = p->GetStageScheduler();
 			if(s.HasMoreStages()) {
+				hasAnyStagesLeft = true;
 				if(s.CanExecuteNextStage()) {
 					timings.emplace_back();
-					timings.back().Start(s.GetNextStage());
+					auto stage = s.GetNextStage();
+					timings.back().Start(stage);
 					s.ExecuteNextStage();
 					executedAny = true;
 					if(this->enableGlFinishInEveryStageToProfile) {
@@ -232,6 +235,7 @@ namespace qgl {
 				}
 			}
 		}
+		gl::Flush();
 		auto end = std::chrono::steady_clock::now();
 		totalCpuTime +=
 				std::chrono::duration_cast<

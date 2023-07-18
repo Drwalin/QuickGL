@@ -163,7 +163,7 @@ namespace qgl {
 			STAGE_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
 				// wait for fence
-				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
+				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(100*1000*1000) == gl::SYNC_TIMEOUT) {
 					gl::Finish();
 				}
 				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();

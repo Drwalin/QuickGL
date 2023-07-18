@@ -55,7 +55,7 @@ namespace qgl {
 		Gui::InitIMGUI();
 		initialized = true;
 		
-		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024, 16);
+		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024*16, 16);
 		deltaVboManager->Init();
 		moveVboManager = std::make_shared<MoveVboManager>(shared_from_this());
 		globalEntityManager = std::make_shared<GlobalEntityManager>(shared_from_this());
