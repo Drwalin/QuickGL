@@ -86,35 +86,25 @@ namespace qgl {
 		return pipeline;
 	}
 	
-	void MaterialStatic::RenderPass(std::shared_ptr<Camera> camera,
-			std::shared_ptr<gl::VBO> entitiesToRender,
-			gl::VBO& meshInfo,
+	void MaterialStatic::RenderPassIndirect(std::shared_ptr<Camera> camera,
+			gl::VBO& indirectBuffer,
 			uint32_t entitiesCount) {
 		if(entitiesCount == 0) {
 			return;
 		}
 		
-		// draw with indirect draw buffer
+		vao->Bind();
 		renderShader->Use();
+		
 		glm::mat4 pv = camera->GetPerspectiveMatrix()
 			* camera->GetViewMatrix();
 		renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
 		
-		for(uint32_t offset=0; offset<entitiesCount;) {
-
-			uint32_t generatedEntities = 0;
-			std::shared_ptr<gl::VBO> indirectBuffer
-				= engine->GetIndirectDrawBufferGenerator()
-					->Generate(*entitiesToRender, meshInfo, entitiesCount-offset,
-							offset, generatedEntities);
-			offset += generatedEntities;
+		renderShader->Use();
+		vao->BindIndirectBuffer(indirectBuffer);
+		vao->DrawMultiElementsIndirect(nullptr, entitiesCount);
 			
-			renderShader->Use();
-			vao->BindIndirectBuffer(*indirectBuffer);
-			vao->DrawMultiElementsIndirect(nullptr,
-					generatedEntities);
-			vao->Unbind();
-		}
+		vao->Unbind();
 		gl::Shader::Unuse();
 	}
 	

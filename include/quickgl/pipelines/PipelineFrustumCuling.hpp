@@ -52,6 +52,8 @@ namespace qgl {
 		
 	protected:
 		
+		std::shared_ptr<gl::VBO> indirectDrawBuffer;
+		
 		std::unique_ptr<gl::Shader> frustumCullingShader;
 		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
 		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounter;

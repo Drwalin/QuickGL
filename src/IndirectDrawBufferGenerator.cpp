@@ -59,7 +59,7 @@ namespace qgl {
 			uint32_t& generatedCount) {
 		auto vbo = engine->GetDeltaVboManager()->GetNextUpdateVBO();
 		generatedCount = std::min<uint32_t>(entitiesCount, vbo->GetVertexCount()*vbo->VertexSize()/20);
-		Generate(entitiesToRender, meshInfo, *vbo, entitiesCount, entitiesOffset);
+		Generate(entitiesToRender, meshInfo, *vbo, generatedCount, entitiesOffset);
 		return vbo;
 	}
 	

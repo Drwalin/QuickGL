@@ -369,7 +369,7 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage: %6.3f us \t  %16s | %s",
+				ImGui::Text("Stage: %10.3f us \t  %32s | %s",
 						t.measuredSeconds*1000000.0,
 						t.stage->pipeline->GetName().c_str(),
 						t.stage->name.c_str());
