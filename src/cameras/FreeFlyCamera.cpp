@@ -28,7 +28,9 @@
 
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 
-#define M_PI 3.141592
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
@@ -176,8 +178,11 @@ namespace qgl {
 			euler.x = M_PI*0.5f;
 		this->euler = euler;
 		SetRotation(
-				glm::quat(euler + glm::vec3{0,0,M_PI})
+				glm::quat(euler)
 				);
+// 		SetRotation(
+// 				glm::quat(euler + glm::vec3{0,0,M_PI})
+// 				);
 	}
 	
 	void FreeFlyCamera::Rotate(glm::quat rotation) {
@@ -220,9 +225,9 @@ namespace qgl {
 			dp += glm::vec3{0,-1,0};
 		
 		if(input.IsKeyDown(GLFW_KEY_E))
-			dpx += glm::vec3{0,1,0};
-		if(input.IsKeyDown(GLFW_KEY_Q))
 			dpx += glm::vec3{0,-1,0};
+		if(input.IsKeyDown(GLFW_KEY_Q))
+			dpx += glm::vec3{0,+1,0};
 		
 		if(input.IsKeyDown(GLFW_KEY_LEFT))
 			dr.y += 1.0f;

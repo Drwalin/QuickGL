@@ -1,4 +1,6 @@
 
+#include "TerrainGenerator.hpp"
+
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
@@ -140,6 +142,13 @@ int main() {
 	camera->SetPosition({0,-2,100});
 	
 	std::vector<uint32_t> entSta, entAni;
+	
+	TerrainGenerator tg(engine, pipelineStatic, pipelineAnimated);
+	
+	{
+		int size = 96; // 1024;
+		tg.Generate(-size, size);
+	}
 	
 	uint32_t II = 0;
 	auto AddRandomEntity = [&]() {

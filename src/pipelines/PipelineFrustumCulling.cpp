@@ -256,13 +256,14 @@ shared uint commonStartingLocation;
 
 uint IsInView(uint id) {
 	if(id < entitiesCount) {
-		vec3 pos = (
-			cameraInverseTransform *
-			entitesTransformations[id] *
+		vec3 pos = (cameraInverseTransform * entitesTransformations[id] *
 				vec4(meshInfo[id].xyz, 1)).xyz;
+		vec3 rad = (cameraInverseTransform * entitesTransformations[id] *
+				vec4(meshInfo[id].xyz + vec3(0,0,meshInfo[id].w), 1)).xyz;
+		float dd = length(pos-rad);
 		for(uint i=0; i<5; ++i) {
 			float d = dot(clippingPlanes[i].xyz, pos);
-			if(d+meshInfo[id].w < clippingPlanes[i].w) {
+			if(d+dd < clippingPlanes[i].w) {
 				return 0;
 			}
 		}

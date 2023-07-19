@@ -78,7 +78,7 @@ namespace qgl {
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) = 0;
 		void SetEntityMeshByName(uint32_t entityId, const char* meshName);
 		virtual void SetEntityTransformsQuat(uint32_t entityId,
-				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
+				glm::vec3 pos={0,0,0}, glm::quat rot=glm::angleAxis(0.0f,glm::vec3(0,1,0)),
 				glm::vec3 scale={1,1,1}) = 0;
 		void SetEntityTransformsEuler(uint32_t entityId, glm::vec3 pos={0,0,0},
 				glm::vec3 eulerRot={0,0,0}, glm::vec3 scale={1,1,1});

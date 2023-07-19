@@ -68,7 +68,10 @@ target_link_libraries(QuickGL OpenGLWrapper)
 
 
 if(BUILD_EXAMPLES)
-	add_executable(sample_conceptual_quickgl samples/conceptual/main.cpp)
+	add_executable(sample_conceptual_quickgl
+		samples/conceptual/DrwalinLibraries/Noise.cpp
+		samples/conceptual/DrwalinLibraries/Perlin.cpp
+		samples/conceptual/main.cpp)
 	target_link_libraries(sample_conceptual_quickgl QuickGL)
 
 	add_custom_target(
