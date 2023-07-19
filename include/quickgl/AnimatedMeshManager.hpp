@@ -51,7 +51,7 @@ namespace qgl {
 		
 		AnimationManager& GetAnimationManager() { return *animationManager; }
 		
-		friend class PipelineAnimated;
+		friend class PipelineBoneAnimated;
 		friend class AnimationManager;
 		
 	protected:

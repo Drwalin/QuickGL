@@ -35,6 +35,7 @@ namespace gl {
 
 namespace qgl {
 	class Engine;
+	class Pipeline;
 	
 	class EntityBufferManager final {
 	public:
@@ -56,7 +57,8 @@ namespace qgl {
 			void* funcData;
 		};
 		
-		EntityBufferManager(std::shared_ptr<Engine> engine);
+		EntityBufferManager(std::shared_ptr<Engine> engine,
+				std::shared_ptr<Pipeline> pipeline);
 		~EntityBufferManager();
 		
 		void Init();
@@ -92,17 +94,16 @@ namespace qgl {
 		std::vector<uint32_t> freeingEntites;
 		
 		ManagedSparselyUpdatedVBOWithLocal<uint32_t> mapOffsetToEntity;
-		std::unordered_map<uint32_t, uint32_t> mapEntityToOffset;
 		
 		std::vector<BufferInfo> buffers;
 		
-		uint32_t lastAddedEntity;
 		uint32_t entitiesBufferSize;
 		uint32_t entitiesCount;
 		
 		static uint64_t allEntitiesAdded;
 		
 		std::shared_ptr<Engine> engine;
+		std::shared_ptr<Pipeline> pipeline;
 	};
 	
 	template<typename T>

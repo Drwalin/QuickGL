@@ -2,11 +2,12 @@
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Sync.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
-#include "../../include/quickgl/pipelines/PipelineAnimated.hpp"
+#include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
@@ -56,8 +57,8 @@ int main() {
 	
 		
 	// create animated pipeline
-	std::shared_ptr<qgl::PipelineAnimated> pipelineAnimated
-		= std::make_shared<qgl::PipelineAnimated>(engine);
+	std::shared_ptr<qgl::PipelineBoneAnimated> pipelineAnimated
+		= std::make_shared<qgl::PipelineBoneAnimated>(engine);
 	engine->AddPipeline(pipelineAnimated);
 	
 	// load animated models
@@ -163,14 +164,14 @@ int main() {
 				uint32_t p = rand() % (entSta.size()-4) + 4;
 				pipelineStatic->DeleteEntity(entSta[p]);
 				std::swap(entSta[p], entSta.back());
-				entSta.erase(entSta.end());
+				entSta.erase(entSta.begin() + entSta.size()-1);
 			}
 		} else {
 			if(entAni.size() > 10) {
 				uint32_t p = rand() % (entAni.size()-4) + 4;
 				pipelineAnimated->DeleteEntity(entAni[p]);
 				std::swap(entAni[p], entAni.back());
-				entAni.erase(entAni.end());
+				entAni.erase(entAni.begin() + entAni.size()-1);
 			}
 		}
 	};
@@ -285,27 +286,27 @@ int main() {
 		
 		
 		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_1)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 0, 0, true, 0, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_2)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 1, 0, true, 1, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_3)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 0, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_4)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 2, 0, true, 2, true);
 			pressedSomething = true;
 		}
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_5)) {
-			for(int i=0; i<2; ++i)
+			for(int i=1; i<=2; ++i)
 				pipelineAnimated->SetAnimationState(i, 3, 0, true, 3, false);
 			pressedSomething = true;
 		}
@@ -324,12 +325,12 @@ int main() {
 		gl::Flush();
 		auto e1 = std::chrono::steady_clock::now();
 		uint64_t renderTime = (e1-s).count();
-		double time_from_frame_begin = 
+		
+		qgl::Log::sync = true;
+		QUICKGL_LOG("end frame duration: %.3f ms",
 				std::chrono::duration_cast<
 					std::chrono::duration<double>>(
-							e1 - frame_start_timepoint).count();
-		qgl::Log::sync = true;
-		QUICKGL_LOG("end frame duration: %.3f ms", time_from_frame_begin*1000.0f);
+							e1 - frame_start_timepoint).count()*1000.0f);
 		if(pressedSomething)
 			QUICKGL_LOG("finished frame had something pressed");
 
@@ -353,7 +354,7 @@ int main() {
 					pipelineAnimated->GetEntitiesCount());
 			glm::vec3 p = camera->GetPosition();
 			ImGui::Text("Position: %f %f %f", p.x, p.y, p.z);
-			ImGui::Text("VBO memory usage: %.3f + %.3f = %.3f [MiB]",
+			ImGui::Text("VRAM usage: %.3f + %.3f = %.3f [MiB]",
 					gl::VBO::CountAllVBOMemoryUsage()/(1024*1024.f),
 					gl::Texture::CountAllTextureMemoryUsage()/(1024*1024.f),
 					(gl::VBO::CountAllVBOMemoryUsage() +
@@ -369,20 +370,15 @@ int main() {
 				ImGuiWindowFlags_NoFocusOnAppearing |
 				ImGuiWindowFlags_AlwaysAutoResize);
 			for(auto t : engine->GetTimings()) {
-				ImGui::Text("Stage: %6.lu.%3.3lu us \t  %16s | %s",
-						t.measuredTimeNanoseconds / 1000lu,
-						t.measuredTimeNanoseconds % 1000lu,
-						t.pipeline->GetPipelineName().c_str(),
-						t.stage->stageName.c_str());
+				ImGui::Text("Stage: %10.3f us \t  %24s | %s",
+						t.measuredSeconds*1000000.0,
+						t.stage->pipeline->GetName().c_str(),
+						t.stage->name.c_str());
 			}
 			ImGui::Text("Full render time: %6.lu.%6.6lu ms",
 					renderTime/1000000, renderTime%1000000);
-			ImGui::Text("Cpu time spent on each task separately sum: %6.lu.%6.6lu ms",
-					engine->CountNanosecondsOnCpu()/1000000,
-					engine->CountNanosecondsOnCpu()%1000000);
-			ImGui::Text("Cpu total time spent in RenderStageComposer::ContinueStages(): %6.lu.%6.6lu ms",
-					engine->CountTotalNanosecondsOnCpu()/1000000,
-					engine->CountTotalNanosecondsOnCpu()%1000000);
+			ImGui::Text("Cpu time spent on each task separately sum: %6.6f us",
+					engine->CountCpuTime()*1000000);
 		ImGui::End();
 		
 		gl::Flush();
@@ -397,10 +393,10 @@ int main() {
 			gl::Sync sync;
 			sync.StartFence();
 			while(sync.IsDone() == false) {
+				gl::Flush();
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 			sync.Destroy();
-			gl::Finish();
 		}
 	}
 	
