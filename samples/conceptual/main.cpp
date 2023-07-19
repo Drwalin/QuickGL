@@ -2,6 +2,7 @@
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Sync.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/MeshManager.hpp"
@@ -163,14 +164,14 @@ int main() {
 				uint32_t p = rand() % (entSta.size()-4) + 4;
 				pipelineStatic->DeleteEntity(entSta[p]);
 				std::swap(entSta[p], entSta.back());
-				entSta.erase(entSta.end());
+				entSta.erase(entSta.begin() + entSta.size()-1);
 			}
 		} else {
 			if(entAni.size() > 10) {
 				uint32_t p = rand() % (entAni.size()-4) + 4;
 				pipelineAnimated->DeleteEntity(entAni[p]);
 				std::swap(entAni[p], entAni.back());
-				entAni.erase(entAni.end());
+				entAni.erase(entAni.begin() + entAni.size()-1);
 			}
 		}
 	};
