@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_PIPELINE_STATIC_HPP
-#define QUICKGL_PIPELINE_STATIC_HPP
+#ifndef QUICKGL_MATERIAL_BONE_ANIMATED_HPP
+#define QUICKGL_MATERIAL_BONE_ANIMATED_HPP
 
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
@@ -29,27 +29,40 @@
 #include <glm/mat4x4.hpp>
 
 #include "../util/BufferedVBO.hpp"
+#include "../AnimatedMeshManager.hpp"
 
-#include "PipelineFrustumCuling.hpp"
+#include "Material.hpp"
 
 namespace qgl {
+	class PipelineBoneAnimated;
 	
-	class PipelineStatic final : public PipelineFrustumCulling {
+	class MaterialBoneAnimated final : public Material {
 	public:
 		
-		PipelineStatic(std::shared_ptr<Engine> engine);
-		virtual ~PipelineStatic();
+		MaterialBoneAnimated(std::shared_ptr<PipelineBoneAnimated> pipeline);
+		virtual ~MaterialBoneAnimated();
 		
 		virtual void Init() override;
 		virtual void Destroy() override;
 		
 		virtual std::string GetName() const override;
 		
-	protected:
+		virtual std::shared_ptr<Pipeline> GetPipeline() override;
 		
-		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
+		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
+				gl::VBO& indirectBuffer,
+				uint32_t entitiesCount) override;
 		
-		friend class MaterialStatic;
+	private:
+		
+		std::shared_ptr<gl::VAO> vao;
+		std::shared_ptr<gl::Shader> renderShader;
+		std::shared_ptr<PipelineBoneAnimated> pipeline;
+		
+		int32_t PROJECTION_VIEW_LOCATION;
+		
+		static const char* VERTEX_SHADER_SOURCE;
+		static const char* FRAGMENT_SHADER_SOURCE;
 	};
 }
 

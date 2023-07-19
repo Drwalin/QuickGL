@@ -21,6 +21,7 @@
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
+#include "../../include/quickgl/materials/Material.hpp"
 
 #include "../../include/quickgl/pipelines/Pipeline.hpp"
 
@@ -28,10 +29,24 @@ namespace qgl {
 	
 	Pipeline::Pipeline(std::shared_ptr<Engine> engine) : engine(engine) {}
 	
-	Pipeline::~Pipeline() {}
+	Pipeline::~Pipeline() {
+	}
 	
-	void Pipeline::Initialize() {
+	void Pipeline::Init() {
+		stagesScheduler.Init(shared_from_this());
 		meshManager = CreateMeshManager();
+	}
+	
+	void Pipeline::Destroy() {
+		engine = nullptr;
+		
+		meshManager = nullptr;
+		
+		stagesScheduler.Destroy();
+		if(material) {
+			material->Destroy();
+			material = nullptr;
+		}
 	}
 	
 	void Pipeline::SetEntityMeshByName(uint32_t entityId, const char* meshName) {
@@ -43,19 +58,12 @@ namespace qgl {
 		SetEntityTransformsQuat(entityId, pos, glm::quat(eulerRot), scale);
 	}
 	
-	void Pipeline::GenerateRenderStages(std::vector<struct Stage>& stages) {
-		stages.emplace_back(
-			"Flush data to GPU",
-			STAGE_GLOBAL,
-			[this](std::shared_ptr<Camera> camera) {
-				this->FlushDataToGPU();
-				gl::Flush();
-			}
-		);
+	void Pipeline::SetPipelineId(uint32_t newId) {
+		pipelineId = newId;
 	}
 	
-	void Pipeline::SetEngine(std::shared_ptr<Engine> engine) {
-		this->engine = engine;
+	uint32_t Pipeline::GetPipelineId() const {
+		return pipelineId;
 	}
 }
 

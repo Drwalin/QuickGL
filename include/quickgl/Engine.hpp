@@ -31,6 +31,8 @@ namespace qgl {
 	class Camera;
 	class DeltaVboManager;
 	class MoveVboManager;
+	class GlobalEntityManager;
+	class IndirectDrawBufferGenerator;
 	
 	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
@@ -48,7 +50,7 @@ namespace qgl {
 		bool IsQuitRequested();
 		
 		int32_t AddPipeline(std::shared_ptr<Pipeline> pipeline);
-		std::shared_ptr<Pipeline> GetPipeline(int32_t id);
+		std::shared_ptr<Pipeline> GetPipeline(uint32_t id);
 		
 		void BeginNewFrame();
 		void Render();
@@ -56,21 +58,25 @@ namespace qgl {
 		
 		uint32_t GetEntitiesCount() const;
 		
+		void AddCamera(std::shared_ptr<Camera> camera);
+		void RemoveCamera(std::shared_ptr<Camera> camera);
 		void SetMainCamera(std::shared_ptr<Camera> camera);
 		
 		inline InputManager& GetInputManager() { return inputManager; }
 		
 		void PrintErrors();
 		
-		inline const std::vector<Timings>& GetTimings() const { return renderStageComposer.GetTimings(); }
-		inline uint64_t CountNanosecondsOnCpu() const { return renderStageComposer.CountNanosecondsOnCpu(); }
-		inline uint64_t CountTotalNanosecondsOnCpu() const { return renderStageComposer.CountTotalNanosecondsOnCpu(); }
+		inline const std::vector<StageTiming> GetTimings() const { return renderStageComposer.GetTimings(); }
+		inline double CountCpuTime() const { return renderStageComposer.GetTotalCpuTime(); }
 		
 		void EnableProfiling(bool value);
 		bool GetProfiling() const;
 		
 		std::shared_ptr<DeltaVboManager> GetDeltaVboManager();
 		std::shared_ptr<MoveVboManager> GetMoveVboManager();
+		
+		std::shared_ptr<GlobalEntityManager> GetGlobalEntityManager();
+		std::shared_ptr<IndirectDrawBufferGenerator> GetIndirectDrawBufferGenerator();
 		
 	protected:
 		
@@ -83,9 +89,14 @@ namespace qgl {
 		
 		std::vector<std::shared_ptr<Pipeline>> pipelines;
 		std::shared_ptr<Camera> mainCamera;
+		std::set<std::shared_ptr<Camera>> cameras;
 		
 		std::shared_ptr<DeltaVboManager> deltaVboManager;
 		std::shared_ptr<MoveVboManager> moveVboManager;
+		
+		std::shared_ptr<GlobalEntityManager> globalEntityManager;
+		
+		std::shared_ptr<IndirectDrawBufferGenerator> indirectDrawBufferGenerator;
 	};
 }
 

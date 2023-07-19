@@ -16,13 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <thread>
+
 #include "../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/Texture.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/AssimpLoader.hpp"
 
 #include "../include/quickgl/AnimationManager.hpp"
-#include <thread>
 
 namespace qgl {
 	AnimationManager::AnimationManager() {

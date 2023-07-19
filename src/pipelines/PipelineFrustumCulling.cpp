@@ -27,8 +27,11 @@
 #include "../../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Shader.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/basic_mesh_loader/Mesh.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Sync.hpp"
 
 #include "../../include/quickgl/MeshManager.hpp"
+#include "../../include/quickgl/Engine.hpp"
+#include "../../include/quickgl/IndirectDrawBufferGenerator.hpp"
 #include "../../include/quickgl/cameras/Camera.hpp"
 #include "../../include/quickgl/util/RenderStageComposer.hpp"
 
@@ -46,14 +49,10 @@ namespace qgl {
 		return frustumCulledEntitiesCount;
 	}
 	
-	void PipelineFrustumCulling::Initialize() {
-		PipelineIdsManagedBase::Initialize();
+	void PipelineFrustumCulling::Init() {
+		PipelineIdsManagedBase::Init();
 		
 		// init buffer objects
-		indirectDrawBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t)*5,
-				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		indirectDrawBuffer->Init();
-		
 		frustumCulledIdsBuffer = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsBuffer->Init();
@@ -76,11 +75,6 @@ namespace qgl {
 					nullptr, 3,
 					gl::MAP_WRITE_BIT | gl::MAP_FLUSH_EXPLICIT_BIT);
 		
-		// init shaders
-		indirectDrawBufferShader = std::make_unique<gl::Shader>();
-		if(indirectDrawBufferShader->Compile(INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE))
-			exit(31);
-		
 		frustumCullingShader = std::make_unique<gl::Shader>();
 		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
 			exit(31);
@@ -90,37 +84,35 @@ namespace qgl {
 				frustumCullingShader
 					->GetUniformLocation("objectsPerInvocation"),
 				objectsPerInvocation);
-	}
-	
-	void PipelineFrustumCulling::FlushDataToGPU() {
-		PipelineIdsManagedBase::FlushDataToGPU();
-		uint32_t i = indirectDrawBuffer->GetVertexCount();
-		while(i < entityBufferManager.Count()) {
-			i = (i*3)/2 + 100;
-		}
-		if(i != indirectDrawBuffer->GetVertexCount()) {
-			indirectDrawBuffer->Generate(nullptr, i);
-			frustumCulledIdsBuffer->Generate(nullptr, i);
-		}
-		frustumCulledEntitiesCount = 0;
-		frustumCulledIdsCountAtomicCounter
-			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-	}
-	
-	void PipelineFrustumCulling::GenerateRenderStages(
-			std::vector<Stage>& stages) {
-		PipelineIdsManagedBase::GenerateRenderStages(stages);
 		
-		{
-		stages.emplace_back(
+		indirectDrawBuffer = std::make_shared<gl::VBO>(20,
+				gl::DRAW_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
+		indirectDrawBuffer->Init(1024);
+		
+		stagesScheduler.AddStage(
+			"Update frustum culling data",
+			STAGE_UPDATE_DATA,
+			[this](std::shared_ptr<Camera>) {
+				uint32_t i = frustumCulledIdsBuffer->GetVertexCount();
+				while(i < entityBufferManager->Count()) {
+					i = (i*3)/2 + 100;
+				}
+				if(i != frustumCulledIdsBuffer->GetVertexCount()) {
+					frustumCulledIdsBuffer->Generate(nullptr, i);
+				}
+				frustumCulledEntitiesCount = 0;
+				frustumCulledIdsCountAtomicCounter
+					->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+			});
+		
+		stagesScheduler.AddStage(
 			"Updating clipping planes of camera to GPU",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				camera->GetClippingPlanes(clippingPlanesValues);
 				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-			}
-		);
-		}
+			});
+	
 		
 		{
 		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
@@ -128,15 +120,15 @@ namespace qgl {
 		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
 			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Performing frustum culling",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[=](std::shared_ptr<Camera> camera) {
 				// set visible entities count
 				frustumCullingShader->Use();
 				frustumCullingShader
 					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-							entityBufferManager.Count());
+							entityBufferManager->Count());
 				frustumCullingShader
 					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
 							camera->GetViewMatrix());
@@ -157,7 +149,7 @@ namespace qgl {
 				
 				frustumCullingShader
 					->DispatchRoundGroupNumbers(
-							(entityBufferManager.Count()+objectsPerInvocation-1) /
+							(entityBufferManager->Count()+objectsPerInvocation-1) /
 								objectsPerInvocation,
 							1, 1);
 				gl::Shader::Unuse();
@@ -172,57 +164,71 @@ namespace qgl {
 			});
 		}
 
-		{
-		stages.emplace_back(
+		stagesScheduler.AddStage(
 			"Fetching count of entities in frustum view to CPU",
-			STAGE_PER_CAMERA,
+			STAGE_CAMERA,
 			[this](std::shared_ptr<Camera> camera) {
 				// wait for fence
-				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(1000000000) == gl::SYNC_TIMEOUT) {
+				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(100*1000*1000) == gl::SYNC_TIMEOUT) {
 					gl::Finish();
 				}
 				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
 			
 				// fetch number of entities to render after culling
 				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
+				
+				if(indirectDrawBuffer->GetVertexCount()
+						< frustumCulledEntitiesCount) {
+				indirectDrawBuffer->Generate(nullptr,
+						frustumCulledEntitiesCount | 0xFFF);
+				}
 			},
 			[this](std::shared_ptr<Camera> camera) -> bool {
 				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
 			});
-		}
-
-		{
-		stages.emplace_back(
-			"Generating indirect draw buffer",
-			STAGE_PER_CAMERA,
-			[=](std::shared_ptr<Camera> camera) {
-				// set visible entities count
-				indirectDrawBufferShader->Use();
+		
+		stagesScheduler.AddStage(
+			"Generating indirect draw command buffer",
+			STAGE_CAMERA,
+			[this](std::shared_ptr<Camera> camera) {
 				
-				// bind buffers
-				frustumCulledIdsCountAtomicCounter
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-				indirectDrawBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				perEntityMeshInfo.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
-				frustumCulledIdsBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
-				
-				// generate indirect draw command
-				indirectDrawBufferShader->DispatchRoundGroupNumbers(
-						frustumCulledEntitiesCount, 1, 1);
-				gl::Shader::Unuse();
-				
+				engine->GetIndirectDrawBufferGenerator()->Generate(
+						*frustumCulledIdsBuffer,
+						perEntityMeshInfo.Vbo(),
+						*indirectDrawBuffer,
+						frustumCulledEntitiesCount,
+						0);
+						
 				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
 						gl::SHADER_STORAGE_BARRIER_BIT |
 						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
 			});
-		}
+	}
+	
+	void PipelineFrustumCulling::Destroy() {
+		frustumCullingShader->Destroy();
+		frustumCulledIdsBuffer->Destroy();
+		frustumCulledIdsCountAtomicCounter->Destroy();
+		frustumCulledIdsCountAtomicCounterAsyncFetch->Destroy();
+		clippingPlanes->Destroy();
+		
+		frustumCullingShader = nullptr;
+		frustumCulledIdsBuffer = nullptr;
+		frustumCulledIdsCountAtomicCounter = nullptr;
+		frustumCulledIdsCountAtomicCounterAsyncFetch = nullptr;
+		clippingPlanes = nullptr;
+		
+		syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
+		
+		mappedPointerToentitiesCount = nullptr;
+		
+		PipelineIdsManagedBase::Destroy();
 	}
 	
 	const char* PipelineFrustumCulling::FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
+#version 420 core
+#extension GL_ARB_compute_shader : require
+#extension GL_ARB_shader_storage_buffer_object : require
 
 layout (packed, std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
@@ -299,51 +305,6 @@ void main() {
 	for(uint i=0; i<inViewCount; ++i) {
 		frustumCulledEntitiesIds[globalStartingLocation+i] = inViewIds[i];
 	}
-}
-)";
-	
-	const char* PipelineFrustumCulling::INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE = R"(
-#version 450 core
-
-struct DrawElementsIndirectCommand {
-	uint count;
-	uint instanceCount;
-	uint firstIndex;
-	int  baseVertex;
-	uint baseInstance;
-};
-
-struct PerEntityMeshInfo {
-	uint elementsStart;
-	uint elementsCount;
-};
-
-layout (packed, std430, binding=4) readonly buffer cccaaa {
-	uint entitiesCount;
-};
-layout (packed, std430, binding=5) writeonly buffer aaa {
-	DrawElementsIndirectCommand indirectCommands[];
-};
-layout (packed, std430, binding=6) readonly buffer bbb {
-	PerEntityMeshInfo meshInfo[];
-};
-layout (packed, std430, binding=7) readonly buffer ccc {
-	uint visibleEntityIds[];
-};
-
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
-
-void main() {
-	if(gl_GlobalInvocationID.x >= entitiesCount)
-		return;
-	uint id = visibleEntityIds[gl_GlobalInvocationID.x];
-	indirectCommands[gl_GlobalInvocationID.x] = DrawElementsIndirectCommand(
-		meshInfo[id].elementsCount,
-		1,
-		meshInfo[id].elementsStart,
-		0,
-		id
-	);
 }
 )";
 }

@@ -37,7 +37,8 @@ namespace qgl {
 		virtual void DeleteEntity(uint32_t entityId) override;
 		virtual uint32_t GetEntitiesCount() const override;
 		
-		virtual void Initialize() override;
+		virtual void Init() override;
+		virtual void Destroy() override;
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		virtual void SetEntityTransformsQuat(uint32_t entityId,
@@ -45,14 +46,6 @@ namespace qgl {
 				glm::vec3 scale={1,1,1}) override;
 		
 		virtual uint32_t GetEntityOffset(uint32_t entityId) const override;
-		
-	public:
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
-		
-	protected:
-		
-		virtual void FlushDataToGPU() override;
 		
 	protected:
 
@@ -72,7 +65,7 @@ namespace qgl {
 		
 		ManagedSparselyUpdatedVBO<glm::mat4> transformMatrices;
 		
-		EntityBufferManager entityBufferManager;
+		std::shared_ptr<EntityBufferManager> entityBufferManager;
 	};
 }
 

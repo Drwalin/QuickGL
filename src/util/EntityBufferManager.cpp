@@ -18,20 +18,21 @@
 
 #include <cstdio>
 
-#include <unordered_map>
-
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
-#include "../include/quickgl/util/DeltaVboManager.hpp"
-#include "../include/quickgl/util/MoveVboUpdater.hpp"
+#include "../../include/quickgl/util/DeltaVboManager.hpp"
+#include "../../include/quickgl/util/MoveVboUpdater.hpp"
+#include "../../include/quickgl/pipelines/Pipeline.hpp"
+#include "../../include/quickgl/GlobalEntityManager.hpp"
 
 #include "../../include/quickgl/util/EntityBufferManager.hpp"
 
 namespace qgl {
-	EntityBufferManager::EntityBufferManager(std::shared_ptr<Engine> engine) :
-		mapOffsetToEntity(engine), engine(engine) {
+	EntityBufferManager::EntityBufferManager(std::shared_ptr<Engine> engine,
+			std::shared_ptr<Pipeline> pipeline) :
+		mapOffsetToEntity(engine), engine(engine), pipeline(pipeline) {
 	}
 	
 	uint64_t EntityBufferManager::allEntitiesAdded = 0;
@@ -42,7 +43,6 @@ namespace qgl {
 	
 	void EntityBufferManager::Init() {
 		mapOffsetToEntity.Init();
-		lastAddedEntity = 1;
 		entitiesCount = 0;
 		entitiesBufferSize = 0;
 	}
@@ -53,23 +53,15 @@ namespace qgl {
 		deltaFromTo.clear();
 		deltaBuffer.clear();
 		freeingEntites.clear();
-		mapEntityToOffset.clear();
 		buffers.clear();
 	}
 	
 	uint32_t EntityBufferManager::GetNewEntity() {
 		allEntitiesAdded++;
-		uint32_t entity = 0;
-		for(;;) {
-			entity = ++lastAddedEntity;
-			if(entity == 0)
-				continue;
-			if(mapEntityToOffset.find(entity) == mapEntityToOffset.end())
-				break;
-		}
-		
 		uint32_t offset = entitiesBufferSize;
-		mapEntityToOffset[entity] = offset;
+		uint32_t entity = engine->GetGlobalEntityManager()
+			->GetNewEntity(pipeline->shared_from_this(), offset);
+		
 		mapOffsetToEntity.SetValue(entity, offset);
 		
 		entitiesBufferSize++;
@@ -190,15 +182,16 @@ namespace qgl {
 	}
 	
 	uint32_t EntityBufferManager::GetOffsetOfEntity(uint32_t entity) const {
-		return mapEntityToOffset.at(entity);
+		return engine->GetGlobalEntityManager()->GetEntityOffset(entity);
 	}
 	
 	void EntityBufferManager::GenerateDeltaBuffer() {
 		deltaBuffer.clear();
 		deltaFromTo.clear();
 		for(const uint32_t entity : freeingEntites) {
-			const uint32_t offset = mapEntityToOffset[entity];
-			mapEntityToOffset.erase(entity);
+			const uint32_t offset = engine->GetGlobalEntityManager()
+				->GetEntityOffset(entity);
+			engine->GetGlobalEntityManager()->FreeEntity(entity);
 			deltaFromTo.erase(entity);
 			entitiesBufferSize--;
 			
@@ -210,7 +203,9 @@ namespace qgl {
 			const uint32_t otherEntity = mapOffsetToEntity.GetValue(otherOffset);
 			
 			mapOffsetToEntity.SetValue(otherEntity, offset);
-			mapEntityToOffset[otherEntity] = offset;
+			
+			engine->GetGlobalEntityManager()
+				->SetEntityOffset(otherEntity, offset);
 			
 			auto it = deltaFromTo.find(otherEntity);
 			if(it == deltaFromTo.end()) {

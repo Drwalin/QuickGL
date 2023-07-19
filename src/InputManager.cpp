@@ -16,9 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../include/quickgl/InputManager.hpp"
-
 #include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+
+#include "../include/quickgl/InputManager.hpp"
 
 namespace qgl {
 	void InputManager::Init() {
@@ -35,7 +35,7 @@ namespace qgl {
 		for(int i=0; i<32; ++i)
 			glfwPollEvents();
 		
-		float t2 = glfwGetTime();
+		double t2 = glfwGetTime();
 		deltaTime = t2 - time;
 		time = t2;
 	}

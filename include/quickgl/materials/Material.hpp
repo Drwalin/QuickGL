@@ -16,49 +16,44 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_INPUT_MANAGER_HPP
-#define QUICKGL_INPUT_MANAGER_HPP
+#ifndef QUICKGL_MATERIAL_HPP
+#define QUICKGL_MATERIAL_HPP
 
-#include <vector>
+#include <memory>
 #include <string>
 
-#include <glm/glm.hpp>
-
-#include "util/Log.hpp"
-
-class GLFWwindow;
+namespace gl {
+	class VBO;
+	class VAO;
+	class Shader;
+}
 
 namespace qgl {
-	class InputManager {
+	class Camera;
+	class Pipeline;
+	class Engine;
+	class MeshManager;
+	
+	class Material : std::enable_shared_from_this<Material> {
 	public:
 		
-		InputManager() = default;
-		~InputManager() = default;
+		Material(std::shared_ptr<Pipeline> pipeline);
+		virtual ~Material();
 		
-		void Init();
+		virtual void Init();
+		virtual void Destroy();
 		
-		void NewFrame();
+		virtual std::shared_ptr<Pipeline> GetPipeline() = 0;
 		
-		std::string GetClipboardContent() const;
-		void SetClipboardContent(std::string value);
+		virtual std::string GetName() const = 0;
 		
-		void LockMouse();
-		void UnlockMouse();
+		virtual void RenderPassIndirect(std::shared_ptr<Camera> camera,
+				gl::VBO& indirectBuffer,
+				uint32_t entitiesCount) = 0;
 		
-		glm::vec3 GetMouseDelta() const;
-		glm::vec3 GetMousePos() const;
+	protected:
 		
-		bool IsKeyDown(const int id) const;
-		bool IsKeyUp(const int id) const;
-		bool WasKeyPressed(const int id) const;
-		bool WasKeyReleased(const int id) const;
-		
-		inline float GetTime() { return time; }
-		inline float GetDeltaTime() { return deltaTime; }
-		
-	private:
-		
-		double time, deltaTime;
+		std::shared_ptr<Engine> engine;
 	};
 }
 

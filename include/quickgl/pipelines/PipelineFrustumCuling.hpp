@@ -43,24 +43,16 @@ namespace qgl {
 		
 		virtual uint32_t GetEntitiesToRender() const override;
 		
-		virtual void Initialize() override;
-		
-	public:
-		
-		virtual void GenerateRenderStages(std::vector<Stage>& stages) override;
-		
-	protected:
-		
-		virtual void FlushDataToGPU() override;
+		virtual void Init() override;
+		virtual void Destroy() override;
 		
 	protected:
 		
 		uint32_t frustumCulledEntitiesCount;
+		
+	protected:
+		
 		std::shared_ptr<gl::VBO> indirectDrawBuffer;
-		
-	private:
-		
-		std::unique_ptr<gl::Shader> indirectDrawBufferShader;
 		
 		std::unique_ptr<gl::Shader> frustumCullingShader;
 		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
@@ -70,7 +62,6 @@ namespace qgl {
 		std::shared_ptr<gl::VBO> clippingPlanes;
 		
 		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;
-		static const char* INDIRECT_DRAW_BUFFER_COMPUTE_SHADER_SOURCE;
 		
 		gl::Sync syncFrustumCulledEntitiesCountReadyToFetch;
 		

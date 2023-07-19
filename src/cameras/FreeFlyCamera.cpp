@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <cmath>
+
 #include <glm/gtc/quaternion.hpp>
 #include <glm/matrix.hpp>
 
@@ -25,6 +27,8 @@
 #include "../../include/quickgl/InputManager.hpp"
 
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
+
+#define M_PI 3.141592
 
 namespace qgl {
 	FreeFlyCamera::FreeFlyCamera() {
