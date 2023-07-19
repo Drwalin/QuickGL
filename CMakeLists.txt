@@ -32,7 +32,7 @@ include_directories(./thirdparty/imgui/)
 include_directories(./thirdparty/imgui/backends)
 aux_source_directory(./thirdparty/imgui/ imgui)
 
-add_library(QuickGL SHARED
+add_library(QuickGL STATIC
 	${header_files}
 	${source_files}
 	${header_files_util}
