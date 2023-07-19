@@ -106,9 +106,13 @@ namespace qgl {
 	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
 			glm::vec3 pos, glm::quat rot, glm::vec3 scale) {
 		entityId = GetEntityOffset(entityId);
-		glm::mat4 t = glm::translate(glm::scale(
-					glm::mat4_cast(rot), scale), pos);
-		transformMatrices.SetValue(t, entityId);
+// 		glm::mat4 t = glm::translate(glm::scale(
+// 					glm::mat4_cast(rot), scale), pos);
+		glm::mat4 t = glm::translate(glm::mat4(1), pos);
+		glm::mat4 r = glm::mat4_cast(rot);
+		glm::mat4 s = glm::scale(glm::mat4(1), scale);
+		glm::mat4 T = t*r*s;
+		transformMatrices.SetValue(T, entityId);
 	}
 	
 	uint32_t PipelineIdsManagedBase::GetEntityOffset(uint32_t entityId) const {

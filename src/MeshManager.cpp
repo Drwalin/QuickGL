@@ -54,38 +54,87 @@ namespace qgl {
 	}
 	
 	bool MeshManager::LoadModels(std::shared_ptr<gl::BasicMeshLoader::AssimpLoader> loader) {
-		std::vector<uint8_t> vboSrc, eboSrc;
 		for(auto& mesh : loader->meshes) {
-			MeshInfo info;
-			
-			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
-					info.boundingSphereRadius);
-			
-			vboSrc.clear();
-			meshAppenderVertices(vboSrc, 0, mesh.get());
-			info.countVertices = mesh->pos.size();
-			info.firstVertex = vboAllocator.Allocate(info.countVertices);
-			
-			eboSrc.clear();
-			mesh->AppendIndices<uint32_t>(info.firstVertex, eboSrc);
-			info.countElements = mesh->indices.size();
-			info.firstElement = eboAllocator.Allocate(info.countElements);
-			
-			std::string name = mesh->name;
-			uint32_t meshId = idsManager.GetNewId();
-			mapNameToId[name] = meshId;
-			if(meshInfo.size() <= meshId) {
-				meshInfo.resize(meshId+100);
-			}
-			meshInfo[meshId] = info;
-			
-			vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
-					info.countVertices*vertexSize);
-			
-			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
-					info.countElements*sizeof(uint32_t));
+			LoadMesh(mesh.get());
 		}
 		return loader->meshes.size() > 0;
+	}
+	
+	uint32_t MeshManager::CreateMeshFromData(std::string name,
+			const std::vector<glm::vec3>& pos,
+			const std::vector<glm::vec3>& normal,
+			const std::vector<std::vector<glm::vec4>>& color,
+			const std::vector<std::vector<glm::vec2>>& uv,
+			const std::vector<uint32_t>& indices,
+			float boundingSphereRadiusMultiplier) {
+		gl::BasicMeshLoader::Mesh mesh;
+		
+		mesh.name = name;
+		
+		mesh.pos.insert(mesh.pos.begin(), pos.begin(), pos.end());
+		mesh.normal.insert(mesh.normal.begin(), normal.begin(), normal.end());
+		mesh.uv.resize(uv.size());
+		for(int i=0; i<uv.size(); ++i)
+			mesh.uv[i].insert(mesh.uv[i].begin(), uv[i].begin(), uv[i].end());
+		mesh.color.resize(color.size());
+		for(int i=0; i<color.size(); ++i)
+			mesh.color[i].insert(mesh.color[i].begin(), color[i].begin(), color[i].end());
+		mesh.indices = indices;
+		
+		mesh.boundingBoxMax = mesh.boundingBoxMin = pos[0];
+		for(glm::vec3 v : pos) {
+			mesh.boundingBoxMin.x = std::min(mesh.boundingBoxMin.x, v.x);
+			mesh.boundingBoxMin.y = std::min(mesh.boundingBoxMin.y, v.y);
+			mesh.boundingBoxMin.z = std::min(mesh.boundingBoxMin.z, v.z);
+			mesh.boundingBoxMax.x = std::max(mesh.boundingBoxMax.x, v.x);
+			mesh.boundingBoxMax.y = std::max(mesh.boundingBoxMax.y, v.y);
+			mesh.boundingBoxMax.z = std::max(mesh.boundingBoxMax.z, v.z);
+		}
+		
+		mesh.boundingSphereCenter =
+			(mesh.boundingBoxMin + mesh.boundingBoxMax) * 0.5f;
+		float r2 = 0;
+		for(glm::vec3 v : pos) {
+			r2 = std::max(r2, glm::dot(v-mesh.boundingSphereCenter,
+						v-mesh.boundingSphereCenter));
+		}
+		mesh.boundingSphereRadius = sqrt(r2)*boundingSphereRadiusMultiplier;
+		
+		LoadMesh(&mesh);
+		
+		return GetMeshIdByName(name);
+	}
+	
+	void MeshManager::LoadMesh(gl::BasicMeshLoader::Mesh* mesh) {
+		std::vector<uint8_t> vboSrc, eboSrc;
+		MeshInfo info;
+		
+		mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
+				info.boundingSphereRadius);
+		
+		vboSrc.clear();
+		meshAppenderVertices(vboSrc, 0, mesh);
+		info.countVertices = mesh->pos.size();
+		info.firstVertex = vboAllocator.Allocate(info.countVertices);
+		
+		eboSrc.clear();
+		mesh->AppendIndices<uint32_t>(info.firstVertex, eboSrc);
+		info.countElements = mesh->indices.size();
+		info.firstElement = eboAllocator.Allocate(info.countElements);
+		
+		std::string name = mesh->name;
+		uint32_t meshId = idsManager.GetNewId();
+		mapNameToId[name] = meshId;
+		if(meshInfo.size() <= meshId) {
+			meshInfo.resize(meshId+100);
+		}
+		meshInfo[meshId] = info;
+		
+		vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
+				info.countVertices*vertexSize);
+		
+		ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
+				info.countElements*sizeof(uint32_t));
 	}
 	
 	MeshManager::MeshInfo MeshManager::GetMeshInfoById(uint32_t id) const {

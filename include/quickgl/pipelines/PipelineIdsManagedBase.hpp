@@ -42,7 +42,7 @@ namespace qgl {
 		
 		virtual void SetEntityMesh(uint32_t entityId, uint32_t meshId) override;
 		virtual void SetEntityTransformsQuat(uint32_t entityId,
-				glm::vec3 pos={0,0,0}, glm::quat rot={0,0,0,1},
+				glm::vec3 pos={0,0,0}, glm::quat rot=glm::angleAxis(0.0f,glm::vec3(0,1,0)),
 				glm::vec3 scale={1,1,1}) override;
 		
 		virtual uint32_t GetEntityOffset(uint32_t entityId) const override;
