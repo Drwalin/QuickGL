@@ -199,7 +199,9 @@ int main() {
 		qgl::Log::sync = false;
 		qgl::Log::EmptyLine(10);
 		QUICKGL_LOG("start new frame");
+#ifdef QUICKGL_ENABLE_LOG
 		auto frame_start_timepoint = std::chrono::steady_clock::now();
+#endif
 		
 		bool pressedSomething = false;
 		
