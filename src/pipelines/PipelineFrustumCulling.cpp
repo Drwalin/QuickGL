@@ -129,14 +129,14 @@ namespace qgl {
 		if(i != frustumCulledIdsBuffer->GetVertexCount()) {
 			frustumCulledIdsBuffer->Generate(nullptr, i);
 		}
-		frustumCulledEntitiesCount = 0;
-		frustumCulledIdsCountAtomicCounter
-			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 	}
 		
 	void PipelineFrustumCulling::UpdateClippingPlanesOfCameraToGPU(std::shared_ptr<Camera> camera) {
 		camera->GetClippingPlanes(clippingPlanesValues);
 		clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
+		frustumCulledEntitiesCount = 0;
+		frustumCulledIdsCountAtomicCounter
+			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
 	}
 	
 	void PipelineFrustumCulling::PerformFrustumCulling(std::shared_ptr<Camera> camera) {
@@ -189,11 +189,12 @@ namespace qgl {
 		// fetch number of entities to render after culling
 		frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
 
-		if(indirectDrawBuffer->GetVertexCount()
-				< frustumCulledEntitiesCount) {
+		if(indirectDrawBuffer->GetVertexCount() < frustumCulledEntitiesCount) {
 			indirectDrawBuffer->Generate(nullptr,
-					frustumCulledEntitiesCount | 0xFFF);
+					(frustumCulledEntitiesCount | 0xFFF) + 1);
 		}
+		
+// 		gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
 	}
 
 	bool PipelineFrustumCulling::CanExecuteFetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera) {

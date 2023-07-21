@@ -347,8 +347,6 @@ int main() {
 				camera2->ProcessDefaultInput(engine);
 		}
 		
-		camera->SetRenderTargetDimensions(256, 256);
-		
 		// render
 		auto s = std::chrono::steady_clock::now();
 		engine->Render();
