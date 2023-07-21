@@ -48,6 +48,11 @@ namespace qgl {
 		virtual uint32_t GetEntityOffset(uint32_t entityId) const override;
 		
 	protected:
+		
+		void UpdateIDManagerData(std::shared_ptr<Camera>);
+		void UpdateEntityBufferManager(std::shared_ptr<Camera>);
+		
+	protected:
 
 		struct PerEntityMeshInfo {
 			uint32_t elementsStart;

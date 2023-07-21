@@ -54,6 +54,15 @@ namespace qgl {
 		
 	protected:
 		
+		void UpdateAnimationData(std::shared_ptr<Camera> camera);
+		void UpdateAnimationState(std::shared_ptr<Camera> camera);
+		void RenderEntities(std::shared_ptr<Camera> camera);
+		int32_t ENTITIES_COUNT_LOCATION;
+		int32_t DELTA_TIME_LOCATION;
+		int32_t TIME_STAMP_LOCATION;
+		
+	protected:
+		
 		friend class MaterialBoneAnimated;
 		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
