@@ -21,6 +21,7 @@
 #include <thread>
 
 #include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include "../OpenGLWrapper/include/openglwrapper/FBO.hpp"
 
 #include "../include/quickgl/cameras/Camera.hpp"
 #include "../include/quickgl/pipelines/Pipeline.hpp"
@@ -29,6 +30,7 @@
 #include "../include/quickgl/util/MoveVboUpdater.hpp"
 #include "../include/quickgl/GlobalEntityManager.hpp"
 #include "../include/quickgl/IndirectDrawBufferGenerator.hpp"
+#include "../include/quickgl/BlitCameraToScreen.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -63,6 +65,8 @@ namespace qgl {
 		indirectDrawBufferGenerator
 			= std::make_shared<IndirectDrawBufferGenerator>(shared_from_this());
 		indirectDrawBufferGenerator->Init();
+		
+		blitTexture = std::make_shared<BlitCameraToScreen>();
 	}
 	
 	void Engine::Destroy() {
@@ -87,6 +91,8 @@ namespace qgl {
 			gl::openGL.Destroy();
 			glfwTerminate();
 			initialized = false;
+			
+			blitTexture = nullptr;
 		}
 	}
 	
@@ -118,7 +124,6 @@ namespace qgl {
 	}
 	
 	void Engine::BeginNewFrame() {
-		gl::openGL.InitFrame();
 		inputManager.NewFrame();
 		Gui::BeginNewFrame();
 	}
@@ -126,6 +131,7 @@ namespace qgl {
 	void Engine::Render() {
 		for(auto c : cameras) {
 			c->PrepareDataForNewFrame();
+			c->Clear(true);
 		}
 		
 		renderStageComposer.ResetExecution();
@@ -134,6 +140,13 @@ namespace qgl {
 				std::this_thread::sleep_for(std::chrono::microseconds(100));
 			}
 			// do some CPU work between render stages here
+		}
+		gl::FBO::Unbind();
+		if(mainCamera) {
+			blitTexture->Blit(
+					mainCamera->GetMainColorTexture(),
+					gl::openGL.GetWidth(),
+					gl::openGL.GetHeight());
 		}
 	}
 	

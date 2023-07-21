@@ -65,18 +65,23 @@ namespace qgl {
 		stagesScheduler.AddStage(
 				"Update ID manager data",
 				STAGE_UPDATE_DATA,
-				[this](std::shared_ptr<Camera>) {
-					perEntityMeshInfo.UpdateVBO();
-					perEntityMeshInfoBoundingSphere.UpdateVBO();
-					transformMatrices.UpdateVBO();
-				});
+				&PipelineIdsManagedBase::UpdateIDManagerData);
 		
 		stagesScheduler.AddStage(
 				"Updating EntityBufferManager",
 				STAGE_GLOBAL,
-				[this](std::shared_ptr<Camera>) {
-					entityBufferManager->UpdateBuffers();
-				});
+				&PipelineIdsManagedBase::UpdateEntityBufferManager);
+	}
+	
+	void PipelineIdsManagedBase::UpdateIDManagerData(std::shared_ptr<Camera>) {
+		perEntityMeshInfo.UpdateVBO();
+		perEntityMeshInfoBoundingSphere.UpdateVBO();
+		transformMatrices.UpdateVBO();
+	}
+	
+	void PipelineIdsManagedBase::UpdateEntityBufferManager(
+			std::shared_ptr<Camera>) {
+		entityBufferManager->UpdateBuffers();
 	}
 	
 	void PipelineIdsManagedBase::Destroy() {
@@ -106,9 +111,13 @@ namespace qgl {
 	void PipelineIdsManagedBase::SetEntityTransformsQuat(uint32_t entityId,
 			glm::vec3 pos, glm::quat rot, glm::vec3 scale) {
 		entityId = GetEntityOffset(entityId);
-		glm::mat4 t = glm::translate(glm::scale(
-					glm::mat4_cast(rot), scale), pos);
-		transformMatrices.SetValue(t, entityId);
+// 		glm::mat4 t = glm::translate(glm::scale(
+// 					glm::mat4_cast(rot), scale), pos);
+		glm::mat4 t = glm::translate(glm::mat4(1), pos);
+		glm::mat4 r = glm::mat4_cast(rot);
+		glm::mat4 s = glm::scale(glm::mat4(1), scale);
+		glm::mat4 T = t*r*s;
+		transformMatrices.SetValue(T, entityId);
 	}
 	
 	uint32_t PipelineIdsManagedBase::GetEntityOffset(uint32_t entityId) const {

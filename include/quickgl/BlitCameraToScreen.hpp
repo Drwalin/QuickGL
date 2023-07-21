@@ -16,29 +16,37 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_FREE_FLY_CAMERA_HPP
-#define QUICKGL_FREE_FLY_CAMERA_HPP
+#ifndef QUICKGL_BLIT_CAMERA_TO_SCREEN_HPP
+#define QUICKGL_BLIT_CAMERA_TO_SCREEN_HPP
 
 #include <memory>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/ext/quaternion_float.hpp>
-
-#include "CameraBasicMaterials.hpp"
+namespace gl {
+	class VBO;
+	class Shader;
+	class VAO;
+	class Texture;
+}
 
 namespace qgl {
-	class Engine;
+	class Camera;
 	
-	class FreeFlyCamera : public CameraBasicMaterials {
+	class BlitCameraToScreen final {
 	public:
 		
-		FreeFlyCamera();
-		virtual ~FreeFlyCamera();
+		BlitCameraToScreen();
 		
-		virtual void PrepareDataForNewFrame() override;
+		void Blit(std::shared_ptr<gl::Texture> texture,
+				uint32_t width,
+				uint32_t height);
 		
-		void ProcessDefaultInput(std::shared_ptr<Engine> engine);
+	private:
+		
+		uint32_t textureLocation;
+		
+		std::shared_ptr<gl::Shader> shader;
+		std::shared_ptr<gl::VBO> vbo;
+		std::shared_ptr<gl::VAO> vao;
 	};
 }
 

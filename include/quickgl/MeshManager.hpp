@@ -25,6 +25,8 @@
 #include <map>
 #include <set>
 
+#include <glm/glm.hpp>
+
 #include "util/AllocatorVBO.hpp"
 #include "util/BufferedVBO.hpp"
 #include "util/IdsManager.hpp"
@@ -76,6 +78,16 @@ namespace qgl {
 				uint32_t& indexCount);
 		void GetMeshBoundingSphere(uint32_t meshId, float* offset,
 				float& radius);
+		
+		uint32_t CreateMeshFromData(std::string name,
+				const std::vector<glm::vec3>& pos,
+				const std::vector<glm::vec3>& normal,
+				const std::vector<std::vector<glm::vec4>>& color,
+				const std::vector<std::vector<glm::vec2>>& uv,
+				const std::vector<uint32_t>& indices,
+				float boundingSphereRadiusMultiplier=1.0f);
+		
+		void LoadMesh(gl::BasicMeshLoader::Mesh* mesh);
 		
 		gl::VBO& GetVBO() { return vbo; }
 		gl::VBO& GetEBO() { return ebo; }

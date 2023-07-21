@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef QUICKGL_FREE_FLY_CAMERA_HPP
-#define QUICKGL_FREE_FLY_CAMERA_HPP
+#ifndef QUICKGL_CAMERA_BASIC_MATERIALS_HPP
+#define QUICKGL_CAMERA_BASIC_MATERIALS_HPP
 
 #include <memory>
 
@@ -25,20 +25,26 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/ext/quaternion_float.hpp>
 
-#include "CameraBasicMaterials.hpp"
+#include "CameraBasic.hpp"
 
 namespace qgl {
 	class Engine;
 	
-	class FreeFlyCamera : public CameraBasicMaterials {
+	class CameraBasicMaterials : public CameraBasic {
 	public:
 		
-		FreeFlyCamera();
-		virtual ~FreeFlyCamera();
+		CameraBasicMaterials(uint32_t width, uint32_t height);
+		virtual ~CameraBasicMaterials();
 		
 		virtual void PrepareDataForNewFrame() override;
 		
-		void ProcessDefaultInput(std::shared_ptr<Engine> engine);
+		virtual std::shared_ptr<gl::Texture> GetMainColorTexture() override;
+		
+		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) override;
+		
+	protected:
+		
+		std::shared_ptr<gl::Texture> colorTexture;
 	};
 }
 

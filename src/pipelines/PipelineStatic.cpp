@@ -58,12 +58,12 @@ namespace qgl {
 		stagesScheduler.AddStage(
 			"Render static entities",
 			STAGE_1_RENDER_PASS_1,
-			[=](std::shared_ptr<Camera> camera) {
-				this->material->RenderPassIndirect(camera,
-						*indirectDrawBuffer,
-						frustumCulledEntitiesCount
-						);
-			});
+			&PipelineStatic::RenderEntities);
+	}
+	
+	void PipelineStatic::RenderEntities(std::shared_ptr<Camera> camera) {
+		material->RenderPassIndirect(camera, *indirectDrawBuffer,
+				frustumCulledEntitiesCount);
 	}
 	
 	void PipelineStatic::Destroy() {

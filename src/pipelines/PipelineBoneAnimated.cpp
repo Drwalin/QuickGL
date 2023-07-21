@@ -88,55 +88,57 @@ namespace qgl {
 		entityBufferManager
 			->AddManagedSparselyUpdateVBO(&perEntityAnimationState);
 		
+		ENTITIES_COUNT_LOCATION =
+			updateAnimationShader->GetUniformLocation("entitiesCount");
+		DELTA_TIME_LOCATION =
+			updateAnimationShader->GetUniformLocation("deltaTime");
+		TIME_STAMP_LOCATION =
+			updateAnimationShader->GetUniformLocation("timeStamp");
+		
 		stagesScheduler.AddStage(
 			"Update animation data",
 			STAGE_UPDATE_DATA,
-			[this](std::shared_ptr<Camera>) {
-				perEntityAnimationState.UpdateVBO();
-			});
-		
-		{
-		const int32_t ENTITIES_COUNT_LOCATION =
-			updateAnimationShader->GetUniformLocation("entitiesCount");
-		const int32_t DELTA_TIME_LOCATION =
-			updateAnimationShader->GetUniformLocation("deltaTime");
-		const int32_t TIME_STAMP_LOCATION =
-			updateAnimationShader->GetUniformLocation("timeStamp");
+			&PipelineBoneAnimated::UpdateAnimationData);
 		
 		stagesScheduler.AddStage(
 			"Update animation state",
 			STAGE_GLOBAL,
-			[=](std::shared_ptr<Camera> camera) {
-				updateAnimationShader->Use();
-				
-				updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
-						GetEntitiesCount());
-				updateAnimationShader->SetFloat(DELTA_TIME_LOCATION,
-						engine->GetInputManager().GetDeltaTime());
-				updateAnimationShader->SetFloat(TIME_STAMP_LOCATION,
-						engine->GetInputManager().GetTime());
-				
-				perEntityAnimationState.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-				animatedMeshManager->GetAnimationManager()
-					.GetAnimationsMetadata().Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-				
-				updateAnimationShader->DispatchRoundGroupNumbers(
-						GetEntitiesCount(), 1, 1);
-				gl::Shader::Unuse();
-			});
-		}
+			&PipelineBoneAnimated::UpdateAnimationState);
 		
 		stagesScheduler.AddStage(
 			"Render bone animated entities",
 			STAGE_1_RENDER_PASS_1,
-			[=](std::shared_ptr<Camera> camera) {
-				this->material->RenderPassIndirect(camera,
-						*indirectDrawBuffer,
-						frustumCulledEntitiesCount
-						);
-			});
+			&PipelineBoneAnimated::RenderEntities);
+	}
+	
+	void PipelineBoneAnimated::UpdateAnimationData(std::shared_ptr<Camera> camera) {
+		perEntityAnimationState.UpdateVBO();
+	}
+	
+	void PipelineBoneAnimated::UpdateAnimationState(std::shared_ptr<Camera> camera) {
+		updateAnimationShader->Use();
+
+		updateAnimationShader->SetUInt(ENTITIES_COUNT_LOCATION,
+				GetEntitiesCount());
+		updateAnimationShader->SetFloat(DELTA_TIME_LOCATION,
+				engine->GetInputManager().GetDeltaTime());
+		updateAnimationShader->SetFloat(TIME_STAMP_LOCATION,
+				engine->GetInputManager().GetTime());
+
+		perEntityAnimationState.Vbo()
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+		animatedMeshManager->GetAnimationManager()
+			.GetAnimationsMetadata().Vbo()
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
+
+		updateAnimationShader->DispatchRoundGroupNumbers(
+				GetEntitiesCount(), 1, 1);
+		gl::Shader::Unuse();
+	}
+	
+	void PipelineBoneAnimated::RenderEntities(std::shared_ptr<Camera> camera) {
+		material->RenderPassIndirect(camera, *indirectDrawBuffer,
+				frustumCulledEntitiesCount);
 	}
 	
 	void PipelineBoneAnimated::Destroy() {
