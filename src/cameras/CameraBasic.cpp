@@ -132,17 +132,20 @@ namespace qgl {
 		
 	void CameraBasic::SetRenderTargetDimensions(uint32_t width,
 			uint32_t height) {
-		aspectRatio = ((float)width)/((float)height);
-		fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
-		depthTexture->UpdateTextureData(
-				nullptr,
-				width,
-				height,
-				false,
-				gl::TEXTURE_2D,
-				(gl::TextureSizedInternalFormat)GL_DEPTH24_STENCIL8,
-				(gl::TextureDataFormat)GL_DEPTH_STENCIL,
-				(gl::DataType)GL_UNSIGNED_INT_24_8);
+		if(width != depthTexture->GetWidth() ||
+				height != depthTexture->GetTexture()) {
+			aspectRatio = ((float)width)/((float)height);
+			fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
+			depthTexture->UpdateTextureData(
+					nullptr,
+					width,
+					height,
+					false,
+					gl::TEXTURE_2D,
+					(gl::TextureSizedInternalFormat)GL_DEPTH24_STENCIL8,
+					(gl::TextureDataFormat)GL_DEPTH_STENCIL,
+					(gl::DataType)GL_UNSIGNED_INT_24_8);
+		}
 	}
 	
 	void CameraBasic::GetRenderTargetDimensions(uint32_t& width,

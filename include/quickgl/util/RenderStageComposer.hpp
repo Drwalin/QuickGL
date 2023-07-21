@@ -62,7 +62,6 @@ namespace qgl {
 	};
 	
 	struct Stage {
-// 		Stage() = default;
 		Stage(Stage&&) = default;
 		Stage(Stage&) = delete;
 		Stage(const Stage&) = delete;
