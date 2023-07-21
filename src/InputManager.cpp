@@ -51,6 +51,7 @@ namespace qgl {
 	
 	
 	void InputManager::LockMouse() {
+		gl::openGL.firstMouse = true;
 		glfwSetInputMode(gl::openGL.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 	
