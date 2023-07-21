@@ -33,6 +33,7 @@ namespace qgl {
 	class MoveVboManager;
 	class GlobalEntityManager;
 	class IndirectDrawBufferGenerator;
+	class BlitCameraToScreen;
 	
 	class Engine : public std::enable_shared_from_this<Engine> {
 	public:
@@ -97,6 +98,8 @@ namespace qgl {
 		std::shared_ptr<GlobalEntityManager> globalEntityManager;
 		
 		std::shared_ptr<IndirectDrawBufferGenerator> indirectDrawBufferGenerator;
+		
+		std::shared_ptr<BlitCameraToScreen> blitTexture;
 	};
 }
 

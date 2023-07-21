@@ -43,7 +43,13 @@ namespace qgl {
 	
 	
 	
-	bool Stage::EmptyCanExecute(std::shared_ptr<Camera>) {
+	void Stage::Execute(std::shared_ptr<Camera> camera) {
+		(pipeline.get()->*(taskFunction))(camera);
+	}
+	
+	bool Stage::CanExecute(std::shared_ptr<Camera> camera) {
+		if(canExecute)
+			return (pipeline.get()->*(canExecute))(camera);
 		return true;
 	}
 	
@@ -81,22 +87,13 @@ namespace qgl {
 		}
 	}
 	
-	void PipelineStagesScheduler::AddStage(
-				std::string name,
-				StageOrder stageOrder,
-				std::function<void(std::shared_ptr<Camera>)> taskFunction,
-				std::function<bool(std::shared_ptr<Camera>)> canExecute) {
-		AddStage(std::make_shared<Stage>(name, stageOrder, pipeline,
-					taskFunction, canExecute));
-	}
-	
 	bool PipelineStagesScheduler::HasMoreStages() {
 		return GetNextStage() != nullptr;
 	}
 	
 	bool PipelineStagesScheduler::CanExecuteNextStage() {
 		auto stage = GetNextStage();
-		bool ret = stage->canExecute(currentCamera);
+		bool ret = stage->CanExecute(currentCamera);
 		if(currentCamera && ret
 				&& stage->executionPolicy & STAGE_SYNC_AFTER_OTHER_MATERIALS_CURRENT_CAMERA) {
 			return renderStageComposer->CanExecuteSyncStage(currentCameraId,
@@ -112,7 +109,7 @@ namespace qgl {
 					&& stage->pipeline->GetStageScheduler().GetCurrentCamera()) {
 				stage->pipeline->GetStageScheduler().GetCurrentCamera()->UseFbo();
 			}
-			stage->task(currentCamera);
+			stage->Execute(currentCamera);
 			
 			if(nextGlobalStage < globalStages.size()) {
 				++nextGlobalStage;
@@ -178,7 +175,7 @@ namespace qgl {
 	void RenderStageComposer::RemoveCamera(std::shared_ptr<Camera> camera) {
 		for(int i=0; i<cameras.size(); ++i) {
 			if(cameras[i] == camera) {
-				cameras.erase(cameras.begin()+1);
+				cameras.erase(cameras.begin()+i);
 				return;
 			}
 		}
@@ -206,10 +203,7 @@ namespace qgl {
 					std::chrono::duration<double>>(
 							end - start).count();
 	}
-	/* 
-	 * return false when nothing was updated (no ::canBeContinue() returned
-	 * true.
-	 */
+	
 	bool RenderStageComposer::ContinueStages() {
 		auto start = std::chrono::steady_clock::now();
 		if(this->enableGlFinishInEveryStageToProfile) {

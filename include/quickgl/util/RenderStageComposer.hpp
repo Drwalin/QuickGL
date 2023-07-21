@@ -62,7 +62,6 @@ namespace qgl {
 	};
 	
 	struct Stage {
-// 		Stage() = default;
 		Stage(Stage&&) = default;
 		Stage(Stage&) = delete;
 		Stage(const Stage&) = delete;
@@ -70,27 +69,26 @@ namespace qgl {
 		Stage& operator=(Stage&) = delete;
 		Stage& operator=(const Stage&) = delete;
 		
-		static bool EmptyCanExecute(std::shared_ptr<Camera>);
+		void Execute(std::shared_ptr<Camera> camera);
+		bool CanExecute(std::shared_ptr<Camera> camera);
 		
 		inline Stage(
 				std::string name,
 				StageOrder stageOrder,
 				std::shared_ptr<Pipeline> pipeline,
-				std::function<void(std::shared_ptr<Camera>)> taskFunction,
-				std::function<bool(std::shared_ptr<Camera>)> canExecute
-					= EmptyCanExecute
-				) :
+				void(Pipeline::* taskFunction)(std::shared_ptr<Camera>),
+				bool(Pipeline::* canExecute)(std::shared_ptr<Camera>) = nullptr) :
 					name(name),
 					executionPolicy(stageOrder),
-					task(taskFunction),
+					taskFunction(taskFunction),
 					canExecute(canExecute),
 					pipeline(pipeline) {
 		}
 		
 		const std::string name;
 		const StageOrder executionPolicy;
-		const std::function<void(std::shared_ptr<Camera>)> task;
-		const std::function<bool(std::shared_ptr<Camera>)> canExecute;
+		void(Pipeline::* taskFunction)(std::shared_ptr<Camera>);
+		bool(Pipeline::* canExecute)(std::shared_ptr<Camera>);
 		const std::shared_ptr<Pipeline> pipeline;
 	};
 	
@@ -119,12 +117,16 @@ namespace qgl {
 		void Destroy();
 		
 		void AddStage(std::shared_ptr<Stage> stage);
+		template<typename T>
 		void AddStage(
 				std::string name,
 				StageOrder stageOrder,
-				std::function<void(std::shared_ptr<Camera>)> taskFunction,
-				std::function<bool(std::shared_ptr<Camera>)> canExecute
-					= Stage::EmptyCanExecute);
+				void(T::* taskFunction)(std::shared_ptr<Camera>),
+				bool(T::* canExecute)(std::shared_ptr<Camera>) = nullptr) {
+			AddStage(std::make_shared<Stage>(name, stageOrder, pipeline,
+						(void(Pipeline::*)(std::shared_ptr<Camera>))taskFunction,
+						(bool(Pipeline::*)(std::shared_ptr<Camera>))canExecute));
+		}
 		
 		bool HasMoreStages();
 		bool CanExecuteNextStage();
@@ -167,6 +169,7 @@ namespace qgl {
 		void RenderAsLast(std::shared_ptr<Camera> camera);
 		
 		void ResetExecution();
+		
 		/* 
 		 * return false when nothing was updated (no ::canBeContinue() returned
 		 * true.
