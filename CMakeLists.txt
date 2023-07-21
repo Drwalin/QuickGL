@@ -6,10 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(BUILD_EXAMPLES "Build examples" ON)
-option(BUILD_DEBUG "Build debug" ON)
-option(BUILD_RELEASE "Build release" OFF)
-option(BUILD_TEST "Build tests" ON)
+option(QUICKGL_BUILD_EXAMPLES "Build QuickGL examples" ON)
+option(QUICKGL_BUILD_TEST "Build QuickGL tests" ON)
 
 add_subdirectory(OpenGLWrapper)
 
@@ -53,21 +51,16 @@ add_library(QuickGL
 )
 target_link_libraries(QuickGL OpenGLWrapper)
 
-
-
-
-# if(BUILD_TESTS)
+if(QUICKGL_BUILD_TESTS)
 	add_executable(tests
 		tests/TestsMain
 		tests/TestsAllocator
 		tests/TestsIdsManager
 	)
 	target_link_libraries(tests QuickGL)
-# endif()
+endif()
 
-
-
-if(BUILD_EXAMPLES)
+if(QUICKGL_BUILD_EXAMPLES)
 	add_executable(sample_conceptual_quickgl
 		samples/conceptual/DrwalinLibraries/Noise.cpp
 		samples/conceptual/DrwalinLibraries/Perlin.cpp
@@ -82,42 +75,4 @@ if(BUILD_EXAMPLES)
 	)
 	set_target_properties(run PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
-
-
-
-
-
-if(UNIX)
-elseif(WIN32)
-else()
-	# print error message: not tested platform
-endif()
-
-add_compile_options(-ggdb3)
-add_compile_options(-ggdb)
-add_compile_options(-pg)
-add_compile_options(-fprofile-arcs -ftest-coverage --coverage -lgcov)
-
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-Wall -ggdb3 -ggdb -pedantic -fprofile-arcs -ftest-coverage --coverage -lgcov -pg")
-set(CMAKE_CXX_FLAGS_RELEASE_INIT "-Wall -Ofast -s -pedantic")	
-	
-# if(BUILD_DEBUG)
-# 	add_compile_options(-ggdb3)
-# 	add_compile_options(-ggdb)
-# 	add_compile_options(-pg)
-# 	add_compile_options(--coverage)
-# 	# gcov file.cpp
-# 	# geninfo ./ -b ./ -o ./coverage.info
-# 	# genhtml ./coverage.info -o /tmp/html
-# else()
-# endif()
-
-# if(BUILD_RELEASE)
-# 	add_compile_options(-Ofast)
-# 	add_compile_options(-s)
-# else()
-# endif()
-
-
-
 
