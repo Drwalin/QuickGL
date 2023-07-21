@@ -14,6 +14,7 @@
 #include "../../include/quickgl/Gui.hpp"
 
 #include "../../include/quickgl/util/Log.hpp"
+#include "quickgl/cameras/CameraBasicMaterials.hpp"
 #include "quickgl/util/EntityBufferManager.hpp"
 
 #include <ctime>
@@ -141,6 +142,15 @@ int main() {
 	camera->SetFov(75);
 	camera->SetPosition({0,-2,100});
 	
+	
+	std::shared_ptr<qgl::FreeFlyCamera> camera2
+		= std::make_shared<qgl::FreeFlyCamera>();
+	camera2->SetRenderTargetDimensions(256, 256);
+	engine->AddCamera(camera2);
+	camera2->SetFov(75);
+	camera2->SetPosition({0,-2,100});
+	
+	
 	std::vector<uint32_t> entSta, entAni;
 	
 	TerrainGenerator tg(engine, pipelineStatic, pipelineAnimated);
@@ -194,6 +204,7 @@ int main() {
 	gl::VBO memb(1024*16, gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 	memb.Init();
 	
+	bool useMainCameraMovement = true;
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -323,11 +334,20 @@ int main() {
 		}
 		
 		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_M)) {
+			useMainCameraMovement = !useMainCameraMovement;
+		}
+		
 		// begin new frame
-		camera->SetRenderTargetDimensions(gl::openGL.width, gl::openGL.height);
 		engine->BeginNewFrame();
-		if(mouseLocked)
-			camera->ProcessDefaultInput(engine);
+		if(mouseLocked) {
+			if(useMainCameraMovement)
+				camera->ProcessDefaultInput(engine);
+			else
+				camera2->ProcessDefaultInput(engine);
+		}
+		
+		camera->SetRenderTargetDimensions(256, 256);
 		
 		// render
 		auto s = std::chrono::steady_clock::now();
@@ -390,6 +410,12 @@ int main() {
 					renderTime/1000000, renderTime%1000000);
 			ImGui::Text("Cpu time spent on each task separately sum: %6.6f us",
 					engine->CountCpuTime()*1000000);
+		ImGui::End();
+		
+		ImGui::Begin("Other camera");
+			ImGui::Image(
+					(ImTextureID)(int64_t)camera2->GetMainColorTexture()->GetTexture(),
+					{256, 256}, {0,1}, {1,0});
 		ImGui::End();
 		
 		gl::Flush();

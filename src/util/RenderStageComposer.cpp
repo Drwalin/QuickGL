@@ -175,7 +175,7 @@ namespace qgl {
 	void RenderStageComposer::RemoveCamera(std::shared_ptr<Camera> camera) {
 		for(int i=0; i<cameras.size(); ++i) {
 			if(cameras[i] == camera) {
-				cameras.erase(cameras.begin()+1);
+				cameras.erase(cameras.begin()+i);
 				return;
 			}
 		}
