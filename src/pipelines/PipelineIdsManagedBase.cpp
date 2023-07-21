@@ -65,18 +65,23 @@ namespace qgl {
 		stagesScheduler.AddStage(
 				"Update ID manager data",
 				STAGE_UPDATE_DATA,
-				[this](std::shared_ptr<Camera>) {
-					perEntityMeshInfo.UpdateVBO();
-					perEntityMeshInfoBoundingSphere.UpdateVBO();
-					transformMatrices.UpdateVBO();
-				});
+				&PipelineIdsManagedBase::UpdateIDManagerData);
 		
 		stagesScheduler.AddStage(
 				"Updating EntityBufferManager",
 				STAGE_GLOBAL,
-				[this](std::shared_ptr<Camera>) {
-					entityBufferManager->UpdateBuffers();
-				});
+				&PipelineIdsManagedBase::UpdateEntityBufferManager);
+	}
+	
+	void PipelineIdsManagedBase::UpdateIDManagerData(std::shared_ptr<Camera>) {
+		perEntityMeshInfo.UpdateVBO();
+		perEntityMeshInfoBoundingSphere.UpdateVBO();
+		transformMatrices.UpdateVBO();
+	}
+	
+	void PipelineIdsManagedBase::UpdateEntityBufferManager(
+			std::shared_ptr<Camera>) {
+		entityBufferManager->UpdateBuffers();
 	}
 	
 	void PipelineIdsManagedBase::Destroy() {

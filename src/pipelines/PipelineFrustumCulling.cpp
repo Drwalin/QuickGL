@@ -89,121 +89,132 @@ namespace qgl {
 				gl::DRAW_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
 		indirectDrawBuffer->Init(1024);
 		
+		FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
+			frustumCullingShader->GetUniformLocation("entitiesCount");
+		FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
+			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
+		
 		stagesScheduler.AddStage(
 			"Update frustum culling data",
 			STAGE_UPDATE_DATA,
-			[this](std::shared_ptr<Camera>) {
-				uint32_t i = frustumCulledIdsBuffer->GetVertexCount();
-				while(i < entityBufferManager->Count()) {
-					i = (i*3)/2 + 100;
-				}
-				if(i != frustumCulledIdsBuffer->GetVertexCount()) {
-					frustumCulledIdsBuffer->Generate(nullptr, i);
-				}
-				frustumCulledEntitiesCount = 0;
-				frustumCulledIdsCountAtomicCounter
-					->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
-			});
+			&PipelineFrustumCulling::UpdateFrustumCullingData);
 		
 		stagesScheduler.AddStage(
 			"Updating clipping planes of camera to GPU",
 			STAGE_CAMERA,
-			[=](std::shared_ptr<Camera> camera) {
-				camera->GetClippingPlanes(clippingPlanesValues);
-				clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
-			});
+			&PipelineFrustumCulling::UpdateClippingPlanesOfCameraToGPU);
 	
-		
-		{
-		const int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
-			frustumCullingShader->GetUniformLocation("entitiesCount");
-		const int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
-			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
-
 		stagesScheduler.AddStage(
 			"Performing frustum culling",
 			STAGE_CAMERA,
-			[=](std::shared_ptr<Camera> camera) {
-				// set visible entities count
-				frustumCullingShader->Use();
-				frustumCullingShader
-					->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-							entityBufferManager->Count());
-				frustumCullingShader
-					->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
-							camera->GetViewMatrix());
-
-				// bind buffers
-				frustumCulledIdsBuffer
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-				transformMatrices.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
-				frustumCulledIdsCountAtomicCounter
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
-				clippingPlanes
-					->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-				perEntityMeshInfoBoundingSphere.Vbo()
-					.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
-
-				// perform frustum culling
-				
-				frustumCullingShader
-					->DispatchRoundGroupNumbers(
-							(entityBufferManager->Count()+objectsPerInvocation-1) /
-								objectsPerInvocation,
-							1, 1);
-				gl::Shader::Unuse();
-				
-				frustumCulledIdsCountAtomicCounterAsyncFetch->
-					Copy(frustumCulledIdsCountAtomicCounter.get(), 0, 0, 12);
-				
-				frustumCulledIdsCountAtomicCounterAsyncFetch->
-					FlushFromGpuMapPersistentFullRange();
-				
-				syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
-			});
-		}
+			&PipelineFrustumCulling::PerformFrustumCulling);
 
 		stagesScheduler.AddStage(
 			"Fetching count of entities in frustum view to CPU",
 			STAGE_CAMERA,
-			[this](std::shared_ptr<Camera> camera) {
-				// wait for fence
-				if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(100*1000*1000) == gl::SYNC_TIMEOUT) {
-					gl::Finish();
-				}
-				syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
-			
-				// fetch number of entities to render after culling
-				frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
-				
-				if(indirectDrawBuffer->GetVertexCount()
-						< frustumCulledEntitiesCount) {
-				indirectDrawBuffer->Generate(nullptr,
-						frustumCulledEntitiesCount | 0xFFF);
-				}
-			},
-			[this](std::shared_ptr<Camera> camera) -> bool {
-				return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
-			});
+			&PipelineFrustumCulling::FetchFrustumCulledEntitiesCount,
+			&PipelineFrustumCulling::CanExecuteFetchFrustumCulledEntitiesCount);
 		
 		stagesScheduler.AddStage(
 			"Generating indirect draw command buffer",
 			STAGE_CAMERA,
-			[this](std::shared_ptr<Camera> camera) {
-				
-				engine->GetIndirectDrawBufferGenerator()->Generate(
-						*frustumCulledIdsBuffer,
-						perEntityMeshInfo.Vbo(),
-						*indirectDrawBuffer,
-						frustumCulledEntitiesCount,
-						0);
-						
-				gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
-						gl::SHADER_STORAGE_BARRIER_BIT |
-						gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
-			});
+			&PipelineFrustumCulling::GenerateIndirectDrawCommandBuffer);
 	}
+	
+	void PipelineFrustumCulling::UpdateFrustumCullingData(std::shared_ptr<Camera> camera) {
+		uint32_t i = frustumCulledIdsBuffer->GetVertexCount();
+		while(i < entityBufferManager->Count()) {
+			i = (i*3)/2 + 100;
+		}
+		if(i != frustumCulledIdsBuffer->GetVertexCount()) {
+			frustumCulledIdsBuffer->Generate(nullptr, i);
+		}
+		frustumCulledEntitiesCount = 0;
+		frustumCulledIdsCountAtomicCounter
+			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
+	}
+		
+	void PipelineFrustumCulling::UpdateClippingPlanesOfCameraToGPU(std::shared_ptr<Camera> camera) {
+		camera->GetClippingPlanes(clippingPlanesValues);
+		clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
+	}
+	
+	void PipelineFrustumCulling::PerformFrustumCulling(std::shared_ptr<Camera> camera) {
+		// set visible entities count
+		frustumCullingShader->Use();
+		frustumCullingShader
+			->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
+					entityBufferManager->Count());
+		frustumCullingShader
+			->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
+					camera->GetViewMatrix());
+
+		// bind buffers
+		frustumCulledIdsBuffer
+			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
+		transformMatrices.Vbo()
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+		frustumCulledIdsCountAtomicCounter
+			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
+		clippingPlanes
+			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
+		perEntityMeshInfoBoundingSphere.Vbo()
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+
+		// perform frustum culling
+		
+		frustumCullingShader
+			->DispatchRoundGroupNumbers(
+					(entityBufferManager->Count()+objectsPerInvocation-1) /
+						objectsPerInvocation,
+					1, 1);
+		gl::Shader::Unuse();
+		
+		frustumCulledIdsCountAtomicCounterAsyncFetch->
+			Copy(frustumCulledIdsCountAtomicCounter.get(), 0, 0, 12);
+		
+		frustumCulledIdsCountAtomicCounterAsyncFetch->
+			FlushFromGpuMapPersistentFullRange();
+		
+		syncFrustumCulledEntitiesCountReadyToFetch.StartFence();
+	}
+
+	void PipelineFrustumCulling::FetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera) {
+		// wait for fence
+		if(syncFrustumCulledEntitiesCountReadyToFetch.WaitClient(100*1000*1000) == gl::SYNC_TIMEOUT) {
+			gl::Finish();
+		}
+		syncFrustumCulledEntitiesCountReadyToFetch.Destroy();
+
+		// fetch number of entities to render after culling
+		frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
+
+		if(indirectDrawBuffer->GetVertexCount()
+				< frustumCulledEntitiesCount) {
+			indirectDrawBuffer->Generate(nullptr,
+					frustumCulledEntitiesCount | 0xFFF);
+		}
+	}
+
+	bool PipelineFrustumCulling::CanExecuteFetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera) {
+		return syncFrustumCulledEntitiesCountReadyToFetch.IsDone();
+	}
+		
+	void PipelineFrustumCulling::GenerateIndirectDrawCommandBuffer(std::shared_ptr<Camera> camera) {
+		engine->GetIndirectDrawBufferGenerator()->Generate(
+				*frustumCulledIdsBuffer,
+				perEntityMeshInfo.Vbo(),
+				*indirectDrawBuffer,
+				frustumCulledEntitiesCount,
+				0);
+
+		gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT |
+				gl::SHADER_STORAGE_BARRIER_BIT |
+				gl::UNIFORM_BARRIER_BIT | gl::COMMAND_BARRIER_BIT);
+	}
+	
+	
+	
 	
 	void PipelineFrustumCulling::Destroy() {
 		frustumCullingShader->Destroy();

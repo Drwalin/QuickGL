@@ -48,6 +48,18 @@ namespace qgl {
 		
 	protected:
 		
+		void UpdateFrustumCullingData(std::shared_ptr<Camera> camera);
+		void UpdateClippingPlanesOfCameraToGPU(std::shared_ptr<Camera> camera);
+		void PerformFrustumCulling(std::shared_ptr<Camera> camera);
+		void FetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera);
+		bool CanExecuteFetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera);
+		void GenerateIndirectDrawCommandBuffer(std::shared_ptr<Camera> camera);
+		
+		int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT;
+		int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX;
+		
+	protected:
+		
 		uint32_t frustumCulledEntitiesCount;
 		
 	protected:

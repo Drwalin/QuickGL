@@ -47,6 +47,10 @@ namespace qgl {
 		
 	protected:
 		
+		void RenderEntities(std::shared_ptr<Camera> camera);
+		
+	protected:
+		
 		virtual std::shared_ptr<MeshManager> CreateMeshManager() override;
 		
 		friend class MaterialStatic;
