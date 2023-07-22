@@ -43,12 +43,16 @@ namespace qgl {
 		virtual void PrepareDataForNewFrame() override;
 		
 		virtual std::shared_ptr<gl::Texture> GetMainColorTexture() override;
+		virtual std::shared_ptr<gl::Texture> GetDepthTexture() override;
 		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) override;
 		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) override;
 		virtual void SetFov(float fov) override;
 		virtual float GetFov() override;
 		virtual glm::mat4 GetPerspectiveMatrix() override;
+		
+		virtual glm::mat4 GetPerspectiveViewMatrix() override;
+		virtual glm::mat4 GetPreviousPerspectiveViewMatrix() override;
 		
 		virtual void Clear(bool clearColor) override;
 		
@@ -95,6 +99,9 @@ namespace qgl {
 		glm::vec3 right;
 		
 		glm::vec4 clippingPlanes[5]; // {n.x, n.y, n.z, distance from origin}
+		
+		glm::mat4 perspectiveView;
+		glm::mat4 previousPerspectiveView;
 	};
 }
 

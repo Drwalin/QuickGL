@@ -74,7 +74,7 @@ void main() {
 	
 	void BlitCameraToScreen::Blit(std::shared_ptr<gl::Texture> texture,
 			uint32_t width, uint32_t height) {
-		gl::VAO::Unbind();
+		vao->Bind();
 		gl::FBO::Unbind();
 		shader->Use();
 		shader->SetTexture(textureLocation, texture.get(), 0);

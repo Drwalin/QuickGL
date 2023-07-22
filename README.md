@@ -18,7 +18,7 @@ suppored extensions listed in architecture/OpenGLExtensions.txt
 - Linear animations - animation loading is very strict as of now
 - Multiple cameras
 
-## Features to be likely supported in near future
+## Features to be likely supported in (hopefully near) future
 
 - Occlusion Culling
 - Post processing
@@ -37,7 +37,7 @@ suppored extensions listed in architecture/OpenGLExtensions.txt
 
 - Animation Blending
 - Ray Tracing
-
+- High quality tranlucency
 
 # Compilation
 

@@ -106,8 +106,7 @@ namespace qgl {
 		vao->Bind();
 		renderShader->Use();
 		
-		glm::mat4 pv = camera->GetPerspectiveMatrix()
-			* camera->GetViewMatrix();
+		glm::mat4 pv = camera->GetPerspectiveViewMatrix();;
 		renderShader->SetMat4(PROJECTION_VIEW_LOCATION, pv);
 		
 		renderShader->Use();
