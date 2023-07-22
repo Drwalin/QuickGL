@@ -21,6 +21,14 @@
 
 #include <memory>
 
+namespace gl {
+	class Shader;
+	class VBO;
+	class VAO;
+	class FBO;
+	class Texture;
+}
+
 namespace qgl {
 	class Camera;
 	

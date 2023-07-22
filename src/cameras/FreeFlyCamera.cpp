@@ -53,7 +53,6 @@ namespace qgl {
 	
 	void FreeFlyCamera::ProcessDefaultInput(std::shared_ptr<Engine> engine) {
 		InputManager& input = engine->GetInputManager();
-		PrepareDataForNewFrame();
 		
 		SetRenderTargetDimensions(gl::openGL.GetWidth(),
 				gl::openGL.GetHeight());

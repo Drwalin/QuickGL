@@ -43,6 +43,7 @@ namespace qgl {
 		virtual void PrepareDataForNewFrame() = 0;
 		
 		virtual std::shared_ptr<gl::Texture> GetMainColorTexture() = 0;
+		virtual std::shared_ptr<gl::Texture> GetDepthTexture() = 0;
 		
 		virtual void UseFbo() = 0;
 		virtual void UnuseFbo() = 0;
@@ -52,6 +53,9 @@ namespace qgl {
 		virtual void SetFov(float fov) = 0;
 		virtual float GetFov() = 0;
 		virtual glm::mat4 GetPerspectiveMatrix() = 0;
+		
+		virtual glm::mat4 GetPerspectiveViewMatrix() = 0;
+		virtual glm::mat4 GetPreviousPerspectiveViewMatrix() = 0;
 		
 		virtual void Clear(bool clearColor) = 0;
 		
