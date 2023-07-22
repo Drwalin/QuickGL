@@ -31,6 +31,7 @@
 #include "../include/quickgl/GlobalEntityManager.hpp"
 #include "../include/quickgl/IndirectDrawBufferGenerator.hpp"
 #include "../include/quickgl/BlitCameraToScreen.hpp"
+#include "../include/quickgl/pipelines/PipelinePostProcessing.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -45,15 +46,15 @@ namespace qgl {
 	}
 	
 	void Engine::InitGL(std::string windowTitle) {
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false,
 				std::thread::hardware_concurrency()<=4,
 				4, 2);
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		gl::openGL.InitGraphic();
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		inputManager.Init();
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		Gui::InitIMGUI();
 		initialized = true;
 		
@@ -67,6 +68,10 @@ namespace qgl {
 		indirectDrawBufferGenerator->Init();
 		
 		blitTexture = std::make_shared<BlitCameraToScreen>();
+		
+		pipelinePostProcessing
+			= std::make_shared<PipelinePostProcessing>(shared_from_this());
+		AddPipeline(pipelinePostProcessing);
 	}
 	
 	void Engine::Destroy() {

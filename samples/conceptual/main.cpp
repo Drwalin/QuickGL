@@ -10,6 +10,7 @@
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 #include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
+#include "../../include/quickgl/pipelines/PipelinePostProcessing.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
 
@@ -38,7 +39,6 @@ int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
 	engine->InitGL("Simple conceptual example");
-	{
 	
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_INDICES);
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_VERTICES);
@@ -435,7 +435,6 @@ int main() {
 		}
 	}
 	
-	}
 	engine->Destroy();	
 	return 0;
 }
