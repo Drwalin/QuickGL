@@ -53,6 +53,7 @@ namespace qgl {
 				(gl::TextureSizedInternalFormat) GL_DEPTH24_STENCIL8,
 				(gl::TextureDataFormat) GL_DEPTH_STENCIL,
 				(gl::DataType) GL_UNSIGNED_INT_24_8);
+		depthTexture->GenerateMipmaps();
 		
 		fbo = std::make_shared<gl::FBO>();
 		fbo->AttachTexture(depthTexture.get(), gl::ATTACHMENT_DEPTH_STENCIL, 0);
@@ -145,6 +146,7 @@ namespace qgl {
 					(gl::TextureSizedInternalFormat)GL_DEPTH24_STENCIL8,
 					(gl::TextureDataFormat)GL_DEPTH_STENCIL,
 					(gl::DataType)GL_UNSIGNED_INT_24_8);
+			depthTexture->GenerateMipmaps();
 		}
 	}
 	

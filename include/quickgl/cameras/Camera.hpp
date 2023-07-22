@@ -20,6 +20,7 @@
 #define QUICKGL_CAMERA_HPP
 
 #include <memory>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -31,7 +32,9 @@ namespace gl {
 }
 
 namespace qgl {
-	class Camera {
+	class PostProcess;
+	
+	class Camera : public std::enable_shared_from_this<Camera> {
 	public:
 		
 		Camera();
@@ -69,6 +72,14 @@ namespace qgl {
 		virtual void Rotate(glm::quat rotation) = 0;
 		virtual void SetRotation(glm::quat rotation) = 0;
 		virtual glm::mat3 GetRotationMatrix() = 0;
+		
+		virtual void DoPostprocessing();
+		void AddPostProcess(std::shared_ptr<PostProcess> postProcess);
+		
+	protected:
+		
+		std::vector<std::shared_ptr<PostProcess>> postProcesses;
+		
 	};
 }
 

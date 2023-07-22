@@ -16,26 +16,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../include/quickgl/postprocess/PostProcess.hpp"
+#ifndef QUICKGL_POST_PROCESS_HPP
+#define QUICKGL_POST_PROCESS_HPP
 
-#include "../../include/quickgl/cameras/Camera.hpp"
+#include <memory>
 
 namespace qgl {
-	Camera::Camera() {
-	}
+	class Camera;
 	
-	Camera::~Camera() {
-	}
-	
-	void Camera::AddPostProcess(std::shared_ptr<PostProcess> postProcess) {
-		postProcesses.push_back(postProcess);
-	}
-	
-	void Camera::DoPostprocessing() {
-		std::shared_ptr<Camera> self = shared_from_this();
-		for(uint32_t i=0; i<postProcesses.size(); ++i) {
-			postProcesses[i]->Execute(self);
-		}
-	}
+	class PostProcess : public std::enable_shared_from_this<PostProcess> {
+	public:
+		
+		PostProcess();
+		virtual ~PostProcess();
+		
+		virtual void Execute(std::shared_ptr<Camera> camera) = 0;
+	};
 }
+
+#endif
 

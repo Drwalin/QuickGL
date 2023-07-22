@@ -100,6 +100,8 @@ namespace qgl {
 		std::shared_ptr<IndirectDrawBufferGenerator> indirectDrawBufferGenerator;
 		
 		std::shared_ptr<BlitCameraToScreen> blitTexture;
+		
+		std::shared_ptr<Pipeline> pipelinePostProcessing;
 	};
 }
 
