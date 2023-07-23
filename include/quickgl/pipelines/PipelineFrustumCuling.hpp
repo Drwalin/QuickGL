@@ -55,6 +55,8 @@ namespace qgl {
 		bool CanExecuteFetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera);
 		void GenerateIndirectDrawCommandBuffer(std::shared_ptr<Camera> camera);
 		
+		uint32_t UNIFORM_LOCATION_DEPTH_TEXTURE;
+		
 	protected:
 		
 		uint32_t frustumCulledEntitiesCount;
