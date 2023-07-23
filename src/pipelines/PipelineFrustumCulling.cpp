@@ -57,9 +57,9 @@ namespace qgl {
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
 		frustumCulledIdsBuffer->Init();
 		
-		clippingPlanes = std::make_shared<gl::VBO>(sizeof(float)*4,
+		clippingPlanes = std::make_shared<gl::VBO>(sizeof(float),
 				gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-		clippingPlanes->Init();
+		clippingPlanes->Init(128);
 		
 		frustumCulledIdsCountAtomicCounter = std::make_shared<gl::VBO>(sizeof(uint32_t),
 				gl::DISPATCH_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
@@ -80,19 +80,10 @@ namespace qgl {
 			exit(31);
 		
 		objectsPerInvocation = 16;
-		frustumCullingShader->SetUInt(
-				frustumCullingShader
-					->GetUniformLocation("objectsPerInvocation"),
-				objectsPerInvocation);
 		
 		indirectDrawBuffer = std::make_shared<gl::VBO>(20,
 				gl::DRAW_INDIRECT_BUFFER, gl::DYNAMIC_DRAW);
 		indirectDrawBuffer->Init(1024);
-		
-		FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT =
-			frustumCullingShader->GetUniformLocation("entitiesCount");
-		FRUSTUM_CULLING_LOCATION_VIEW_MATRIX =
-			frustumCullingShader->GetUniformLocation("cameraInverseTransform");
 		
 		stagesScheduler.AddStage(
 			"Update frustum culling data",
@@ -132,8 +123,38 @@ namespace qgl {
 	}
 		
 	void PipelineFrustumCulling::UpdateClippingPlanesOfCameraToGPU(std::shared_ptr<Camera> camera) {
-		camera->GetClippingPlanes(clippingPlanesValues);
-		clippingPlanes->Update(clippingPlanesValues, 0, 5*4*sizeof(float));
+		struct {
+			glm::mat4 pv;
+			glm::mat4 prevPV;
+			glm::mat4 cameraInverseTransform;
+			glm::vec4 up;
+			glm::vec4 right;
+			glm::vec4 front;
+			glm::vec4 nearfar;
+			glm::vec4 clippingPlanes[5];
+			glm::vec4 p1fur;
+			glm::vec4 p2fur;
+			glm::vec4 p3fur;
+			glm::uvec2 cameraPixelDimension;
+			uint objectsPerInvocation;
+			uint entitiesCount;
+		} d;
+		camera->GetClippingPlanes(d.clippingPlanes);
+		d.pv = camera->GetPerspectiveViewMatrix();
+		d.prevPV = camera->GetPreviousPerspectiveViewMatrix();
+		d.cameraInverseTransform = camera->GetViewMatrix();
+		d.up = glm::vec4(camera->GetUp(), 0);
+		d.right = glm::vec4(camera->GetRight(), 0);
+		d.front = glm::vec4(camera->GetFront(), 0);
+		d.p1fur = d.front - d.up - d.right;
+		d.p2fur = d.front + d.up + d.right;
+		d.p3fur = - d.front;
+		d.nearfar = {camera->GetNear(), camera->GetFar(), 0, 0};
+		camera->GetRenderTargetDimensions(d.cameraPixelDimension.x, d.cameraPixelDimension.y);
+		d.objectsPerInvocation = objectsPerInvocation;
+		d.entitiesCount = entityBufferManager->Count();
+		clippingPlanes->Update(&d, 0, sizeof(d));
+		
 		frustumCulledEntitiesCount = 0;
 		frustumCulledIdsCountAtomicCounter
 			->Update(&frustumCulledEntitiesCount, 0, sizeof(uint32_t));
@@ -142,12 +163,6 @@ namespace qgl {
 	void PipelineFrustumCulling::PerformFrustumCulling(std::shared_ptr<Camera> camera) {
 		// set visible entities count
 		frustumCullingShader->Use();
-		frustumCullingShader
-			->SetUInt(FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT,
-					entityBufferManager->Count());
-		frustumCullingShader
-			->SetMat4(FRUSTUM_CULLING_LOCATION_VIEW_MATRIX,
-					camera->GetViewMatrix());
 
 		// bind buffers
 		frustumCulledIdsBuffer
@@ -188,6 +203,8 @@ namespace qgl {
 
 		// fetch number of entities to render after culling
 		frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
+// 		
+// 		printf(" frustum culled entities count = %i\n", frustumCulledEntitiesCount);
 
 		if(indirectDrawBuffer->GetVertexCount() < frustumCulledEntitiesCount) {
 			indirectDrawBuffer->Generate(nullptr,
@@ -242,50 +259,61 @@ namespace qgl {
 #extension GL_ARB_compute_shader : require
 #extension GL_ARB_shader_storage_buffer_object : require
 
-layout (packed, std430, binding=1) writeonly buffer aaa {
+layout (std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
 };
-layout (packed, std430, binding=3) readonly buffer ccc {
+layout (std430, binding=3) readonly buffer ccc {
 	mat4 entitesTransformations[];
 };
-layout (packed, std430, binding=4) buffer ddd {
+layout (std430, binding=4) buffer ddd {
 	uint globalAtomicCounter;
 };
-layout (packed, std430, binding=5) readonly buffer eee {
-	vec4 clippingPlanes[];
+layout (std430, binding=5) readonly buffer eee {
+	mat4 pv;
+	mat4 prevPV;
+	mat4 cameraInverseTransform;
+	vec4 up;
+	vec4 right;
+	vec4 front;
+	vec4 nearfar;
+	vec4 clippingPlanes[5];
+	vec4 p1fur;
+	vec4 p2fur;
+	vec4 p3fur;
+	uvec2 cameraPixelDimension;
+	uint objectsPerInvocation;
+	uint entitiesCount;
 };
-layout (packed, std430, binding=6) readonly buffer fff {
+layout (std430, binding=6) readonly buffer fff {
 	vec4 meshInfo[];
 };
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
-
-uniform uint entitiesCount;
-uniform mat4 cameraInverseTransform;
 
 shared uint localAtomicCounter;
 shared uint commonStartingLocation;
 
 uint IsInView(uint id) {
 	if(id < entitiesCount) {
-		vec3 pos = (cameraInverseTransform * entitesTransformations[id] *
-				vec4(meshInfo[id].xyz, 1)).xyz;
-		vec3 rad = (cameraInverseTransform * entitesTransformations[id] *
-				vec4(meshInfo[id].xyz + vec3(0,0,meshInfo[id].w), 1)).xyz;
-		float dd = length(pos-rad);
-		for(uint i=0; i<5; ++i) {
-			float d = dot(clippingPlanes[i].xyz, pos);
-			if(d+dd < clippingPlanes[i].w) {
-				return 0;
-			}
-		}
-		return 1;
+		vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
+		vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
+		float dd = length(rad);
+		
+		vec4 p1 = pv*(pos + ( + front - up - right) * dd);
+		vec4 p2 = pv*(pos + ( + front + up + right) * dd);
+		vec4 p3 = pv*(pos + ( - front             ) * dd);
+		
+		p1.xyz /= p1.w;
+		p2.xyz /= p2.w;
+		p3.xyz /= p3.w;
+		
+		if(p1.w >= 0 && p3.w <= nearfar.y && p1.x <= 1 && p1.y <= 1 && p2.x >= -1 && p2.y >= -1)
+			return 1;
 	}
 	return 0;
 }
 
 const uint MAX_OBJECTS_PER_INVOCATION = 16;
-uniform uint objectsPerInvocation;
 
 void main() {
 	if(gl_LocalInvocationID.x == 0)
@@ -304,8 +332,8 @@ void main() {
 	
 	uint localStartingLocation = 0;
 	if(inViewCount > 0) // @TODO: this condition can be removed
-	                                            // and code still will work:
-	                                            // @TODO: check if removign this condition is faster
+												// and code still will work:
+												// @TODO: check if removign this condition is faster
 		localStartingLocation = atomicAdd(localAtomicCounter, inViewCount);
 	
 	barrier();

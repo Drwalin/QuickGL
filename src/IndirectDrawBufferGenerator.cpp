@@ -109,13 +109,13 @@ struct PerEntityMeshInfo {
 	uint elementsCount;
 };
 
-layout (packed, std430, binding=1) readonly buffer ccc {
+layout (std430, binding=1) readonly buffer ccc {
 	uint visibleEntityIds[];
 };
-layout (packed, std430, binding=2) readonly buffer bbb {
+layout (std430, binding=2) readonly buffer bbb {
 	PerEntityMeshInfo meshInfo[];
 };
-layout (packed, std430, binding=3) writeonly buffer aaa {
+layout (std430, binding=3) writeonly buffer aaa {
 	DrawElementsIndirectCommand indirectCommands[];
 };
 
