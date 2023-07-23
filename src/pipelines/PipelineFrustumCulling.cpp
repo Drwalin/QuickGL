@@ -78,6 +78,7 @@ namespace qgl {
 		frustumCullingShader = std::make_unique<gl::Shader>();
 		if(frustumCullingShader->Compile(FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE))
 			exit(31);
+		UNIFORM_LOCATION_DEPTH_TEXTURE = frustumCullingShader->GetUniformLocation("depthTexture");
 		
 		objectsPerInvocation = 16;
 		
@@ -175,6 +176,9 @@ namespace qgl {
 			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
 		perEntityMeshInfoBoundingSphere.Vbo()
 			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+		frustumCullingShader
+			->SetTexture(UNIFORM_LOCATION_DEPTH_TEXTURE,
+				camera->GetDepthTexture().get(), 0);
 
 		// perform frustum culling
 		
@@ -203,8 +207,6 @@ namespace qgl {
 
 		// fetch number of entities to render after culling
 		frustumCulledEntitiesCount = mappedPointerToentitiesCount[0];
-// 		
-// 		printf(" frustum culled entities count = %i\n", frustumCulledEntitiesCount);
 
 		if(indirectDrawBuffer->GetVertexCount() < frustumCulledEntitiesCount) {
 			indirectDrawBuffer->Generate(nullptr,
@@ -293,22 +295,86 @@ layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 shared uint localAtomicCounter;
 shared uint commonStartingLocation;
 
+uniform sampler2D depthTexture;
+
 uint IsInView(uint id) {
 	if(id < entitiesCount) {
+		uint ret = 0;
+		
 		vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
 		vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
 		float dd = length(rad);
 		
-		vec4 p1 = pv*(pos + ( + front - up - right) * dd);
-		vec4 p2 = pv*(pos + ( + front + up + right) * dd);
-		vec4 p3 = pv*(pos + ( - front             ) * dd);
+		vec4 p1 = pv*(pos + p1fur * dd);
+		vec4 p2 = pv*(pos + p2fur * dd);
+		vec4 p3 = pv*(pos + p3fur * dd);
+
+		vec4 P3 = p3;
 		
 		p1.xyz /= p1.w;
 		p2.xyz /= p2.w;
 		p3.xyz /= p3.w;
+
+		uvec2 ss1 = uvec2(clamp(p1.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
+		uvec2 ss2 = uvec2(clamp(p2.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
+		const uvec2 s1 = ss1;//min(ss1, ss2);
+		const uvec2 s2 = ss2;//max(ss1, ss2);
+		const float currentDepth = (p3.z * 0.5) + 0.5 - 0.00007;
+
+// 		p1.w >= 0
+// 		p3.w <= nearfar.y
+// 		p1.x <= 1
+// 		p1.y <= 1
+// 		p2.x >= -1
+// 		p2.y >= -1
+	
+// 		p1.w = p1.w - 0;
+// 		p3.w = -(p3.w - nearfar.y);
+// 		p1.x = -(p1.x - 1);
+// 		p1.y = -(p1.y - 1);
+// 		p2.x = p2.x - (-1);
+// 		p2.y = p2.y - (-1);
+// 		
+// 		uvec4 u1, u2, u3;
+// 		u1.w = floatBitsToUint(p1.w);
+// 		u3.w = floatBitsToUint(p3.w);
+// 		u1.x = floatBitsToUint(p1.x);
+// 		u1.y = floatBitsToUint(p1.y);
+// 		u2.x = floatBitsToUint(p2.x);
+// 		u2.y = floatBitsToUint(p2.y);
+// 		
+// 		ret = (((u1.w | u3.w | u1.x | u1.y | u2.x | u2.y)>>31) & 1) ^ 1;
 		
 		if(p1.w >= 0 && p3.w <= nearfar.y && p1.x <= 1 && p1.y <= 1 && p2.x >= -1 && p2.y >= -1)
-			return 1;
+			ret = 1;
+		
+		if(ret == 1 && P3.z > 1)
+		{ // occlusion culling
+			const uvec2 s = abs(s2-s1);
+			const uint smaxdim = max(cameraPixelDimension.x, cameraPixelDimension.y);
+			const uint maxlod = uint(log2(smaxdim))-1;
+			const uint omaxdim = max(s.x, s.y);
+			
+			uint lod = min(uint(log2(omaxdim)), maxlod);
+			lod = max(lod, 1);
+			const uint bits = 1<<lod;
+			
+			uvec2 start = s1>>lod;
+			uvec2 end = (s2)>>lod;
+			
+			uint visible = 0;
+			for(int i=int(start.x); i<=end.x && visible==0; ++i) {
+				for(int j=int(start.y); j<=end.y && visible==0; ++j) {
+					float testedDepth = texelFetch(depthTexture, ivec2(i,j), int(lod)).x;
+					if(currentDepth <= testedDepth) {
+						visible = 1;
+					}
+				}
+			}
+			ret = ret & visible;
+		}
+		
+		return ret;
 	}
 	return 0;
 }
