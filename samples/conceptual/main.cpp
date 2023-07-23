@@ -200,10 +200,6 @@ int main() {
 	bool stressTestigEntityCreateAndDelete = false;
 	bool stressDeleting;
 	
-	uint32_t BSIZE = 1;
-	gl::VBO memb(1024*16, gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-	memb.Init();
-	
 	bool useMainCameraMovement = true;
 	
 	while(!engine->IsQuitRequested()) {
@@ -226,11 +222,6 @@ int main() {
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_BACKSLASH)) {
 			I = 0;
 			II++;
-		}
-		
-		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_K)) {
-			memb.Resize(BSIZE);
-			BSIZE+=16;
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {

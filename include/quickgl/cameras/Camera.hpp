@@ -49,33 +49,35 @@ namespace qgl {
 		virtual void UnuseFbo() = 0;
 		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) = 0;
-		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) = 0;
+		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) const = 0;
 		virtual void SetFov(float fov) = 0;
-		virtual float GetFov() = 0;
-		virtual glm::mat4 GetPerspectiveMatrix() = 0;
+		virtual float GetFov() const = 0;
+		virtual float GetNear() const = 0;
+		virtual float GetFar() const = 0;
 		
-		virtual glm::mat4 GetPerspectiveViewMatrix() = 0;
-		virtual glm::mat4 GetPreviousPerspectiveViewMatrix() = 0;
+		virtual glm::mat4 GetPerspectiveMatrix() const = 0;
+		virtual glm::mat4 GetPerspectiveViewMatrix() const = 0;
+		virtual glm::mat4 GetPreviousPerspectiveViewMatrix() const = 0;
 		
 		virtual void Clear(bool clearColor) = 0;
 		
-		virtual glm::mat4 GetViewMatrix() = 0;
+		virtual glm::mat4 GetViewMatrix() const = 0;
 		
-		virtual glm::vec3 GetPosition() = 0;
+		virtual glm::vec3 GetPosition() const= 0;
 		virtual void SetPosition(glm::vec3 position) = 0;
 		
-		virtual glm::vec3 GetFront() = 0;
-		virtual glm::vec3 GetRight() = 0;
-		virtual glm::vec3 GetUp() = 0;
+		virtual glm::vec3 GetFront() const = 0;
+		virtual glm::vec3 GetRight() const = 0;
+		virtual glm::vec3 GetUp() const = 0;
 		
-		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) = 0;
-		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) = 0;
+		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) const = 0;
+		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) const = 0;
 		
 		virtual void Rotate(glm::vec3 euler) = 0;
 		virtual void SetRotation(glm::vec3 euler) = 0;
 		virtual void Rotate(glm::quat rotation) = 0;
 		virtual void SetRotation(glm::quat rotation) = 0;
-		virtual glm::mat3 GetRotationMatrix() = 0;
+		virtual glm::mat3 GetRotationMatrix() const = 0;
 		
 		virtual void DoPostprocessing();
 		void AddPostProcess(std::shared_ptr<PostProcess> postProcess);

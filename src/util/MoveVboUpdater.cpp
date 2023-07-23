@@ -54,10 +54,10 @@ struct DeltaData {
 	uint to;
 };
 
-layout (packed, std430, binding=1) readonly buffer updateData {
+layout (std430, binding=1) readonly buffer updateData {
 	DeltaData deltaData[];
 };
-layout (packed, std430, binding=2) buffer dataBuffer {
+layout (std430, binding=2) buffer dataBuffer {
 	Data data[];
 };
 

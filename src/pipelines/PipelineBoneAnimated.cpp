@@ -210,11 +210,11 @@ uniform float deltaTime;
 uniform float timeStamp;
 uniform uint entitiesCount;
 
-layout (packed, std430, binding=1) buffer aaa {
+layout (std430, binding=1) buffer aaa {
 	AnimatedState animatedState[];
 };
 
-layout (packed, std430, binding=2) readonly buffer bbb {
+layout (std430, binding=2) readonly buffer bbb {
 	AnimationMetadata animationMetadata[];
 };
 
