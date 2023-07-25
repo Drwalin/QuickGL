@@ -13,6 +13,7 @@
 #include "../../include/quickgl/pipelines/PipelinePostProcessing.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
+#include "../include/quickgl/BlitCameraToScreen.hpp"
 
 #include "../../include/quickgl/util/Log.hpp"
 #include "quickgl/cameras/CameraBasicMaterials.hpp"
@@ -201,6 +202,8 @@ int main() {
 	bool stressDeleting;
 	
 	bool useMainCameraMovement = true;
+	
+	int blitDepthLevel = -1;
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -406,6 +409,25 @@ int main() {
 					(ImTextureID)(int64_t)camera2->GetMainColorTexture()->GetTexture(),
 					{256, 256}, {0,1}, {1,0});
 		ImGui::End();
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_EQUAL)) {
+			blitDepthLevel++;
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_MINUS)) {
+			blitDepthLevel--;
+		}
+		
+		if(blitDepthLevel >= 0) {
+			auto tex = camera->GetDepthTexture();
+			engine->GetBlitter()->Blit(
+					tex,
+					0, 0,
+					1, //((tex->GetWidth()>>blitDepthLevel)<<blitDepthLevel)/(float)tex->GetWidth(),
+					1, //((tex->GetHeight()>>blitDepthLevel)<<blitDepthLevel)/(float)tex->GetHeight(),
+					0, 0, (tex->GetWidth()>>blitDepthLevel)<<blitDepthLevel, (tex->GetHeight()>>blitDepthLevel)<<blitDepthLevel,
+					blitDepthLevel);
+		}
 		
 		gl::Flush();
 		

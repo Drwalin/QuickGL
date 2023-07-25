@@ -79,6 +79,8 @@ namespace qgl {
 		std::shared_ptr<GlobalEntityManager> GetGlobalEntityManager();
 		std::shared_ptr<IndirectDrawBufferGenerator> GetIndirectDrawBufferGenerator();
 		
+		std::shared_ptr<BlitCameraToScreen> GetBlitter() { return blitTexture; }
+		
 	protected:
 		
 		bool profiling;
