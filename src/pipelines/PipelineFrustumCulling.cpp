@@ -282,7 +282,7 @@ layout (std430, binding=5) readonly buffer eee {
 	vec4 p1fur;
 	vec4 p2fur;
 	vec4 p3fur;
-	uvec2 cameraPixelDimension;
+	ivec2 cameraPixelDimension;
 	uint objectsPerInvocation;
 	uint entitiesCount;
 };
@@ -315,10 +315,10 @@ uint IsInView(uint id) {
 		p2.xyz /= p2.w;
 		p3.xyz /= p3.w;
 
-		uvec2 ss1 = uvec2(clamp(p1.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
-		uvec2 ss2 = uvec2(clamp(p2.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
-		const uvec2 s1 = ss1;//min(ss1, ss2);
-		const uvec2 s2 = ss2;//max(ss1, ss2);
+		ivec2 ss1 = ivec2(clamp(p1.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension-1));
+		ivec2 ss2 = ivec2(clamp(p2.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
+		const ivec2 s1 = max(ss1, ivec2(0,0));//min(ss1, ss2);
+		const ivec2 s2 = ss2;//max(ss1, ss2);
 		const float currentDepth = (p3.z * 0.5) + 0.5 - 0.00007;
 
 // 		p1.w >= 0
@@ -348,23 +348,47 @@ uint IsInView(uint id) {
 		if(p1.w >= 0 && p3.w <= nearfar.y && p1.x <= 1 && p1.y <= 1 && p2.x >= -1 && p2.y >= -1)
 			ret = 1;
 		
-		if(ret == 1 && P3.z > 1)
-		{ // occlusion culling
-			const uvec2 s = abs(s2-s1);
-			const uint smaxdim = max(cameraPixelDimension.x, cameraPixelDimension.y);
-			const uint maxlod = uint(log2(smaxdim))-1;
-			const uint omaxdim = max(s.x, s.y);
+		if(ret == 1 && P3.z > 1) { // occlusion culling
+// 			const ivec2 s = abs(s2-s1);
+// 			const int smaxdim = max(cameraPixelDimension.x, cameraPixelDimension.y);
+// 			const int maxlod = int(log2(smaxdim))-1;
+// 			const int omaxdim = max(s.x, s.y);
+// 			
+// 			int lod = min(int(log2(omaxdim)), maxlod);
+// 			lod = max(lod, 1);
+// 			const int bits = 1<<lod;
+// 			
+// 			ivec2 end = min((s2)>>lod, (cameraPixelDimension>>lod)-1);
+// 			ivec2 start = max(min(s1>>lod, end), ivec2(0,0));
+// 			
+// 			uint visible = 0;
+// 			for(int i=start.x; i<=end.x && visible==0; ++i) {
+// 				for(int j=start.y; j<=end.y && visible==0; ++j) {
+// 					float testedDepth = texelFetch(depthTexture, ivec2(i,j), int(lod)).x;
+// 					if(currentDepth <= testedDepth) {
+// 						visible = 1;
+// 					}
+// 				}
+// 			}
+// 			ret = ret & visible;
 			
-			uint lod = min(uint(log2(omaxdim)), maxlod);
-			lod = max(lod, 1);
-			const uint bits = 1<<lod;
 			
-			uvec2 start = s1>>lod;
-			uvec2 end = (s2)>>lod;
+			
+			
+			
+			const ivec2 s = abs(s2-s1);
+			const int smaxdim = max(cameraPixelDimension.x, cameraPixelDimension.y);
+			const int maxlod = int(log2(smaxdim))-2;
+			const int omaxdim = max(s.x, s.y);
+			
+			const int lod = max(min(int(log2(omaxdim)), maxlod), 1);
+			
+			ivec2 end = min(s2>>lod, (cameraPixelDimension>>lod)-1);
+			ivec2 start = max(min(s1>>lod, end), ivec2(0,0));
 			
 			uint visible = 0;
-			for(int i=int(start.x); i<=end.x && visible==0; ++i) {
-				for(int j=int(start.y); j<=end.y && visible==0; ++j) {
+			for(int i=start.x; i<=end.x && visible==0; ++i) {
+				for(int j=start.y; j<=end.y && visible==0; ++j) {
 					float testedDepth = texelFetch(depthTexture, ivec2(i,j), int(lod)).x;
 					if(currentDepth <= testedDepth) {
 						visible = 1;

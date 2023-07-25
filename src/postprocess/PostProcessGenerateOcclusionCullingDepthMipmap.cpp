@@ -32,14 +32,16 @@ namespace qgl {
 		shader = std::make_shared<gl::Shader>();
 		shader->Compile(R"(
 #version 420 core
+#extension GL_ARB_explicit_uniform_location : enable
 
 layout ( location = 0 ) in vec2 pos;
 
 out vec2 texCoord;
+layout (location=4) uniform ivec2 srcImageSize;
 
 void main() {
 	gl_Position = vec4(pos*2-1,1,1);
-	texCoord = pos;
+	texCoord = pos * vec2((srcImageSize+1)/2)*2;
 }
 )",
 
@@ -54,21 +56,27 @@ R"(
 in vec2 texCoord;
 
 uniform sampler2D tex;
-layout (location=4) uniform ivec2 sourceImageSize;
+layout (location=4) uniform ivec2 srcImageSize;
 layout (location=8) uniform int level;
 
+float SafeTexelFetch(ivec2 p) {
+	if(p.x<0 || p.y<0 || p.x>=srcImageSize.x || p.y>=srcImageSize.y)
+		return 1;
+	return texelFetch(tex, p, level).x;
+}
+
 float GetValue(ivec2 p) {
-	float a = texelFetch(tex, p*2+ivec2(0,0), level).x;
-	float b = texelFetch(tex, p*2+ivec2(1,0), level).x;
-	float c = texelFetch(tex, p*2+ivec2(0,1), level).x;
-	float d = texelFetch(tex, p*2+ivec2(1,1), level).x;
+	float a = SafeTexelFetch(p+ivec2(0,0));
+	float b = SafeTexelFetch(p+ivec2(1,0));
+	float c = SafeTexelFetch(p+ivec2(0,1));
+	float d = SafeTexelFetch(p+ivec2(1,1));
 	return max(max(a,b),max(c,d));
 }
 
 void main() {
-	vec2 p = texCoord * vec2(sourceImageSize) + vec2(0.5, 0.5);
+	vec2 p = texCoord;
 	ivec2 pp = ivec2(p);
-	gl_FragDepth = GetValue(pp);
+	gl_FragDepth = GetValue((pp|ivec2(1,1))^ivec2(1,1));
 }
 )");
 		textureLocation = shader->GetUniformLocation("tex");
@@ -98,12 +106,12 @@ void main() {
 		shader->SetTexture(textureLocation, depthTexture.get(), 0);
 		
 		fbo->SimpleBind();
-		int w=(depthTexture->GetWidth()+1)/2,
-			h=(depthTexture->GetHeight()+1)/2,
+		int w=depthTexture->GetWidth(),
+			h=depthTexture->GetHeight(),
 			l=1;
 		vao->Bind();
 		glDepthFunc(GL_ALWAYS);
-		for(; w>2 && h>2; ++l, w=(w+1)/2, h=(h+1)/2) {
+		for(; w>2 && h>2; ++l, w=(w+1)>>1, h=(h+1)>>1) {
 			glFramebufferTexture2D(GL_FRAMEBUFFER, gl::ATTACHMENT_DEPTH,
 					GL_TEXTURE_2D, depthTexture->GetTexture(), l);
 			
@@ -114,7 +122,7 @@ void main() {
 			glProgramUniform1i(shader->GetProgram(), 8, l-1);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			
-			glViewport(0, 0, w, h);
+			glViewport(0, 0, (w+1)>>1, (h+1)>>1);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			vao->DrawArrays(0, 4);
 			GL_CHECK_PUSH_PRINT_ERROR;

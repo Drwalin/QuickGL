@@ -148,10 +148,12 @@ namespace qgl {
 		}
 		gl::FBO::Unbind();
 		if(mainCamera) {
+			auto tex = mainCamera->GetMainColorTexture();
 			blitTexture->Blit(
-					mainCamera->GetMainColorTexture(),
-					gl::openGL.GetWidth(),
-					gl::openGL.GetHeight());
+					tex,
+					0, 0, 1, 1,
+					0, 0, gl::openGL.GetWidth(), gl::openGL.GetHeight(),
+					0);
 		}
 	}
 	
