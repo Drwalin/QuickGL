@@ -38,11 +38,12 @@ layout ( location = 0 ) in vec2 pos;
 
 out vec2 texCoord;
 layout (location=4) uniform ivec2 srcImageSize;
+layout (location=12) uniform ivec2 dstImageSize;
 uniform int reduceSize;
 
 void main() {
-	gl_Position = vec4(pos*reduceSize-1,1,1);
-	texCoord = pos * vec2((srcImageSize+reduceSize-1)/reduceSize)*reduceSize;
+	gl_Position = vec4(pos*2-1,1,1);
+	texCoord = pos * vec2(dstImageSize);
 }
 )",
 
@@ -59,36 +60,24 @@ in vec2 texCoord;
 uniform sampler2D tex;
 layout (location=4) uniform ivec2 srcImageSize;
 layout (location=8) uniform int level;
+layout (location=12) uniform ivec2 dstImageSize;
 uniform int reduceSize;
 
-float SafeTexelFetch(ivec2 p) {
-	if(p.x<0 || p.y<0 || p.x>=srcImageSize.x || p.y>=srcImageSize.y)
-		return 1;
-	return texelFetch(tex, p, level).x;
-}
-
 float GetValue(ivec2 p) {
-	float a = SafeTexelFetch(p+ivec2(0,0));
-	float b = SafeTexelFetch(p+ivec2(1,0));
-	float c = SafeTexelFetch(p+ivec2(0,1));
-	float d = SafeTexelFetch(p+ivec2(1,1));
-	return max(max(a,b),max(c,d));
-}
-
-float GetFullValue(ivec2 p) {
 	float ret = 0;
-	for(int i=0; i<reduceSize; i+=2) {
-		for(int j=0; j<reduceSize; j+=2) {
-			ret = max(ret, GetValue(p+ivec2(i,j)));
+	const ivec2 start=p, end=min(p+ivec2(reduceSize, reduceSize), srcImageSize-1);
+	for(int i=start.x; i<end.x; i++) {
+		for(int j=start.y; j<end.y; j++) {
+			ret = max(ret, texelFetch(tex, ivec2(i,j), level).x);
 		}
 	}
 	return ret;
 }
 
 void main() {
-	vec2 p = texCoord;
-	ivec2 pp = ivec2(p);
-	gl_FragDepth = GetFullValue((pp|ivec2(1,1))^ivec2(1,1));
+	ivec2 pp = ivec2(texCoord*reduceSize);
+	const ivec2 ppred = ivec2(reduceSize-1, reduceSize-1);
+	gl_FragDepth = GetValue((pp | ppred) ^ ppred);
 }
 )");
 		textureLocation = shader->GetUniformLocation("tex");
@@ -124,7 +113,7 @@ void main() {
 			l=1;
 		vao->Bind();
 		glDepthFunc(GL_ALWAYS);
-		int reduceSize = 2;
+		int reduceSize = 4;
 		for(; w>2 && h>2; ++l) {
 			glFramebufferTexture2D(GL_FRAMEBUFFER, gl::ATTACHMENT_DEPTH,
 					GL_TEXTURE_2D, depthTexture->GetTexture(), l);
@@ -136,9 +125,14 @@ void main() {
 			glProgramUniform1i(shader->GetProgram(), 8, l-1);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			glProgramUniform1i(shader->GetProgram(), reduceSizeLocation, reduceSize);
+			GL_CHECK_PUSH_PRINT_ERROR;
 			
 			w = (w + reduceSize-1)/reduceSize;
 			h = (h + reduceSize-1)/reduceSize;
+			
+			glProgramUniform2i(shader->GetProgram(), 12, w, h);
+			GL_CHECK_PUSH_PRINT_ERROR;
+			
 			glViewport(0, 0, w, h);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			vao->DrawArrays(0, 4);
@@ -146,7 +140,7 @@ void main() {
 			
 			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
 			
-			reduceSize = std::min(2, reduceSize);
+			reduceSize = std::max(2, reduceSize/2);
 		}
 		shader->Unuse();
 		vao->Unbind();
