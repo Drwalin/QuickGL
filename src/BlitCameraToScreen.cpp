@@ -60,13 +60,12 @@ uniform vec2 size;
 
 void main() {
 	vec2 uv = texCoord * coords.zw + coords.xy;
-	ivec2 isize = ivec2(size) >> lod;
-	ivec2 iuv = ivec2(uv * (isize));
+	ivec2 iuv = ivec2(uv * size);
 	vec4 v = texelFetch(tex, iuv, lod);
-	if(v.z > 0.01 || v.y > 0.01)
+	if(v.z > 0.01 || v.y > 0.01)// || v.w > 0.01)
 		FragColor = v;//*v*v*v*v*v*v*v;
 	else {
-		v.x = pow(v.x, 16);
+		v.x = pow(v.x, 24);
 		FragColor = v;
 	}
 }
@@ -97,7 +96,10 @@ void main() {
 		shader->SetTexture(textureLocation, texture.get(), 0);
 		shader->SetInt(lodLocation, lod);
 		shader->SetVec4(coordsLocation, {srcX, srcY, srcW, srcH});
-		shader->SetVec2(sizeLocation, {texture->GetWidth(), texture->GetHeight()});
+		shader->SetVec2(sizeLocation, {
+				(texture->GetWidth() +(1<<lod)-1)>>lod,
+				(texture->GetHeight()+(1<<lod)-1)>>lod
+				});
 		glViewport(dstX, dstY, dstW, dstH);
 		GL_CHECK_PUSH_PRINT_ERROR;
 		glDisable(GL_DEPTH_TEST);
