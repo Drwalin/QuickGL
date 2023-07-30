@@ -114,7 +114,7 @@ void main() {
 		vao->Bind();
 		glDepthFunc(GL_ALWAYS);
 		int reduceSize = 4;
-		for(; w>2 && h>2; ++l) {
+		for(; w>8 && h>8; ++l) {
 			glFramebufferTexture2D(GL_FRAMEBUFFER, gl::ATTACHMENT_DEPTH,
 					GL_TEXTURE_2D, depthTexture->GetTexture(), l);
 			
