@@ -40,7 +40,7 @@ namespace qgl {
 	public:
 		
 		AnimatedMeshManager(uint32_t vertexSize,
-				void(*meshAppenderVertices)(
+				bool(*meshAppenderVertices)(
 					std::vector<uint8_t>& buffer,
 					uint32_t bufferByteOffset,
 					gl::BasicMeshLoader::Mesh* mesh

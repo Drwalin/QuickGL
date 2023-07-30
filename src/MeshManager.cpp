@@ -29,7 +29,7 @@
 
 namespace qgl {
 	MeshManager::MeshManager(uint32_t vertexSize,
-			void(*meshAppenderVertices)(
+			bool(*meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh))
@@ -105,36 +105,37 @@ namespace qgl {
 		return GetMeshIdByName(name);
 	}
 	
-	void MeshManager::LoadMesh(gl::BasicMeshLoader::Mesh* mesh) {
+	bool MeshManager::LoadMesh(gl::BasicMeshLoader::Mesh* mesh) {
 		std::vector<uint8_t> vboSrc, eboSrc;
-		MeshInfo info;
-		
-		mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
+		if(meshAppenderVertices(vboSrc, 0, mesh)) {
+			MeshInfo info;
+			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
 				info.boundingSphereRadius);
-		
-		vboSrc.clear();
-		meshAppenderVertices(vboSrc, 0, mesh);
-		info.countVertices = mesh->pos.size();
-		info.firstVertex = vboAllocator.Allocate(info.countVertices);
-		
-		eboSrc.clear();
-		mesh->AppendIndices<uint32_t>(info.firstVertex, eboSrc);
-		info.countElements = mesh->indices.size();
-		info.firstElement = eboAllocator.Allocate(info.countElements);
-		
-		std::string name = mesh->name;
-		uint32_t meshId = idsManager.GetNewId();
-		mapNameToId[name] = meshId;
-		if(meshInfo.size() <= meshId) {
-			meshInfo.resize(meshId+100);
+			
+			info.countVertices = mesh->pos.size();
+			info.firstVertex = vboAllocator.Allocate(info.countVertices);
+			
+			eboSrc.clear();
+			mesh->AppendIndices<uint32_t>(info.firstVertex, eboSrc);
+			info.countElements = mesh->indices.size();
+			info.firstElement = eboAllocator.Allocate(info.countElements);
+			
+			std::string name = mesh->name;
+			uint32_t meshId = idsManager.GetNewId();
+			mapNameToId[name] = meshId;
+			if(meshInfo.size() <= meshId) {
+				meshInfo.resize(meshId+100);
+			}
+			meshInfo[meshId] = info;
+			
+			vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
+					info.countVertices*vertexSize);
+			
+			ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
+					info.countElements*sizeof(uint32_t));
+			return true;
 		}
-		meshInfo[meshId] = info;
-		
-		vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
-				info.countVertices*vertexSize);
-		
-		ebo.Update(&eboSrc.front(), info.firstElement*sizeof(uint32_t),
-				info.countElements*sizeof(uint32_t));
+		return false;
 	}
 	
 	MeshManager::MeshInfo MeshManager::GetMeshInfoById(uint32_t id) const {

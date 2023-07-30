@@ -157,7 +157,7 @@ int main() {
 	TerrainGenerator tg(engine, pipelineStatic, pipelineAnimated);
 	
 	{
-		int size = 96; // 1024;
+		int size = 128; // 1024;
 		tg.Generate(-size, size);
 	}
 	
@@ -420,12 +420,17 @@ int main() {
 		
 		if(blitDepthLevel >= 0) {
 			auto tex = camera->GetDepthTexture();
+			std::vector<uint32_t> d;
+// 			d.resize(1000000);
+// 			tex->Fetch2(d.data(), 0, 0, 0, 
 			engine->GetBlitter()->Blit(
 					tex,
+					0, 0, 1, 1,
 					0, 0,
-					1, //((tex->GetWidth()>>blitDepthLevel)<<blitDepthLevel)/(float)tex->GetWidth(),
-					1, //((tex->GetHeight()>>blitDepthLevel)<<blitDepthLevel)/(float)tex->GetHeight(),
-					0, 0, (tex->GetWidth()>>blitDepthLevel)<<blitDepthLevel, (tex->GetHeight()>>blitDepthLevel)<<blitDepthLevel,
+					(((1<<blitDepthLevel)-1+tex->GetWidth() )>>blitDepthLevel)<<blitDepthLevel,
+					(((1<<blitDepthLevel)-1+tex->GetHeight())>>blitDepthLevel)<<blitDepthLevel,
+// 					((1<<blitDepthLevel)-1+(tex->GetWidth()>>blitDepthLevel))<<blitDepthLevel,
+// 					((1<<blitDepthLevel)-1+(tex->GetHeight()>>blitDepthLevel))<<blitDepthLevel,
 					blitDepthLevel);
 		}
 		

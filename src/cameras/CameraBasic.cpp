@@ -148,12 +148,16 @@ namespace qgl {
 // 					gl::DEPTH_STENCIL,
 // 					gl::UNSIGNED_INT_24_8);
 			
-			depthTexture->UpdateTextureData(
-					nullptr,
-					width,
-					height,
-					false,
-					gl::TEXTURE_2D,
+// 			depthTexture->UpdateTextureData(
+// 					nullptr,
+// 					width,
+// 					height,
+// 					false,
+// 					gl::TEXTURE_2D,
+// 					gl::DEPTH_COMPONENT32F,
+// 					gl::DEPTH_COMPONENT,
+// 					gl::FLOAT);
+			depthTexture->Generate2(gl::TEXTURE_2D, width, height, 
 					gl::DEPTH_COMPONENT32F,
 					gl::DEPTH_COMPONENT,
 					gl::FLOAT);

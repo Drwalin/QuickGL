@@ -160,11 +160,22 @@ namespace qgl {
 		
 		animatedMeshManager = std::make_shared<AnimatedMeshManager>(stride,
 			[](std::vector<uint8_t>& buffer, uint32_t offset,
-					gl::BasicMeshLoader::Mesh* mesh){
+					gl::BasicMeshLoader::Mesh* mesh)->bool {
+			
+				if(mesh->weight.size() == 0) {
+					return false;
+				}
 				
 				mesh->ExtractPos<float>(offset, buffer, 0, stride,
 						gl::BasicMeshLoader::ConverterFloatPlain<float, 3>);
 				
+				if(mesh->color.size() == 0 || mesh->color[0].size() != mesh->pos.size()) {
+					mesh->color.resize(std::max<int>(mesh->color.size(), 1));
+					mesh->color[0].resize(mesh->pos.size());
+					for(auto&c : mesh->color[0]) {
+						c = {0,0,0,1};
+					}
+				}
 				mesh->ExtractColor<uint8_t>(offset, buffer, 12, stride,
 						gl::BasicMeshLoader::ConverterIntPlainClampScale
 							<uint8_t, 255, 0, 255, 4>);
@@ -177,6 +188,8 @@ namespace qgl {
 						20, 24, stride,
 						gl::BasicMeshLoader::ConverterIntPlainClampScale
 							<uint8_t, 255, 0, 255, 1>, 4);
+				
+				return true;
 			});
 		return animatedMeshManager;
 	}

@@ -35,6 +35,7 @@ namespace qgl {
 	private:
 		
 		uint32_t textureLocation;
+		uint32_t reduceSizeLocation;
 		
 		std::shared_ptr<gl::Shader> shader;
 		std::shared_ptr<gl::VBO> vbo;
