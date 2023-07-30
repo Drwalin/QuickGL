@@ -18,7 +18,6 @@
 
 #include "../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/Shader.hpp"
-#include "../OpenGLWrapper/include/openglwrapper/FBO.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/VAO.hpp"
 #include "../OpenGLWrapper/include/openglwrapper/Texture.hpp"
@@ -55,12 +54,26 @@ in vec2 texCoord;
 out vec4 FragColor;
 
 uniform sampler2D tex;
+uniform int lod;
+uniform vec4 coords;
+uniform vec2 size;
 
 void main() {
-	FragColor = texture(tex, texCoord);
+	vec2 uv = texCoord * coords.zw + coords.xy;
+	ivec2 iuv = ivec2(uv * size);
+	vec4 v = texelFetch(tex, iuv, lod);
+	if(v.z > 0.01 || v.y > 0.01)// || v.w > 0.01)
+		FragColor = v;//*v*v*v*v*v*v*v;
+	else {
+		v.x = pow(v.x, 24);
+		FragColor = v;
+	}
 }
 )");
 		textureLocation = shader->GetUniformLocation("tex");
+		lodLocation = shader->GetUniformLocation("lod");
+		coordsLocation = shader->GetUniformLocation("coords");
+		sizeLocation = shader->GetUniformLocation("size");
 		
 		vbo = std::make_shared<gl::VBO>(2, gl::ARRAY_BUFFER, gl::STATIC_DRAW);
 		uint8_t p[8] = {0, 0, 1, 0, 0, 1, 1, 1};
@@ -73,12 +86,21 @@ void main() {
 	}
 	
 	void BlitCameraToScreen::Blit(std::shared_ptr<gl::Texture> texture,
-			uint32_t width, uint32_t height) {
-		gl::VAO::Unbind();
-		gl::FBO::Unbind();
+			float srcX, float srcY,
+			float srcW, float srcH,
+			uint32_t dstX, uint32_t dstY,
+			uint32_t dstW, uint32_t dstH,
+			int lod) {
+		vao->Bind();
 		shader->Use();
 		shader->SetTexture(textureLocation, texture.get(), 0);
-		glViewport(0, 0, width, height);
+		shader->SetInt(lodLocation, lod);
+		shader->SetVec4(coordsLocation, {srcX, srcY, srcW, srcH});
+		shader->SetVec2(sizeLocation, {
+				(texture->GetWidth() +(1<<lod)-1)>>lod,
+				(texture->GetHeight()+(1<<lod)-1)>>lod
+				});
+		glViewport(dstX, dstY, dstW, dstH);
 		GL_CHECK_PUSH_PRINT_ERROR;
 		glDisable(GL_DEPTH_TEST);
 		vao->DrawArrays(0, 4);

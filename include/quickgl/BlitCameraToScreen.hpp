@@ -37,12 +37,18 @@ namespace qgl {
 		BlitCameraToScreen();
 		
 		void Blit(std::shared_ptr<gl::Texture> texture,
-				uint32_t width,
-				uint32_t height);
+				float srcX, float srcY,
+				float srcW, float srcH,
+				uint32_t dstX, uint32_t dstY,
+				uint32_t dstW, uint32_t dstH,
+				int lod = 0);
 		
 	private:
 		
 		uint32_t textureLocation;
+		uint32_t lodLocation;
+		uint32_t coordsLocation;
+		uint32_t sizeLocation;
 		
 		std::shared_ptr<gl::Shader> shader;
 		std::shared_ptr<gl::VBO> vbo;

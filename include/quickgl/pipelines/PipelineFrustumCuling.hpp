@@ -55,8 +55,7 @@ namespace qgl {
 		bool CanExecuteFetchFrustumCulledEntitiesCount(std::shared_ptr<Camera> camera);
 		void GenerateIndirectDrawCommandBuffer(std::shared_ptr<Camera> camera);
 		
-		int32_t FRUSTUM_CULLING_LOCATION_ENTITIES_COUNT;
-		int32_t FRUSTUM_CULLING_LOCATION_VIEW_MATRIX;
+		uint32_t UNIFORM_LOCATION_DEPTH_TEXTURE;
 		
 	protected:
 		
@@ -70,7 +69,6 @@ namespace qgl {
 		std::shared_ptr<gl::VBO> frustumCulledIdsBuffer;
 		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounter;
 		std::shared_ptr<gl::VBO> frustumCulledIdsCountAtomicCounterAsyncFetch;
-		glm::vec4 clippingPlanesValues[5];
 		std::shared_ptr<gl::VBO> clippingPlanes;
 		
 		static const char* FRUSTUM_CULLING_COMPUTE_SHADER_SOURCE;

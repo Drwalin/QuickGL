@@ -43,32 +43,38 @@ namespace qgl {
 		virtual void PrepareDataForNewFrame() override;
 		
 		virtual std::shared_ptr<gl::Texture> GetMainColorTexture() override;
+		virtual std::shared_ptr<gl::Texture> GetDepthTexture() override;
 		
 		virtual void SetRenderTargetDimensions(uint32_t width, uint32_t height) override;
-		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) override;
+		virtual void GetRenderTargetDimensions(uint32_t& width, uint32_t& height) const override;
 		virtual void SetFov(float fov) override;
-		virtual float GetFov() override;
-		virtual glm::mat4 GetPerspectiveMatrix() override;
+		virtual float GetFov() const override;
+		virtual float GetNear() const override;
+		virtual float GetFar() const override;
+		
+		virtual glm::mat4 GetPerspectiveMatrix() const override;
+		virtual glm::mat4 GetPerspectiveViewMatrix() const override;
+		virtual glm::mat4 GetPreviousPerspectiveViewMatrix() const override;
 		
 		virtual void Clear(bool clearColor) override;
 		
-		virtual glm::mat4 GetViewMatrix() override;
+		virtual glm::mat4 GetViewMatrix() const override;
 		
-		virtual glm::vec3 GetPosition() override;
+		virtual glm::vec3 GetPosition() const override;
 		virtual void SetPosition(glm::vec3 position) override;
 		
-		virtual glm::vec3 GetFront() override;
-		virtual glm::vec3 GetRight() override;
-		virtual glm::vec3 GetUp() override;
+		virtual glm::vec3 GetFront() const override;
+		virtual glm::vec3 GetRight() const override;
+		virtual glm::vec3 GetUp() const override;
 		
-		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) override;
-		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) override;
+		virtual void GetClippingPlanes(glm::vec3 normals[5], float offsets[5]) const override;
+		virtual void GetClippingPlanes(glm::vec4 normalsOffsets[5]) const override;
 		
 		virtual void Rotate(glm::vec3 euler) override;
 		virtual void SetRotation(glm::vec3 euler) override;
 		virtual void Rotate(glm::quat rotation) override;
 		virtual void SetRotation(glm::quat rotation) override;
-		virtual glm::mat3 GetRotationMatrix() override;
+		virtual glm::mat3 GetRotationMatrix() const override;
 		
 	protected:
 		
@@ -95,6 +101,9 @@ namespace qgl {
 		glm::vec3 right;
 		
 		glm::vec4 clippingPlanes[5]; // {n.x, n.y, n.z, distance from origin}
+		
+		glm::mat4 perspectiveView;
+		glm::mat4 previousPerspectiveView;
 	};
 }
 

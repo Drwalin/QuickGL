@@ -41,7 +41,6 @@ namespace gl {
 }
 
 namespace qgl {
-	
 	struct Stage;
 	
 	class MeshManager;

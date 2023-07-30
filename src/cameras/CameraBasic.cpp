@@ -22,6 +22,8 @@
 #include <glm/matrix.hpp>
 
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/FBO.hpp"
+#include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
 
 #include "../../include/quickgl/Engine.hpp"
 #include "../../include/quickgl/InputManager.hpp"
@@ -44,21 +46,17 @@ namespace qgl {
 		far = 100000;
 		
 		depthTexture = std::make_shared<gl::Texture>();
-		depthTexture->UpdateTextureData(
-				nullptr,
-				width,
-				height,
-				false,
-				gl::TEXTURE_2D,
-				(gl::TextureSizedInternalFormat) GL_DEPTH24_STENCIL8,
-				(gl::TextureDataFormat) GL_DEPTH_STENCIL,
-				(gl::DataType) GL_UNSIGNED_INT_24_8);
+		SetRenderTargetDimensions(width, height);
 		
 		fbo = std::make_shared<gl::FBO>();
-		fbo->AttachTexture(depthTexture.get(), gl::ATTACHMENT_DEPTH_STENCIL, 0);
+		fbo->AttachTexture(depthTexture.get(), gl::ATTACHMENT_DEPTH, 0);
 	}
 	
 	std::shared_ptr<gl::Texture> CameraBasic::GetMainColorTexture() {
+		return depthTexture;
+	}
+	
+	std::shared_ptr<gl::Texture> CameraBasic::GetDepthTexture() {
 		return depthTexture;
 	}
 	
@@ -80,10 +78,12 @@ namespace qgl {
 	
 	
 	void CameraBasic::PrepareDataForNewFrame() {
+		previousPerspectiveView = perspectiveView;
+		
 		glm::mat4 rot = glm::mat4_cast(rotation);
-		front = rot * glm::vec4{0,0,-1,0};
-		up = rot * glm::vec4{0,1,0,0};
-		right = rot * glm::vec4{1,0,0,0};
+		front = glm::normalize(rot * glm::vec4{0,0,-1,0});
+		up = 	glm::normalize(rot * glm::vec4{0,1, 0,0});
+		right = glm::normalize(rot * glm::vec4{1,0, 0,0});
 		
 		perspective = glm::perspective(fovy, aspectRatio, near, far);
 		
@@ -128,28 +128,30 @@ namespace qgl {
 		
 		transform = glm::translate(rot, pos);
 		view = glm::inverse(rot) * glm::translate(glm::mat4(1), -pos);
+		
+		perspectiveView = GetPerspectiveMatrix() * GetViewMatrix();
 	}
 		
 	void CameraBasic::SetRenderTargetDimensions(uint32_t width,
 			uint32_t height) {
 		if(width != depthTexture->GetWidth() ||
-				height != depthTexture->GetTexture()) {
+				height != depthTexture->GetHeight()) {
 			aspectRatio = ((float)width)/((float)height);
 			fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
 			depthTexture->UpdateTextureData(
 					nullptr,
 					width,
 					height,
-					false,
+					true,
 					gl::TEXTURE_2D,
-					(gl::TextureSizedInternalFormat)GL_DEPTH24_STENCIL8,
-					(gl::TextureDataFormat)GL_DEPTH_STENCIL,
-					(gl::DataType)GL_UNSIGNED_INT_24_8);
+					gl::DEPTH_COMPONENT32F,
+					gl::DEPTH_COMPONENT,
+					gl::FLOAT);
 		}
 	}
 	
 	void CameraBasic::GetRenderTargetDimensions(uint32_t& width,
-			uint32_t& height) {
+			uint32_t& height) const {
 		width = depthTexture->GetWidth();
 		height = depthTexture->GetHeight();
 	}
@@ -160,12 +162,29 @@ namespace qgl {
 		fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
 	}
 	
-	float CameraBasic::GetFov() {
+	float CameraBasic::GetFov() const {
 		return fov;
 	}
 	
-	glm::mat4 CameraBasic::GetPerspectiveMatrix() {
+	float CameraBasic::GetNear() const {
+		return near;
+	}
+	
+	float CameraBasic::GetFar() const {
+		return far;
+	}
+	
+	glm::mat4 CameraBasic::GetPerspectiveMatrix() const {
 		return perspective;
+	}
+	
+	
+	glm::mat4 CameraBasic::GetPerspectiveViewMatrix() const {
+		return perspectiveView;
+	}
+	
+	glm::mat4 CameraBasic::GetPreviousPerspectiveViewMatrix() const {
+		return previousPerspectiveView;
 	}
 	
 	void CameraBasic::Clear(bool clearColor) {
@@ -175,11 +194,11 @@ namespace qgl {
 		fbo->Clear(clearColor, true);
 	}
 	
-	glm::mat4 CameraBasic::GetViewMatrix() {
+	glm::mat4 CameraBasic::GetViewMatrix() const {
 		return view;
 	}
 	
-	glm::vec3 CameraBasic::GetPosition() {
+	glm::vec3 CameraBasic::GetPosition() const {
 		return pos;
 	}
 	
@@ -187,28 +206,28 @@ namespace qgl {
 		pos = position;
 	}
 	
-	glm::vec3 CameraBasic::GetFront() {
+	glm::vec3 CameraBasic::GetFront() const {
 		return front;
 	}
 	
-	glm::vec3 CameraBasic::GetRight() {
+	glm::vec3 CameraBasic::GetRight() const {
 		return right;
 	}
 	
-	glm::vec3 CameraBasic::GetUp() {
+	glm::vec3 CameraBasic::GetUp() const {
 		return up;
 	}
 	
 	
 	void CameraBasic::GetClippingPlanes(glm::vec3 normals[5],
-			float offsets[5]) {
+			float offsets[5]) const {
 		for(int i=0; i<5; ++i) {
 			normals[i] = clippingPlanes[i];
 			offsets[i] = clippingPlanes[i][3];
 		}
 	}
 	
-	void CameraBasic::GetClippingPlanes(glm::vec4 normalsOffsets[5]) {
+	void CameraBasic::GetClippingPlanes(glm::vec4 normalsOffsets[5]) const {
 		for(int i=0; i<5; ++i) {
 			normalsOffsets[i] = clippingPlanes[i];
 		}
@@ -235,7 +254,7 @@ namespace qgl {
 		this->rotation = rotation;
 	}
 	
-	glm::mat3 CameraBasic::GetRotationMatrix() {
+	glm::mat3 CameraBasic::GetRotationMatrix() const {
 		return glm::mat3_cast(rotation);
 	}
 }

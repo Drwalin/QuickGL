@@ -10,8 +10,10 @@
 #include "../../include/quickgl/MeshManager.hpp"
 #include "../../include/quickgl/pipelines/PipelineStatic.hpp"
 #include "../../include/quickgl/pipelines/PipelineBoneAnimated.hpp"
+#include "../../include/quickgl/pipelines/PipelinePostProcessing.hpp"
 #include "../../include/quickgl/cameras/FreeFlyCamera.hpp"
 #include "../../include/quickgl/Gui.hpp"
+#include "../include/quickgl/BlitCameraToScreen.hpp"
 
 #include "../../include/quickgl/util/Log.hpp"
 #include "quickgl/cameras/CameraBasicMaterials.hpp"
@@ -38,7 +40,6 @@ int main() {
 	std::shared_ptr<qgl::Engine> engine
 		= std::make_shared<qgl::Engine>();
 	engine->InitGL("Simple conceptual example");
-	{
 	
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_INDICES);
 // 	PRINT_PARAMETER(GL_MAX_ELEMENTS_VERTICES);
@@ -156,7 +157,7 @@ int main() {
 	TerrainGenerator tg(engine, pipelineStatic, pipelineAnimated);
 	
 	{
-		int size = 96; // 1024;
+		int size = 128; // 1024;
 		tg.Generate(-size, size);
 	}
 	
@@ -200,11 +201,9 @@ int main() {
 	bool stressTestigEntityCreateAndDelete = false;
 	bool stressDeleting;
 	
-	uint32_t BSIZE = 1;
-	gl::VBO memb(1024*16, gl::SHADER_STORAGE_BUFFER, gl::DYNAMIC_DRAW);
-	memb.Init();
-	
 	bool useMainCameraMovement = true;
+	
+	int blitDepthLevel = -1;
 	
 	while(!engine->IsQuitRequested()) {
 		qgl::Log::sync = false;
@@ -226,11 +225,6 @@ int main() {
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_BACKSLASH)) {
 			I = 0;
 			II++;
-		}
-		
-		if(engine->GetInputManager().IsKeyDown(GLFW_KEY_K)) {
-			memb.Resize(BSIZE);
-			BSIZE+=16;
 		}
 		
 		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_ENTER)) {
@@ -347,8 +341,6 @@ int main() {
 				camera2->ProcessDefaultInput(engine);
 		}
 		
-		camera->SetRenderTargetDimensions(256, 256);
-		
 		// render
 		auto s = std::chrono::steady_clock::now();
 		engine->Render();
@@ -418,6 +410,25 @@ int main() {
 					{256, 256}, {0,1}, {1,0});
 		ImGui::End();
 		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_EQUAL)) {
+			blitDepthLevel++;
+		}
+		
+		if(engine->GetInputManager().WasKeyPressed(GLFW_KEY_MINUS)) {
+			blitDepthLevel--;
+		}
+		
+		if(blitDepthLevel >= 0) {
+			auto tex = camera->GetDepthTexture();
+			engine->GetBlitter()->Blit(
+					tex,
+					0, 0, blitDepthLevel>0?0.5:1, blitDepthLevel>0?0.5:1,
+					0, 0,
+					(((1<<blitDepthLevel)-1+tex->GetWidth() )>>blitDepthLevel)<<blitDepthLevel,
+					(((1<<blitDepthLevel)-1+tex->GetHeight())>>blitDepthLevel)<<blitDepthLevel,
+					blitDepthLevel);
+		}
+		
 		gl::Flush();
 		
 		// swap buffers
@@ -437,7 +448,6 @@ int main() {
 		}
 	}
 	
-	}
 	engine->Destroy();	
 	return 0;
 }

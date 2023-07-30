@@ -16,29 +16,33 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../include/quickgl/postprocess/PostProcess.hpp"
-#include "../../include/quickgl/postprocess/PostProcessGenerateOcclusionCullingDepthMipmap.hpp"
+#ifndef QUICKGL_POST_PROCESS_GENERATE_OCCLUSION_CULLING_DEPTH_MIPMAP_HPP
+#define QUICKGL_POST_PROCESS_GENERATE_OCCLUSION_CULLING_DEPTH_MIPMAP_HPP
 
-#include "../../include/quickgl/cameras/Camera.hpp"
+#include "PostProcess.hpp"
 
 namespace qgl {
-	Camera::Camera() {
-		AddPostProcess(
-				std::make_shared<qgl::PostProcessGenerateOcclusionCullingDepthMipmap>());
-	}
+	class Camera;
 	
-	Camera::~Camera() {
-	}
-	
-	void Camera::AddPostProcess(std::shared_ptr<PostProcess> postProcess) {
-		postProcesses.push_back(postProcess);
-	}
-	
-	void Camera::DoPostprocessing() {
-		std::shared_ptr<Camera> self = shared_from_this();
-		for(uint32_t i=0; i<postProcesses.size(); ++i) {
-			postProcesses[i]->Execute(self);
-		}
-	}
+	class PostProcessGenerateOcclusionCullingDepthMipmap : public PostProcess {
+	public:
+		
+		PostProcessGenerateOcclusionCullingDepthMipmap();
+		virtual ~PostProcessGenerateOcclusionCullingDepthMipmap();
+		
+		virtual void Execute(std::shared_ptr<Camera> camera) override;
+		
+	private:
+		
+		uint32_t textureLocation;
+		uint32_t reduceSizeLocation;
+		
+		std::shared_ptr<gl::Shader> shader;
+		std::shared_ptr<gl::VBO> vbo;
+		std::shared_ptr<gl::VAO> vao;
+		std::shared_ptr<gl::FBO> fbo;
+	};
 }
+
+#endif
 
