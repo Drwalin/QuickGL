@@ -297,84 +297,153 @@ shared uint commonStartingLocation;
 
 uniform sampler2D depthTexture;
 
-uint IsInView(uint id) {
-	if(id < entitiesCount) {
-		uint ret = 0;
-		
-		vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
-		vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
-		float dd = length(rad);
-		
-		vec4 p1 = pv*(pos + p1fur * dd);
-		vec4 p2 = pv*(pos + p2fur * dd);
-		vec4 p3 = pv*(pos + p3fur * dd);
-
-		vec4 P3 = p3;
-		
-		p1.xyz /= p1.w;
-		p2.xyz /= p2.w;
-		p3.xyz /= p3.w;
-
-		ivec2 ss1 = ivec2(clamp(p1.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension-1));
-		ivec2 ss2 = ivec2(clamp(p2.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
-		const ivec2 s1 = max(ss1, ivec2(0,0));//min(ss1, ss2);
-		const ivec2 s2 = ss2;//max(ss1, ss2);
-		const float currentDepth = (p3.z * 0.5) + 0.5 - 0.00007;
-
-// 		p1.w >= 0
-// 		p3.w <= nearfar.y
-// 		p1.x <= 1
-// 		p1.y <= 1
-// 		p2.x >= -1
-// 		p2.y >= -1
+uint IsFullyInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4 _p3) {
+	vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
+	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
+	float dd = length(rad);
 	
-// 		p1.w = p1.w - 0;
-// 		p3.w = -(p3.w - nearfar.y);
-// 		p1.x = -(p1.x - 1);
-// 		p1.y = -(p1.y - 1);
-// 		p2.x = p2.x - (-1);
-// 		p2.y = p2.y - (-1);
-// 		
-// 		uvec4 u1, u2, u3;
-// 		u1.w = floatBitsToUint(p1.w);
-// 		u3.w = floatBitsToUint(p3.w);
-// 		u1.x = floatBitsToUint(p1.x);
-// 		u1.y = floatBitsToUint(p1.y);
-// 		u2.x = floatBitsToUint(p2.x);
-// 		u2.y = floatBitsToUint(p2.y);
-// 		
-// 		ret = (((u1.w | u3.w | u1.x | u1.y | u2.x | u2.y)>>31) & 1) ^ 1;
-		
-		if(p1.w >= 0 && p3.w <= nearfar.y && p1.x <= 1 && p1.y <= 1 && p2.x >= -1 && p2.y >= -1)
-			ret = 1;
-		
-		if(ret == 1 && P3.z > 1) { // occlusion culling
-			const ivec2 s = abs(s2-s1);
-			const int smaxdim = min(cameraPixelDimension.x, cameraPixelDimension.y);
-			const int maxlod = int(log2(smaxdim))-2;
-			
-			const int omaxdim = max(s.x, s.y);
-			const int lod = max(min(int(log2(omaxdim)), maxlod), 2);
-			const int bits = (1<<lod) - 1;
-			
-			ivec2 end = min((s2+bits)>>lod, ((cameraPixelDimension+bits)>>lod));
-			ivec2 start = max(min((s1)>>lod, end), ivec2(0,0));
-			end = max(end, start);
-			
-			uint visible = 0;
-			for(int i=start.x; i<=end.x && visible==0; ++i) {
-				for(int j=start.y; j<=end.y && visible==0; ++j) {
-					float testedDepth = texelFetch(depthTexture, ivec2(i,j), lod-1).x;
-					if(currentDepth <= testedDepth) {
-						visible = 1;
-					}
-				}
-			}
-			ret = ret & visible;
-		}
-		
-		return ret;
+	_p1 = matPV*(pos + p1fur * dd);
+	_p2 = matPV*(pos + p2fur * dd);
+	_p3 = matPV*(pos + p3fur * dd);
+	
+	_p1.xyz /= _p1.w;
+	_p2.xyz /= _p2.w;
+	_p3.xyz /= _p3.w;
+	
+	vec4 p1 = _p1;
+	vec4 p2 = _p2;
+	vec4 p3 = _p3;
+	
+	
+// 	if(p1.w >= 0 && p3.w <= nearfar.y && p1.x >= -1 && p1.y >= -1 && p2.x <= 1 && p2.y <= 1)
+// 		return 1;
+// 	else
+// 		return 0;
+
+
+// 	p1.w >= 0
+// 	p3.w <= nearfar.y
+// 	p1.x >= -1
+// 	p1.y >= -1
+// 	p2.x <= -1
+// 	p2.y <= -1
+
+	p1.w = p1.w - 0;
+	p3.w = -(p3.w - nearfar.y);
+	p1.x = p1.x - (-1);
+	p1.y = p1.y - (-1);
+	p2.x = -(p2.x - 1);
+	p2.y = -(p2.y - 1);
+	
+	uvec4 u1, u2, u3;
+	u1.w = floatBitsToUint(p1.w);
+	u3.w = floatBitsToUint(p3.w);
+	u1.x = floatBitsToUint(p1.x);
+	u1.y = floatBitsToUint(p1.y);
+	u2.x = floatBitsToUint(p2.x);
+	u2.y = floatBitsToUint(p2.y);
+	
+	return (((u1.w | u3.w | u1.x | u1.y | u2.x | u2.y)>>31) & 1) ^ 1;
+}
+
+uint IsInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4 _p3) {
+	vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
+	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
+	float dd = length(rad);
+	
+	_p1 = matPV*(pos + p1fur * dd);
+	_p2 = matPV*(pos + p2fur * dd);
+	_p3 = matPV*(pos + p3fur * dd);
+	
+	_p1.xyz /= _p1.w;
+	_p2.xyz /= _p2.w;
+	_p3.xyz /= _p3.w;
+	
+	vec4 p1 = _p1;
+	vec4 p2 = _p2;
+	vec4 p3 = _p3;
+
+	
+	if(p1.w >= 0 && p3.w <= nearfar.y && p1.x <= 1 && p1.y <= 1 && p2.x >= -1 && p2.y >= -1)
+		return 1;
+	else
+		return 0;
+	
+	
+// 	p1.w >= 0
+// 	p3.w <= nearfar.y
+// 	p1.x <= 1
+// 	p1.y <= 1
+// 	p2.x >= -1
+// 	p2.y >= -1
+
+	p1.w = p1.w - 0;
+	p3.w = -(p3.w - nearfar.y);
+	p1.x = -(p1.x - 1);
+	p1.y = -(p1.y - 1);
+	p2.x = p2.x - (-1);
+	p2.y = p2.y - (-1);
+	
+	uvec4 u1, u2, u3;
+	u1.w = floatBitsToUint(p1.w);
+	u3.w = floatBitsToUint(p3.w);
+	u1.x = floatBitsToUint(p1.x);
+	u1.y = floatBitsToUint(p1.y);
+	u2.x = floatBitsToUint(p2.x);
+	u2.y = floatBitsToUint(p2.y);
+	
+	return (((u1.w | u3.w | u1.x | u1.y | u2.x | u2.y)>>31) & 1) ^ 1;
+}
+
+uint IsNotOccluded(vec4 p1, vec4 p2, vec4 p3) {
+	if(p3.z*p3.w < 1) {
+		return 1;
 	}
+	
+	ivec2 ss1 = ivec2(clamp(p1.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension-1));
+	ivec2 ss2 = ivec2(clamp(p2.xy*0.5 + 0.5, vec2(0,0), vec2(1,1)) * (cameraPixelDimension));
+	const ivec2 s1 = max(ss1, ivec2(0,0));//min(ss1, ss2);
+	const ivec2 s2 = ss2;//max(ss1, ss2);
+	const float currentDepth = (p3.z * 0.5) + 0.5 - 0.00007;
+
+	const ivec2 s = abs(s2-s1);
+	const int smaxdim = min(cameraPixelDimension.x, cameraPixelDimension.y);
+	const int maxlod = int(log2(smaxdim))-2;
+	
+	const int omaxdim = max(s.x, s.y);
+	const int lod = max(min(int(log2(omaxdim)), maxlod), 2);
+	const int bits = (1<<lod) - 1;
+	
+	ivec2 end = min((s2+bits)>>lod, ((cameraPixelDimension+bits)>>lod));
+	ivec2 start = max(min((s1)>>lod, end), ivec2(0,0));
+	end = max(end, start);
+	
+	for(int i=start.x; i<=end.x; ++i) {
+		for(int j=start.y; j<=end.y; ++j) {
+			float testedDepth = texelFetch(depthTexture, ivec2(i,j), lod-1).x;
+			if(currentDepth <= testedDepth) {
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+uint IsInViewNotOccluded(uint id) {
+	if(id >= entitiesCount) {
+		return 0;
+	}
+	
+	vec4 p1, p2, p3;
+	if(IsInViewport(id, pv, p1, p2, p3) == 0) {
+		return 0;
+	}
+	
+	if(IsInViewport(id, prevPV, p1, p2, p3) == 1) {
+		return IsNotOccluded(p1, p2, p3);
+	}
+	
+	return 1;
 	return 0;
 }
 
@@ -390,7 +459,7 @@ void main() {
 
 	for(uint i=0; i<objectsPerInvocation; ++i) {
 		uint invocationId = gl_GlobalInvocationID.x*objectsPerInvocation + i;
-		uint isIn = IsInView(invocationId);
+		uint isIn = IsInViewNotOccluded(invocationId);
 		inViewIds[inViewCount] = invocationId;
 		inViewCount += isIn;
 	}
