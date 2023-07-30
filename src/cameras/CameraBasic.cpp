@@ -138,40 +138,15 @@ namespace qgl {
 				height != depthTexture->GetHeight()) {
 			aspectRatio = ((float)width)/((float)height);
 			fovy = aspectRatio < 1 ? fov : fov / aspectRatio;
-// 			depthTexture->UpdateTextureData(
-// 					nullptr,
-// 					width,
-// 					height,
-// 					false,
-// 					gl::TEXTURE_2D,
-// 					gl::DEPTH24_STENCIL8,
-// 					gl::DEPTH_STENCIL,
-// 					gl::UNSIGNED_INT_24_8);
-			
-// 			depthTexture->UpdateTextureData(
-// 					nullptr,
-// 					width,
-// 					height,
-// 					false,
-// 					gl::TEXTURE_2D,
-// 					gl::DEPTH_COMPONENT32F,
-// 					gl::DEPTH_COMPONENT,
-// 					gl::FLOAT);
-			depthTexture->Generate2(gl::TEXTURE_2D, width, height, 
+			depthTexture->UpdateTextureData(
+					nullptr,
+					width,
+					height,
+					true,
+					gl::TEXTURE_2D,
 					gl::DEPTH_COMPONENT32F,
 					gl::DEPTH_COMPONENT,
 					gl::FLOAT);
-			
-// 			depthTexture->UpdateTextureData(
-// 					nullptr,
-// 					width,
-// 					height,
-// 					false,
-// 					gl::TEXTURE_2D,
-// 					gl::DEPTH24_STENCIL8,
-// 					gl::DEPTH_STENCIL,
-// 					gl::UNSIGNED_INT_24_8);
-			depthTexture->GenerateMipmaps();
 		}
 	}
 	
