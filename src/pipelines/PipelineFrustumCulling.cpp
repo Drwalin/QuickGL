@@ -354,7 +354,7 @@ uint IsInView(uint id) {
 			const int maxlod = int(log2(smaxdim))-2;
 			
 			const int omaxdim = max(s.x, s.y);
-			const int lod = max(min(int(log2(omaxdim)), maxlod), 1);
+			const int lod = max(min(int(log2(omaxdim)), maxlod), 2);
 			const int bits = (1<<lod) - 1;
 			
 			ivec2 end = min((s2+bits)>>lod, ((cameraPixelDimension+bits)>>lod));
@@ -364,7 +364,7 @@ uint IsInView(uint id) {
 			uint visible = 0;
 			for(int i=start.x; i<=end.x && visible==0; ++i) {
 				for(int j=start.y; j<=end.y && visible==0; ++j) {
-					float testedDepth = texelFetch(depthTexture, ivec2(i,j), int(lod)).x;
+					float testedDepth = texelFetch(depthTexture, ivec2(i,j), lod-1).x;
 					if(currentDepth <= testedDepth) {
 						visible = 1;
 					}
