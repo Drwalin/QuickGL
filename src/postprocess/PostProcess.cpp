@@ -16,29 +16,16 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../../include/quickgl/postprocess/PostProcess.hpp"
-#include "../../include/quickgl/postprocess/PostProcessGenerateOcclusionCullingDepthMipmap.hpp"
-
 #include "../../include/quickgl/cameras/Camera.hpp"
 
+#include "../../include/quickgl/postprocess/PostProcess.hpp"
+
 namespace qgl {
-	Camera::Camera() {
-		AddPostProcess(
-				std::make_shared<qgl::PostProcessGenerateOcclusionCullingDepthMipmap>());
+	PostProcess::PostProcess() {
 	}
 	
-	Camera::~Camera() {
-	}
-	
-	void Camera::AddPostProcess(std::shared_ptr<PostProcess> postProcess) {
-		postProcesses.push_back(postProcess);
-	}
-	
-	void Camera::DoPostprocessing() {
-		std::shared_ptr<Camera> self = shared_from_this();
-		for(uint32_t i=0; i<postProcesses.size(); ++i) {
-			postProcesses[i]->Execute(self);
-		}
+	PostProcess::~PostProcess() {
 	}
 }
+
 

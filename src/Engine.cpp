@@ -31,6 +31,7 @@
 #include "../include/quickgl/GlobalEntityManager.hpp"
 #include "../include/quickgl/IndirectDrawBufferGenerator.hpp"
 #include "../include/quickgl/BlitCameraToScreen.hpp"
+#include "../include/quickgl/pipelines/PipelinePostProcessing.hpp"
 
 #include "../include/quickgl/Engine.hpp"
 
@@ -45,19 +46,19 @@ namespace qgl {
 	}
 	
 	void Engine::InitGL(std::string windowTitle) {
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		gl::openGL.Init(windowTitle.c_str(), 800, 600, true, false,
 				std::thread::hardware_concurrency()<=4,
 				4, 2);
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		gl::openGL.InitGraphic();
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		inputManager.Init();
-	GL_CHECK_PUSH_ERROR;
+		GL_CHECK_PUSH_ERROR;
 		Gui::InitIMGUI();
 		initialized = true;
 		
-		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024*16, 16);
+		deltaVboManager = std::make_shared<DeltaVboManager>(1024*1024, 16);
 		deltaVboManager->Init();
 		moveVboManager = std::make_shared<MoveVboManager>(shared_from_this());
 		globalEntityManager = std::make_shared<GlobalEntityManager>(shared_from_this());
@@ -67,6 +68,10 @@ namespace qgl {
 		indirectDrawBufferGenerator->Init();
 		
 		blitTexture = std::make_shared<BlitCameraToScreen>();
+		
+		pipelinePostProcessing
+			= std::make_shared<PipelinePostProcessing>(shared_from_this());
+		AddPipeline(pipelinePostProcessing);
 	}
 	
 	void Engine::Destroy() {
@@ -143,10 +148,12 @@ namespace qgl {
 		}
 		gl::FBO::Unbind();
 		if(mainCamera) {
+			auto tex = mainCamera->GetMainColorTexture();
 			blitTexture->Blit(
-					mainCamera->GetMainColorTexture(),
-					gl::openGL.GetWidth(),
-					gl::openGL.GetHeight());
+					tex,
+					0, 0, 1, 1,
+					0, 0, gl::openGL.GetWidth(), gl::openGL.GetHeight(),
+					0);
 		}
 	}
 	

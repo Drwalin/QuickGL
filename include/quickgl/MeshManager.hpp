@@ -57,7 +57,7 @@ namespace qgl {
 		};
 		
 		MeshManager(uint32_t vertexSize,
-				void(*meshAppenderVertices)(
+				bool(*meshAppenderVertices)(
 					std::vector<uint8_t>& buffer,
 					uint32_t bufferByteOffset,
 					gl::BasicMeshLoader::Mesh* mesh
@@ -87,7 +87,7 @@ namespace qgl {
 				const std::vector<uint32_t>& indices,
 				float boundingSphereRadiusMultiplier=1.0f);
 		
-		void LoadMesh(gl::BasicMeshLoader::Mesh* mesh);
+		bool LoadMesh(gl::BasicMeshLoader::Mesh* mesh);
 		
 		gl::VBO& GetVBO() { return vbo; }
 		gl::VBO& GetEBO() { return ebo; }
@@ -110,7 +110,7 @@ namespace qgl {
 		AllocatorVBO eboAllocator;
 		gl::VBO& ebo;
 		
-		void(*const meshAppenderVertices)(
+		bool(*const meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh
