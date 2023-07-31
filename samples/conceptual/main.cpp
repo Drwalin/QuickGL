@@ -74,14 +74,14 @@ int main() {
 	// add animated object
 	if(1){
 		uint32_t entity = pipelineAnimated->CreateEntity();
-		pipelineAnimated->SetEntityMesh(entity, 0);
+		pipelineAnimated->SetEntityMeshByName(entity, "Wobbler");
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-1});
 		pipelineAnimated->SetAnimationState(entity, 0, rand()/30.0f, true, 0, true);
 		printf("entity = %i\n", entity);
 	}
 	if(1){
 		uint32_t entity = pipelineAnimated->CreateEntity();
-		pipelineAnimated->SetEntityMesh(entity, 1);
+		pipelineAnimated->SetEntityMeshByName(entity, "Wobbler");
 		pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{0,0,-10});
 		pipelineAnimated->SetAnimationState(entity, 0, rand()/30.0f, true, 0, true);
 		printf("entity = %i\n", entity);
@@ -101,30 +101,30 @@ int main() {
 	
 	// add terrain object
 	if(1){
-	uint32_t terrainId = pipelineStatic->CreateEntity();
-	pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
-	pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,-30,0});
+		uint32_t terrainId = pipelineStatic->CreateEntity();
+		pipelineStatic->SetEntityMeshByName(terrainId, "Grid");
+		pipelineStatic->SetEntityTransformsQuat(terrainId, glm::vec3{0,-30,0});
 	}
-	
+
 	// add box object
 	if(1){
-	uint32_t chestId = pipelineStatic->CreateEntity();
-	pipelineStatic->SetEntityMeshByName(chestId, "temple");
-	pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,-10,0});
+		uint32_t chestId = pipelineStatic->CreateEntity();
+		pipelineStatic->SetEntityMeshByName(chestId, "temple");
+		pipelineStatic->SetEntityTransformsQuat(chestId, glm::vec3{0,-10,0});
 	}
-	
+
 	// add fire stand object
 	{
-	uint32_t standId = pipelineStatic->CreateEntity();
-	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
-	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{-20,0,0});
+		uint32_t standId = pipelineStatic->CreateEntity();
+		pipelineStatic->SetEntityMeshByName(standId, "fireStand");
+		pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{-20,0,0});
 	}
-	
+
 	// add 2. fire stand object
 	{
-	uint32_t standId = pipelineStatic->CreateEntity();
-	pipelineStatic->SetEntityMeshByName(standId, "fireStand");
-	pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{0,20,0});
+		uint32_t standId = pipelineStatic->CreateEntity();
+		pipelineStatic->SetEntityMeshByName(standId, "fireStand");
+		pipelineStatic->SetEntityTransformsQuat(standId, glm::vec3{0,20,0});
 	}
 	
 	int I=0;
@@ -170,7 +170,7 @@ int main() {
 			entSta.emplace_back(standId);
 		} else {
 			uint32_t entity = pipelineAnimated->CreateEntity();
-			pipelineAnimated->SetEntityMesh(entity, rand()%2);
+			pipelineAnimated->SetEntityMesh(entity, 1+(rand()%2));
 			pipelineAnimated->SetEntityTransformsQuat(entity, glm::vec3{4*((I%400)-200),4*((I/400)-200),II*4});
 			pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
 			entAni.emplace_back(entity);
@@ -420,13 +420,16 @@ int main() {
 		
 		if(blitDepthLevel >= 0) {
 			auto tex = camera->GetDepthTexture();
+			const int b = blitDepthLevel;
+			const int w = tex->GetWidth();
+			const int h = tex->GetHeight();
 			engine->GetBlitter()->Blit(
 					tex,
-					0, 0, blitDepthLevel>0?0.5:1, blitDepthLevel>0?0.5:1,
+					0, 0, b>0?0.5:1, b>0?0.5:1,
 					0, 0,
-					(((1<<blitDepthLevel)-1+tex->GetWidth() )>>blitDepthLevel)<<blitDepthLevel,
-					(((1<<blitDepthLevel)-1+tex->GetHeight())>>blitDepthLevel)<<blitDepthLevel,
-					blitDepthLevel);
+					(((1<<b)-1+w)>>b)<<b,
+					(((1<<b)-1+h)>>b)<<b,
+					b);
 		}
 		
 		gl::Flush();

@@ -253,7 +253,7 @@ public:
 								);
 					} else {
 						uint32_t entity = pipelineAnimated->CreateEntity();
-						pipelineAnimated->SetEntityMesh(entity, rand()%2);
+						pipelineAnimated->SetEntityMesh(entity, 1+rand()%2);
 						pipelineAnimated->SetAnimationState(entity, rand()%4, rand()/300.0f, true, rand()%4, true);
 						pipelineAnimated->SetEntityTransformsQuat(entity,
 								p,

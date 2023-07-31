@@ -31,6 +31,7 @@
 #include "util/BufferedVBO.hpp"
 #include "util/IdsManager.hpp"
 #include "util/Log.hpp"
+#include "util/ManagedSparselyUpdatedVBO.hpp"
 
 namespace gl {
 	class VBO;
@@ -41,22 +42,22 @@ namespace gl {
 }
 
 namespace qgl {
+	class MeshResource;
+	class Engine;
 	
 	class MeshManager {
 	public:
 		
-		struct MeshInfo {
-			MeshInfo() = default;
-			std::string name;
-			uint32_t firstElement;
-			uint32_t countElements;
+		struct PerMeshInfoGPU {
 			uint32_t firstVertex;
 			uint32_t countVertices;
+			uint32_t firstElement;
+			uint32_t countElements;
 			float boundingSphereCenterOffset[3];
 			float boundingSphereRadius;
 		};
 		
-		MeshManager(uint32_t vertexSize,
+		MeshManager(std::shared_ptr<Engine> engine, uint32_t vertexSize,
 				bool(*meshAppenderVertices)(
 					std::vector<uint8_t>& buffer,
 					uint32_t bufferByteOffset,
@@ -66,12 +67,13 @@ namespace qgl {
 		
 		bool LoadModels(const std::string& fileName);
 		
-		MeshInfo GetMeshInfoById(uint32_t id) const;
+		PerMeshInfoGPU GetMeshInfoById(uint32_t id) const;
 		uint32_t GetMeshIdByName(std::string name) const;
 		
 		uint32_t CreateMeshFrom(std::shared_ptr<MeshManager> otherMeshManager,
 				const std::vector<uint32_t>& sourceMeshesIds);
 		
+		virtual void AcquireMeshReference(uint32_t id);
 		virtual void ReleaseMeshReference(uint32_t id);
 		
 		void GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
@@ -92,6 +94,10 @@ namespace qgl {
 		gl::VBO& GetVBO() { return vbo; }
 		gl::VBO& GetEBO() { return ebo; }
 		
+		gl::VBO& GetMeshInfoBuffer() { return perMeshInfoGPU.Vbo(); }
+		
+		void UpdateVbo();
+		
 	protected:
 		
 		virtual void FreeMesh(uint32_t id);
@@ -100,8 +106,15 @@ namespace qgl {
 		
 	protected:
 		
+		struct PerMeshInfoCPU {
+			std::shared_ptr<MeshResource> meshResource;
+			std::string name;
+		};
+		
+		ManagedSparselyUpdatedVBOWithLocal<PerMeshInfoGPU> perMeshInfoGPU;
+		std::vector<PerMeshInfoCPU> perMeshInfoCPU;
+		
 		std::map<std::string, uint32_t> mapNameToId;
-		std::vector<MeshInfo> meshInfo;
 		IdsManager idsManager;
 		
 		AllocatorVBO vboAllocator;

@@ -24,12 +24,13 @@
 #include "../include/quickgl/AnimatedMeshManager.hpp"
 
 namespace qgl {
-	AnimatedMeshManager::AnimatedMeshManager(uint32_t vertexSize,
+	AnimatedMeshManager::AnimatedMeshManager(std::shared_ptr<Engine> engine,
+			uint32_t vertexSize,
 			bool(*meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh)) :
-			MeshManager(vertexSize, meshAppenderVertices) {
+			MeshManager(engine, vertexSize, meshAppenderVertices) {
 		animationManager = new AnimationManager();
 	}
 	
@@ -42,12 +43,12 @@ namespace qgl {
 	
 	void AnimatedMeshManager::ReleaseMeshReference(uint32_t id) {
 		MeshManager::ReleaseMeshReference(id);
-		throw "AnimatedMeshManager::ReleaseMeshReference is not implemented.";
+// 		throw "AnimatedMeshManager::ReleaseMeshReference is not implemented.";
 	}
 	
 	void AnimatedMeshManager::FreeMesh(uint32_t id) {
 		MeshManager::FreeMesh(id);
-		throw "AnimatedMeshManager::FreeMesh is not implemented.";
+// 		throw "AnimatedMeshManager::FreeMesh is not implemented.";
 	}
 	
 	bool AnimatedMeshManager::LoadModels(

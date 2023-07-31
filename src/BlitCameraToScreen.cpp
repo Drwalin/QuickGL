@@ -62,10 +62,10 @@ void main() {
 	vec2 uv = texCoord * coords.zw + coords.xy;
 	ivec2 iuv = ivec2(uv * size);
 	vec4 v = texelFetch(tex, iuv, lod);
-	if(v.z > 0.01 || v.y > 0.01)// || v.w > 0.01)
+	if(v.z > 0.01 || v.y > 0.01) {// || v.w > 0.01)
 		FragColor = v;//*v*v*v*v*v*v*v;
-	else {
-		v.x = pow(v.x, 24);
+	} else {
+		v.x = pow(v.x, 40);
 		FragColor = v;
 	}
 }

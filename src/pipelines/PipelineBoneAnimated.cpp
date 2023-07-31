@@ -158,7 +158,8 @@ namespace qgl {
 			+ 8*sizeof(uint8_t) // bones and weights
 			;
 		
-		animatedMeshManager = std::make_shared<AnimatedMeshManager>(stride,
+		animatedMeshManager = std::make_shared<AnimatedMeshManager>(engine,
+				stride,
 			[](std::vector<uint8_t>& buffer, uint32_t offset,
 					gl::BasicMeshLoader::Mesh* mesh)->bool {
 			

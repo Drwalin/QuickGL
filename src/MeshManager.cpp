@@ -28,15 +28,17 @@
 #include "../include/quickgl/MeshManager.hpp"
 
 namespace qgl {
-	MeshManager::MeshManager(uint32_t vertexSize,
+	MeshManager::MeshManager(std::shared_ptr<Engine> engine, uint32_t vertexSize,
 			bool(*meshAppenderVertices)(
 				std::vector<uint8_t>& buffer,
 				uint32_t bufferByteOffset,
 				gl::BasicMeshLoader::Mesh* mesh))
-		: vboAllocator(vertexSize, false), vbo(vboAllocator.Vbo()),
+		: perMeshInfoGPU(engine),
+			vboAllocator(vertexSize, false), vbo(vboAllocator.Vbo()),
 			eboAllocator(sizeof(uint32_t), true), ebo(eboAllocator.Vbo()),
 			meshAppenderVertices(meshAppenderVertices),
 			vertexSize(vertexSize) {
+		perMeshInfoGPU.Init();
 	}
 	
 	MeshManager::~MeshManager() {
@@ -108,7 +110,7 @@ namespace qgl {
 	bool MeshManager::LoadMesh(gl::BasicMeshLoader::Mesh* mesh) {
 		std::vector<uint8_t> vboSrc, eboSrc;
 		if(meshAppenderVertices(vboSrc, 0, mesh)) {
-			MeshInfo info;
+			PerMeshInfoGPU info;
 			mesh->GetBoundingSphereInfo(info.boundingSphereCenterOffset,
 				info.boundingSphereRadius);
 			
@@ -123,10 +125,11 @@ namespace qgl {
 			std::string name = mesh->name;
 			uint32_t meshId = idsManager.GetNewId();
 			mapNameToId[name] = meshId;
-			if(meshInfo.size() <= meshId) {
-				meshInfo.resize(meshId+100);
+			perMeshInfoGPU.SetValue(info, meshId);
+			if(perMeshInfoCPU.size() <= meshId) {
+				perMeshInfoCPU.resize(meshId+100);
 			}
-			meshInfo[meshId] = info;
+			perMeshInfoCPU[meshId] = {nullptr, name};
 			
 			vbo.Update(&vboSrc.front(), info.firstVertex*vertexSize,
 					info.countVertices*vertexSize);
@@ -138,8 +141,12 @@ namespace qgl {
 		return false;
 	}
 	
-	MeshManager::MeshInfo MeshManager::GetMeshInfoById(uint32_t id) const {
-		return meshInfo[id];
+	void MeshManager::UpdateVbo() {
+		perMeshInfoGPU.UpdateVBO();
+	}
+	
+	MeshManager::PerMeshInfoGPU MeshManager::GetMeshInfoById(uint32_t id) const {
+		return perMeshInfoGPU.GetValue(id);
 	}
 	
 	uint32_t MeshManager::GetMeshIdByName(std::string name) const {
@@ -152,24 +159,30 @@ namespace qgl {
 	
 	void MeshManager::GetMeshIndices(uint32_t meshId, uint32_t& indexStart,
 			uint32_t& indexCount) {
-		MeshInfo info = GetMeshInfoById(meshId);
+		auto info = GetMeshInfoById(meshId);
 		indexStart = info.firstElement;
 		indexCount = info.countElements;
 	}
 	
 	void MeshManager::GetMeshBoundingSphere(uint32_t meshId, float* offset,
 			float& radius) {
-		MeshInfo info = GetMeshInfoById(meshId);
+		auto info = GetMeshInfoById(meshId);
 		memcpy(offset, info.boundingSphereCenterOffset, sizeof(float)*3);
 		radius = info.boundingSphereRadius;
 	}
 	
 	void MeshManager::FreeMesh(uint32_t id) {
-		throw "Meshmanager::FreeMesh is not implemented.";
+		auto info = GetMeshInfoById(id);
+		vboAllocator.Free(info.firstVertex, info.countVertices);
+		eboAllocator.Free(info.firstElement, info.countElements);
+	}
+	
+	void MeshManager::AcquireMeshReference(uint32_t id) {
+// 		throw "Meshmanager::AcquireMeshReference is not implemented.";
 	}
 	
 	void MeshManager::ReleaseMeshReference(uint32_t id) {
-		throw "Meshmanager::ReleaseMeshReference is not implemented.";
+// 		throw "Meshmanager::ReleaseMeshReference is not implemented.";
 	}
 }
 

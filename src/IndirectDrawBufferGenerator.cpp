@@ -53,18 +53,20 @@ namespace qgl {
 	
 	std::shared_ptr<gl::VBO> IndirectDrawBufferGenerator::Generate(
 			gl::VBO& entitiesToRender,
+			gl::VBO& meshIdsPerEntity,
 			gl::VBO& meshInfo,
 			uint32_t entitiesCount,
 			uint32_t entitiesOffset,
 			uint32_t& generatedCount) {
 		auto vbo = engine->GetDeltaVboManager()->GetNextUpdateVBO();
 		generatedCount = std::min<uint32_t>(entitiesCount, vbo->GetVertexCount()*vbo->VertexSize()/20);
-		Generate(entitiesToRender, meshInfo, *vbo, generatedCount, entitiesOffset);
+		Generate(entitiesToRender, meshIdsPerEntity, meshInfo, *vbo, generatedCount, entitiesOffset);
 		return vbo;
 	}
 	
 	void IndirectDrawBufferGenerator::Generate(
 			gl::VBO& entitiesToRender,
+			gl::VBO& meshIdsPerEntity,
 			gl::VBO& meshInfo,
 			gl::VBO& indirectDrawBuffer,
 			uint32_t entitiesCount,
@@ -75,10 +77,12 @@ namespace qgl {
 		// bind buffers
 		entitiesToRender
 			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 1);
-		meshInfo
+		meshIdsPerEntity
 			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 2);
-		indirectDrawBuffer
+		meshInfo
 			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 3);
+		indirectDrawBuffer
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 		shader->SetUInt(ENTITIES_COUNT_LOCATION, entitiesCount);
 		shader->SetUInt(ENTITIES_OFFSET_LOCATION, entitiesOffset);
 		
@@ -104,18 +108,24 @@ struct DrawElementsIndirectCommand {
 	uint baseInstance;
 };
 
-struct PerEntityMeshInfo {
-	uint elementsStart;
-	uint elementsCount;
+struct MeshInfo {
+	uint firstVertex;
+	uint countVertices;
+	uint firstElement;
+	uint countElements;
+	vec4 boundingSphereInfo;
 };
 
 layout (std430, binding=1) readonly buffer ccc {
 	uint visibleEntityIds[];
 };
 layout (std430, binding=2) readonly buffer bbb {
-	PerEntityMeshInfo meshInfo[];
+	uint meshIds[];
 };
-layout (std430, binding=3) writeonly buffer aaa {
+layout (std430, binding=3) readonly buffer ddd {
+	MeshInfo meshInfo[];
+};
+layout (std430, binding=4) writeonly buffer aaa {
 	DrawElementsIndirectCommand indirectCommands[];
 };
 
@@ -130,9 +140,9 @@ void main() {
 	uint ids = entitiesOffset + gl_GlobalInvocationID.x;
 	uint id = visibleEntityIds[ids];
 	indirectCommands[ids] = DrawElementsIndirectCommand(
-		meshInfo[id].elementsCount,
+		meshInfo[meshIds[id]].countElements,
 		1,
-		meshInfo[id].elementsStart,
+		meshInfo[meshIds[id]].firstElement,
 		0,
 		id
 	);

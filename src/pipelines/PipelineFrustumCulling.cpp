@@ -174,8 +174,10 @@ namespace qgl {
 			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 4);
 		clippingPlanes
 			->BindBufferBase(gl::SHADER_STORAGE_BUFFER, 5);
-		perEntityMeshInfoBoundingSphere.Vbo()
+		perEntityMeshIds.Vbo()
 			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 6);
+		meshManager->GetMeshInfoBuffer()
+			.BindBufferBase(gl::SHADER_STORAGE_BUFFER, 7);
 		frustumCullingShader
 			->SetTexture(UNIFORM_LOCATION_DEPTH_TEXTURE,
 				camera->GetDepthTexture().get(), 0);
@@ -223,7 +225,8 @@ namespace qgl {
 	void PipelineFrustumCulling::GenerateIndirectDrawCommandBuffer(std::shared_ptr<Camera> camera) {
 		engine->GetIndirectDrawBufferGenerator()->Generate(
 				*frustumCulledIdsBuffer,
-				perEntityMeshInfo.Vbo(),
+				perEntityMeshIds.Vbo(),
+				meshManager->GetMeshInfoBuffer(),
 				*indirectDrawBuffer,
 				frustumCulledEntitiesCount,
 				0);
@@ -261,6 +264,14 @@ namespace qgl {
 #extension GL_ARB_compute_shader : require
 #extension GL_ARB_shader_storage_buffer_object : require
 
+struct PerMeshInfoGPU {
+	uint firstVertex;
+	uint countVertices;
+	uint firstElement;
+	uint countElements;
+	vec4 boundingSphereInfo;
+};
+
 layout (std430, binding=1) writeonly buffer aaa {
 	uint frustumCulledEntitiesIds[];
 };
@@ -287,7 +298,10 @@ layout (std430, binding=5) readonly buffer eee {
 	uint entitiesCount;
 };
 layout (std430, binding=6) readonly buffer fff {
-	vec4 meshInfo[];
+	uint meshIds[];
+};
+layout (std430, binding=7) readonly buffer ggg {
+	PerMeshInfoGPU meshInfo[];
 };
 
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
@@ -298,8 +312,8 @@ shared uint commonStartingLocation;
 uniform sampler2D depthTexture;
 
 uint IsFullyInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4 _p3) {
-	vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
-	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
+	vec4 pos = entitesTransformations[id] * vec4(meshInfo[meshIds[id]].boundingSphereInfo.xyz, 1);
+	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[meshIds[id]].boundingSphereInfo.w, 0);
 	float dd = length(rad);
 	
 	_p1 = matPV*(pos + p1fur * dd);
@@ -347,8 +361,8 @@ uint IsFullyInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4
 }
 
 uint IsInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4 _p3) {
-	vec4 pos = entitesTransformations[id] * vec4(meshInfo[id].xyz, 1);
-	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[id].w, 0);
+	vec4 pos = entitesTransformations[id] * vec4(meshInfo[meshIds[id]].boundingSphereInfo.xyz, 1);
+	vec4 rad = entitesTransformations[id] * vec4(0,0,meshInfo[meshIds[id]].boundingSphereInfo.w, 0);
 	float dd = length(rad);
 	
 	_p1 = matPV*(pos + p1fur * dd);
@@ -395,6 +409,12 @@ uint IsInViewport(uint id, mat4 matPV, out vec4 _p1, out vec4 _p2, out vec4 _p3)
 	return (((u1.w | u3.w | u1.x | u1.y | u2.x | u2.y)>>31) & 1) ^ 1;
 }
 
+int CalcMaxLod(ivec2 dim) {
+	const int smaxdim = min(cameraPixelDimension.x, cameraPixelDimension.y);
+	int maxlod = int(log2(smaxdim/4));
+	return max(maxlod, 2);
+}
+
 uint IsNotOccluded(vec4 p1, vec4 p2, vec4 p3) {
 	if(p3.z*p3.w < 1) {
 		return 1;
@@ -407,8 +427,8 @@ uint IsNotOccluded(vec4 p1, vec4 p2, vec4 p3) {
 	const float currentDepth = (p3.z * 0.5) + 0.5 - 0.00007;
 
 	const ivec2 s = abs(s2-s1);
-	const int smaxdim = min(cameraPixelDimension.x, cameraPixelDimension.y);
-	const int maxlod = int(log2(smaxdim))-2;
+// 	const int smaxdim = min(cameraPixelDimension.x, cameraPixelDimension.y);
+	const int maxlod = CalcMaxLod(cameraPixelDimension);//max(int(log2(smaxdim))-2,2);
 	
 	const int omaxdim = max(s.x, s.y);
 	const int lod = max(min(int(log2(omaxdim)), maxlod), 2);

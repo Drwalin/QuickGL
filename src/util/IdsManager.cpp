@@ -23,20 +23,25 @@
 namespace qgl {
 	
 	uint32_t IdsManager::GetNewId() {
+		uint32_t ret = 0;
 		if(freeIdsStack.size()) {
 			uint32_t id = freeIdsStack.back();
 			freeIdsStack.resize(freeIdsStack.size()-1);
 			uint32_t arrayOfUsedIdsOffset = arrayOfUsedIds.size();
 			mapIdToOffsetInArrayOfUsedIds[id] = arrayOfUsedIdsOffset;
 			arrayOfUsedIds.emplace_back(id);
-			return id;
+			ret = id;
 		} else {
 			uint32_t id = ids.size();
 			ids.resize(id+1);
 			arrayOfUsedIds.push_back(id);
 			mapIdToOffsetInArrayOfUsedIds[id] = id; 
-			return id;
+			ret = id;
 		}
+		if(ret == 0) {
+			return GetNewId();
+		}
+		return ret;
 	}
 	
 	void IdsManager::FreeId(uint32_t id) {
