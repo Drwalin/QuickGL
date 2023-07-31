@@ -77,7 +77,7 @@ namespace qgl {
 			+ 4*sizeof(uint8_t) // normal
 			;
 		
-		return std::make_shared<MeshManager>(stride,
+		return std::make_shared<MeshManager>(engine, stride,
 			[](std::vector<uint8_t>& buffer, uint32_t offset,
 					gl::BasicMeshLoader::Mesh* mesh)->bool {
 				mesh->ExtractPos<float>(offset, buffer, 0, stride,

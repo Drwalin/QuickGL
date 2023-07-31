@@ -39,7 +39,8 @@ namespace qgl {
 	class AnimatedMeshManager : public MeshManager {
 	public:
 		
-		AnimatedMeshManager(uint32_t vertexSize,
+		AnimatedMeshManager(std::shared_ptr<Engine> engine,
+				std::uint32_t vertexSize,
 				bool(*meshAppenderVertices)(
 					std::vector<uint8_t>& buffer,
 					uint32_t bufferByteOffset,

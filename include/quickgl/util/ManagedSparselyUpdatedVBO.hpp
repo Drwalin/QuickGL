@@ -112,6 +112,8 @@ namespace qgl {
 			return localBuffer.size();
 		}
 		
+		friend class EntityBufferManager;
+		
 	private:
 		
 		std::vector<T> localBuffer;

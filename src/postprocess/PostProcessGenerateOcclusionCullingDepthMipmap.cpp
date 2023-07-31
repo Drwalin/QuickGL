@@ -114,7 +114,7 @@ void main() {
 		vao->Bind();
 		glDepthFunc(GL_ALWAYS);
 		int reduceSize = 4;
-		for(; w>8 && h>8; ++l) {
+		for(; w>3 && h>3; ++l) {
 			glFramebufferTexture2D(GL_FRAMEBUFFER, gl::ATTACHMENT_DEPTH,
 					GL_TEXTURE_2D, depthTexture->GetTexture(), l);
 			
@@ -127,8 +127,8 @@ void main() {
 			glProgramUniform1i(shader->GetProgram(), reduceSizeLocation, reduceSize);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			
-			w = (w + reduceSize-1)/reduceSize;
-			h = (h + reduceSize-1)/reduceSize;
+			w = (w + reduceSize-1)/reduceSize+1;
+			h = (h + reduceSize-1)/reduceSize+1;
 			
 			glProgramUniform2i(shader->GetProgram(), 12, w, h);
 			GL_CHECK_PUSH_PRINT_ERROR;
@@ -138,7 +138,7 @@ void main() {
 			vao->DrawArrays(0, 4);
 			GL_CHECK_PUSH_PRINT_ERROR;
 			
-			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
+// 			gl::MemoryBarrier(gl::ALL_BARRIER_BITS);
 			
 			reduceSize = std::max(2, reduceSize/2);
 		}

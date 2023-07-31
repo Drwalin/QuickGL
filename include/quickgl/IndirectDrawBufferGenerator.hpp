@@ -41,6 +41,7 @@ namespace qgl {
 		
 		std::shared_ptr<gl::VBO> Generate(
 				gl::VBO& entitiesToRender,
+				gl::VBO& meshIdsPerEntity,
 				gl::VBO& meshInfo,
 				uint32_t entitiesCount,
 				uint32_t entitiesOffset,
@@ -48,6 +49,7 @@ namespace qgl {
 		
 		void Generate(
 				gl::VBO& entitiesToRender,
+				gl::VBO& meshIdsPerEntity,
 				gl::VBO& meshInfo,
 				gl::VBO& indirectDrawBuffer,
 				uint32_t entitiesCount,

@@ -27,7 +27,7 @@
 #include <vector>
 #include <memory>
 
-#include "../../include/quickgl/util/ManagedSparselyUpdatedVBO.hpp"
+#include "ManagedSparselyUpdatedVBO.hpp"
 
 namespace gl {
 	class VBO;
@@ -77,7 +77,13 @@ namespace qgl {
 		template<typename T>
 		void AddVector(std::vector<T>* vec);
 		void AddManagedSparselyUpdateVBO(
-				qgl::UntypedManagedSparselyUpdatedVBO* vbo);
+				UntypedManagedSparselyUpdatedVBO* vbo);
+		template<typename T>
+		void AddManagedSparselyUpdatedVBOWithLocal(
+				ManagedSparselyUpdatedVBOWithLocal<T>* vbo) {
+			AddManagedSparselyUpdateVBO(vbo);
+			AddVector(&(vbo->localBuffer));
+		}
 		
 		uint32_t GetOffsetOfEntity(uint32_t entity) const;
 		
