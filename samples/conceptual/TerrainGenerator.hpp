@@ -1,6 +1,8 @@
 
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include "../../OpenGLWrapper/include/openglwrapper/OpenGL.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/VBO.hpp"
 #include "../../OpenGLWrapper/include/openglwrapper/Texture.hpp"
