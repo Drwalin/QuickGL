@@ -19,6 +19,8 @@
 #ifndef QUICKGL_RESOURCE_HPP
 #define QUICKGL_RESOURCE_HPP
 
+#include <cstdint>
+
 #include <memory>
 #include <string>
 
